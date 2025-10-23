@@ -27,9 +27,9 @@ db.initialize_firestore()
 # Admin credentials - Multiple accounts supported
 ADMIN_ACCOUNTS = {
     # Your account
-    os.getenv('ADMIN1_USERNAME', 'christopher'): os.getenv('ADMIN1_PASSWORD', 'ChangeThisPassword123!'),
+    os.getenv('ADMIN1_USERNAME'): os.getenv('ADMIN1_PASSWORD'),
     # Professor account
-    os.getenv('ADMIN2_USERNAME', 'professor'): os.getenv('ADMIN2_PASSWORD', 'ProfessorPassword123!'),
+    os.getenv('ADMIN2_USERNAME'): os.getenv('ADMIN2_PASSWORD'),
 }
 
 # Email configuration from environment variables
