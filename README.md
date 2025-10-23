@@ -66,7 +66,7 @@ Two admin accounts are configured:
 
 | Account | Default Username | Default Password |
 |---------|------------------|------------------|
-| **You** | `christopher` | `ChangeThisPassword123!` |
+| **You** | `username` | `ChangeThisPassword123!` |
 | **Professor** | `professor` | `ProfessorPassword123!` |
 
 **⚠️ Change these passwords in `.env` before deploying!**
