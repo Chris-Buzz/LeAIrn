@@ -33,6 +33,51 @@
         </svg>
     </a>
 
+    <!-- AI Built Popup - Left Side -->
+    <div class="ai-popup" id="aiBanner">
+        <div class="ai-popup-content">
+            <button class="ai-popup-close" onclick="closeAIBanner()" aria-label="Close">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+
+            <div class="ai-popup-header">
+                <svg class="ai-popup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
+                </svg>
+                <h3>Built Entirely with AI</h3>
+            </div>
+
+            <div class="ai-popup-body">
+                <div class="ai-popup-feature">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>No coding experience required</span>
+                </div>
+                <div class="ai-popup-feature">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Created in just a few hours</span>
+                </div>
+                <div class="ai-popup-feature">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Powered by Claude AI</span>
+                </div>
+            </div>
+
+            <div class="ai-popup-footer">
+                <p><strong>You can do this too!</strong></p>
+                <p>Learn AI skills and build your own projects.</p>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- Header -->
         <header class="header">
@@ -521,6 +566,11 @@
                 </div>
             </div>
         </div>
+
+        <!-- Admin Access Link -->
+        <div class="admin-access-footer">
+            <a href="/admin/login" class="admin-link">Admin Access</a>
+        </div>
     </div>
 
     <!-- Welcome Popup Modal -->
@@ -632,5 +682,12 @@
     </div>
 
     <script src="/static/script.js"></script>
+    <script>
+        // Close AI Banner function - only closes for current session
+        function closeAIBanner() {
+            const banner = document.getElementById('aiBanner');
+            banner.classList.add('hidden');
+        }
+    </script>
 </body>
 </html>
