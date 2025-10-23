@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeAIrn - Schedule Your AI Learning Session</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+        <svg id="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+    <svg id="theme-icon-dark" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+    </button>
+
+    <!-- View Booking Button -->
+    <button onclick="showViewBookingModal()" class="view-booking-btn" title="View Previous Booking">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+    </button>
+
+    <!-- Email Contact Button -->
+    <a href="#" onclick="openContactForm(); return false;" class="email-contact-btn" title="Email Christopher">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+        </svg>
+    </a>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="logo">
+                <span class="logo-text">Le<span class="logo-ai">AI</span>rn</span>
+            </h1>
+            <p class="tagline">Schedule a Meeting</p>
+            <div class="ai-badge">Built with AI</div>
+        </header>
+
+        <!-- Progress Indicator -->
+        <div class="progress-bar">
+            <div class="progress-step active" data-step="1">
+                <div class="step-circle">1</div>
+                <div class="step-label">Info</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step" data-step="2">
+                <div class="step-circle">2</div>
+                <div class="step-label">Questions</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step" data-step="8">
+                <div class="step-circle">3</div>
+                <div class="step-label">Booking</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step" data-step="10">
+                <div class="step-circle">4</div>
+                <div class="step-label">Done</div>
+            </div>
+        </div>
+
+        <!-- Form Card -->
+        <div class="form-card">
+            <!-- Step 1: Personal Information -->
+            <div id="step1" class="step active">
+                <h2>Book Your Session with Christopher</h2>
+                <p class="step-description">Let's personalize your AI learning experience. Tell me about yourself so I can prepare the best session for you.</p>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="full_name">Full Name *</label>
+                        <input type="text" id="full_name" placeholder="John Doe" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" placeholder="john@example.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email_confirm">Confirm Email Address *</label>
+                        <input type="email" id="email_confirm" placeholder="john@example.com" required>
+                        <small class="form-hint" id="email-match-hint" style="display: none; color: var(--error); margin-top: 0.5rem;">Emails do not match</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="role">I am a *</label>
+                        <select id="role" required>
+                            <option value="">Select your role</option>
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="advisor">Advisor</option>
+                            <option value="staff">Staff Member</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn-primary" onclick="goToStep(2)">Continue to AI Experience</button>
+            </div>
+
+            <!-- Step 2: Question 1 - AI Familiarity -->
+            <div id="step2" class="step">
+                <div class="question-progress">Question 1 of 6</div>
+                <h2>What's your current AI experience level?</h2>
+                <p class="step-description">This helps us tailor the session to your needs.</p>
+
+                <div class="question-group">
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="ai_familiarity" value="new" required>
+                            <span>I'm completely new to AI
+                                <small class="option-hint">Never used AI or just heard about it</small>
+                            </span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="ai_familiarity" value="casual">
+                            <span>I've tried AI a few times
+                                <small class="option-hint">Used it occasionally for questions or basic tasks</small>
+                            </span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="ai_familiarity" value="basic">
+                            <span>I use AI sometimes
+                                <small class="option-hint">Use it for homework, writing, or casual help</small>
+                            </span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="ai_familiarity" value="practical">
+                            <span>I use AI regularly
+                                <small class="option-hint">Part of my daily routine for work or school</small>
+                            </span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="ai_familiarity" value="advanced">
+                            <span>I'm very experienced with AI
+                                <small class="option-hint">Use advanced features or build AI-powered projects</small>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="goToStep(1)">Back</button>
+                    <button class="btn-primary" onclick="goToStep(3)">Next Question</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Question 2 - AI Tools -->
+            <div id="step3" class="step">
+                <div class="question-progress">Question 2 of 6</div>
+                <h2>Which AI tools have you tried?</h2>
+                <p class="step-description">Select all that apply. It's okay if you haven't used any yet.</p>
+
+                <div class="question-group">
+                    <div class="checkbox-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="ai_tools" value="chatgpt">
+                            <span>ChatGPT
+                                <small class="option-hint">ChatGPT, GPT-4, Custom GPTs</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="ai_tools" value="gemini">
+                            <span>Google Gemini
+                                <small class="option-hint">Google's AI chatbot (formerly Bard)</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="ai_tools" value="claude">
+                            <span>Claude
+                                <small class="option-hint">Anthropic's AI assistant</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="ai_tools" value="image_gen">
+                            <span>Image Generators
+                                <small class="option-hint">Midjourney, DALL·E, Stable Diffusion</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="ai_tools" value="coding">
+                            <span>Coding Assistants
+                                <small class="option-hint">GitHub Copilot, Cursor, Replit</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="ai_tools" value="research">
+                            <span>Research & Search
+                                <small class="option-hint">Perplexity, Consensus, Elicit</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="ai_tools" value="video">
+                            <span>Video & Audio
+                                <small class="option-hint">Runway, Descript, ElevenLabs</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="ai_tools" value="writing">
+                            <span>Writing Assistants
+                                <small class="option-hint">Grammarly, Jasper, Notion AI</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="ai_tools" value="productivity">
+                            <span>Productivity Tools
+                                <small class="option-hint">Microsoft Copilot, Zapier AI</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="ai_tools" value="none">
+                            <span>None yet
+                                <small class="option-hint">I'm just getting started</small>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="goToStep(2)">Back</button>
+                    <button class="btn-primary" onclick="goToStep(4)">Next Question</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Question 3 - Primary Use -->
+            <div id="step4" class="step">
+                <div class="question-progress">Question 3 of 6</div>
+                <h2>What interests you most about AI?</h2>
+                <p class="step-description">Select all areas you'd like to explore.</p>
+
+                <div class="question-group">
+                    <div class="checkbox-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="primary_use" value="writing">
+                            <span>Writing & Content
+                                <small class="option-hint">Essays, emails, social media, creative writing</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="primary_use" value="coding">
+                            <span>Coding & Programming
+                                <small class="option-hint">Writing code, debugging, learning to program</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="primary_use" value="research">
+                            <span>Research & Analysis
+                                <small class="option-hint">Finding information, summarizing articles</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="primary_use" value="creative">
+                            <span>Creative Projects
+                                <small class="option-hint">Images, videos, art, design ideas</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="primary_use" value="productivity">
+                            <span>Productivity & Organization
+                                <small class="option-hint">Planning, scheduling, task management</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="primary_use" value="education">
+                            <span>School & Studying
+                                <small class="option-hint">Homework help, exam prep, learning concepts</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="primary_use" value="business">
+                            <span>Work & Professional
+                                <small class="option-hint">Presentations, reports, business tasks</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="primary_use" value="not_sure">
+                            <span>Not sure yet
+                                <small class="option-hint">Want to explore different possibilities</small>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="goToStep(3)">Back</button>
+                    <button class="btn-primary" onclick="goToStep(5)">Next Question</button>
+                </div>
+            </div>
+
+            <!-- Step 5: Question 4 - Learning Goal -->
+            <div id="step5" class="step">
+                <div class="question-progress">Question 4 of 6</div>
+                <h2>What would you like to accomplish?</h2>
+                <p class="step-description">Select all that apply to your learning goals.</p>
+
+                <div class="question-group">
+                    <div class="checkbox-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="learning_goal" value="use_tools">
+                            <span>Get better at using AI
+                                <small class="option-hint">Learn tips and tricks for better results</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="learning_goal" value="understand">
+                            <span>Understand how AI works
+                                <small class="option-hint">Learn what AI can and can't do</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="learning_goal" value="build">
+                            <span>Build my own AI projects
+                                <small class="option-hint">Create custom AI-powered tools</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="learning_goal" value="integrate">
+                            <span>Add AI to my projects
+                                <small class="option-hint">Connect AI to apps or websites</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="learning_goal" value="career">
+                            <span>Build career skills
+                                <small class="option-hint">Stay competitive in my field</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="learning_goal" value="productivity">
+                            <span>Work more efficiently
+                                <small class="option-hint">Save time on everyday tasks</small>
+                            </span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="learning_goal" value="explore">
+                            <span>Just curious to learn
+                                <small class="option-hint">Explore and see what's possible</small>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="goToStep(4)">Back</button>
+                    <button class="btn-primary" onclick="goToStep(6)">Next Question</button>
+                </div>
+            </div>
+
+            <!-- Step 6: Question 5 - Confidence Level -->
+            <div id="step6" class="step">
+                <div class="question-progress">Question 5 of 6</div>
+                <h2>How comfortable are you using AI tools?</h2>
+                <p class="step-description">Be honest - this helps us personalize your session.</p>
+
+                <div class="question-group">
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="confidence_level" value="1" required>
+                            <span>Not confident
+                                <small class="option-hint">Haven't used it or feel unsure</small>
+                            </span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="confidence_level" value="2">
+                            <span>A little comfortable
+                                <small class="option-hint">Tried it but struggle with results</small>
+                            </span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="confidence_level" value="3">
+                            <span>Somewhat comfortable
+                                <small class="option-hint">Can use basics, want to improve</small>
+                            </span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="confidence_level" value="4">
+                            <span>Very comfortable
+                                <small class="option-hint">Use it regularly with good results</small>
+                            </span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="confidence_level" value="5">
+                            <span>Expert level
+                                <small class="option-hint">Could teach others how to use AI</small>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="goToStep(5)">Back</button>
+                    <button class="btn-primary" onclick="goToStep(7)">Next Question</button>
+                </div>
+            </div>
+
+            <!-- Step 7: Personal Comments -->
+            <div id="step7" class="step">
+                <div class="question-progress">Question 6 of 6</div>
+                <h2>Anything else you'd like to share?</h2>
+                <p class="step-description">Tell me about specific topics, questions, or goals you have in mind (optional).</p>
+
+                <div class="form-group">
+                    <label for="personal_comments">Your Comments (Optional)</label>
+                    <textarea id="personal_comments" rows="6" placeholder="For example:&#10;- I want to learn how to write better prompts&#10;- I'm working on a project and need help with...&#10;- I'm confused about how AI can help with...&#10;- I want to understand the differences between..."></textarea>
+                    <small class="form-hint">This helps me prepare a more personalized session for you</small>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="goToStep(6)">Back</button>
+                    <button class="btn-primary" onclick="goToStep(8)">Continue to Time Selection</button>
+                </div>
+            </div>
+
+            <!-- Step 8: Time Selection -->
+            <div id="step8" class="step">
+                <h2>Choose Your Preferred Time</h2>
+                <p class="step-description">Select a time slot that works best for you. Each session is 30 minutes.</p>
+
+                <div id="loadingSlots" class="loading-container">
+                    <div class="spinner"></div>
+                    <p>Loading available time slots...</p>
+                </div>
+
+                <div id="slotsContainer" class="slots-grid hidden"></div>
+
+                <input type="hidden" id="selected_slot">
+
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="goToStep(7)">Back</button>
+                    <button id="continueToLocation" class="btn-primary" onclick="goToStep(9)" disabled>Continue to Location</button>
+                </div>
+            </div>
+
+            <!-- Step 9: Location -->
+            <div id="step9" class="step">
+                <h2>Where Should We Meet?</h2>
+                <p class="step-description">Select a Monmouth University building and specify the room number or office.</p>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="selected_building">Building *</label>
+                        <select id="selected_building" required>
+                            <option value="">Select a building</option>
+                            <option value="Edison Hall">Edison Hall</option>
+                            <option value="Howard Hall">Howard Hall</option>
+                            <option value="Pozycki Hall">Pozycki Hall</option>
+                            <option value="McAllan Hall">McAllan Hall</option>
+                            <option value="Great Hall">Great Hall</option>
+                            <option value="Bey Hall">Bey Hall</option>
+                            <option value="Rebecca Stafford Student Center">Rebecca Stafford Student Center</option>
+                            <option value="Guggenheim Memorial Library">Guggenheim Memorial Library</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="room_number">Room Number / Office *</label>
+                        <input type="text" id="room_number" placeholder="e.g., Room 204, Office 3B" required>
+                        <small class="form-hint">Enter the specific room number or office name</small>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="goToStep(8)">Back</button>
+                    <button class="btn-primary" onclick="confirmBooking()">
+                        <span class="btn-text">Confirm Booking</span>
+                        <span class="btn-spinner hidden"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 10: Success -->
+            <div id="step10" class="step">
+                <div class="success-container">
+                    <div class="success-icon">
+                        <svg viewBox="0 0 52 52">
+                            <circle class="success-circle" cx="26" cy="26" r="25" fill="none"/>
+                            <path class="success-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                        </svg>
+                    </div>
+
+                    <h2>You're All Set!</h2>
+                    <p class="success-message">Your AI learning session has been successfully booked.</p>
+
+                    <div id="bookingDetails" class="booking-details"></div>
+
+                    <div class="calendar-section">
+                        <h3>Add to Calendar</h3>
+                        <div class="calendar-buttons">
+                            <button class="btn-calendar google" onclick="addToGoogleCalendar()">
+                                <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V9h14v10z"/></svg>
+                                Google Calendar
+                            </button>
+                            <button class="btn-calendar apple" onclick="downloadICS()">
+                                <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V9h14v10z"/></svg>
+                                Apple/Outlook
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="contact-section">
+                        <h3>Have Questions?</h3>
+                        <p>Need to reschedule or have questions about your session? Contact me directly.</p>
+                        <a href="#" onclick="openContactForm(); return false;" class="btn-contact">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                <polyline points="22,6 12,13 2,6"/>
+                            </svg>
+                            Email Me
+                        </a>
+                    </div>
+
+                    <button class="btn-secondary" onclick="location.reload()">Book Another Session</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welcome Popup Modal -->
+    <div id="welcomeModal" class="welcome-modal">
+        <div class="welcome-modal-content">
+            <div class="welcome-modal-header">
+                <h1>AI is Transforming the World</h1>
+                <p class="welcome-subtitle">Don't Get Left Behind</p>
+            </div>
+
+            <div class="welcome-modal-body">
+                <div class="welcome-content-wrapper">
+                    <div class="welcome-left-column">
+                        <div class="welcome-message-large">
+                            <h2>Why Learn AI Now?</h2>
+                            <p>Artificial Intelligence is revolutionizing every industry, changing how we work, create, and solve problems.</p>
+                            <p><strong>The question isn't whether AI will impact your life — it's whether you'll be ready for it.</strong></p>
+                        </div>
+                    </div>
+
+                    <div class="welcome-right-column">
+                        <div class="mentor-intro">
+                            <div class="mentor-card">
+                                <div class="mentor-info">
+                                    <h2>Your AI Mentor</h2>
+                                    <h3>Christopher Buzaid</h3>
+                                    <p>I'll personally guide you through your AI learning journey. Together, we'll discover the best tools and strategies tailored specifically to your goals and experience level.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="welcome-cta">
+                        <p class="cta-text">Ready to start your AI journey?</p>
+                        <button type="button" class="btn-welcome-start" onclick="closeWelcomeModal()">Schedule Your Free Session</button>
+                        <p class="welcome-note">This booking system was built with AI in just 5 hours. Imagine what you could create.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Booking Modal -->
+    <div id="viewBookingModal" class="welcome-modal hidden">
+        <div class="welcome-modal-content" style="max-width: 650px; overflow-y: hidden;">
+            <div class="welcome-modal-header">
+                <h1>View My Booking</h1>
+                <p class="welcome-subtitle">Enter your email to view your upcoming booking</p>
+            </div>
+
+            <div class="welcome-modal-body" style="padding: 2rem;">
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="lookup_email" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Email Address</label>
+                    <input type="email" id="lookup_email" placeholder="john@example.com" style="width: 100%; padding: 1rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1rem; background: var(--bg); color: var(--text-primary);" required>
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button onclick="closeViewBookingModal()" style="flex: 1; padding: 1rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                        Cancel
+                    </button>
+                    <button onclick="lookupBooking()" class="btn-welcome-start" style="flex: 1; padding: 1rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                        View Booking
+                    </button>
+                </div>
+
+                <div id="booking-lookup-result" style="margin-top: 1.5rem; display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Form Modal -->
+    <div id="contactFormModal" class="welcome-modal hidden">
+        <div class="welcome-modal-content" style="max-width: 550px; overflow-y: hidden;">
+            <div class="welcome-modal-header">
+                <h1>Contact Me</h1>
+                <p class="welcome-subtitle">Send me a message about your AI learning session</p>
+            </div>
+
+            <div class="welcome-modal-body" style="padding: 2rem;">
+                <form id="contactForm" onsubmit="submitContactForm(event)">
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="contact_name" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Your Name</label>
+                        <input type="text" id="contact_name" placeholder="John Doe" style="width: 100%; padding: 1rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1rem; background: var(--bg); color: var(--text-primary);" required>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="contact_email" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Your Email</label>
+                        <input type="email" id="contact_email" placeholder="john@example.com" style="width: 100%; padding: 1rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1rem; background: var(--bg); color: var(--text-primary);" required>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="contact_message" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Message</label>
+                        <textarea id="contact_message" placeholder="I have a question about..." rows="5" style="width: 100%; padding: 1rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1rem; background: var(--bg); color: var(--text-primary); resize: vertical; font-family: inherit;" required></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="button" onclick="closeContactForm()" style="flex: 1; padding: 1rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-welcome-start" style="flex: 1; padding: 1rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                            Send Message
+                        </button>
+                    </div>
+                </form>
+
+                <div id="contact-form-result" style="margin-top: 1.5rem; display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

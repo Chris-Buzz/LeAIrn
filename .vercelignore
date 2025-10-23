@@ -1,0 +1,15 @@
+__pycache__
+*.pyc
+.env
+.env.local
+.venv
+venv/
+*.log
+.DS_Store
+.vscode/
+.idea/
+firebase-credentials.json
+user_data.json
+schedule.json
+backup/
+docs/

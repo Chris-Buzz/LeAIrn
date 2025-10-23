@@ -1,0 +1,50 @@
+# Environment variables
+.env
+.env.local
+
+# Firebase credentials (NEVER commit this!)
+firebase-credentials.json
+**/firebase-credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Flask
+instance/
+.webassets-cache
+
+# Data files (don't commit user data)
+user_data.json
+schedule.json
+*.db
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+.claude/*
+__pycache__/*
