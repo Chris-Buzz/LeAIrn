@@ -5,6 +5,8 @@ This module handles all Firestore database operations, replacing JSON file stora
 """
 
 import os
+import json
+import base64
 import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime
@@ -17,8 +19,13 @@ def initialize_firestore():
     """
     Initialize Firebase Admin SDK and Firestore client.
 
-    Uses firebase-credentials.json file for authentication.
-    Set FIREBASE_CREDENTIALS_PATH environment variable or place file in project root.
+    Supports two authentication methods:
+    1. Base64-encoded credentials (FIREBASE_CREDENTIALS_BASE64) - Best for Vercel
+    2. JSON file path (FIREBASE_CREDENTIALS_PATH) - Best for local development
+
+    Environment variables:
+    - FIREBASE_CREDENTIALS_BASE64: Base64-encoded service account JSON
+    - FIREBASE_CREDENTIALS_PATH: Path to service account JSON file
     """
     global db
 
@@ -26,17 +33,39 @@ def initialize_firestore():
         return db
 
     try:
-        # Get credentials path from environment or use default
-        cred_path = os.getenv('FIREBASE_CREDENTIALS_PATH', 'firebase-credentials.json')
+        cred = None
 
-        if not os.path.exists(cred_path):
-            print(f"WARNING:  WARNING: Firebase credentials not found at {cred_path}")
-            print("   Please download from Firebase Console → Project Settings → Service Accounts")
+        # Method 1: Try base64-encoded credentials (Vercel deployment)
+        base64_creds = os.getenv('FIREBASE_CREDENTIALS_BASE64')
+        if base64_creds:
+            try:
+                # Decode base64 string to JSON
+                creds_json = base64.b64decode(base64_creds).decode('utf-8')
+                creds_dict = json.loads(creds_json)
+                cred = credentials.Certificate(creds_dict)
+                print("OK: Using base64-encoded Firebase credentials")
+            except Exception as e:
+                print(f"WARNING: Failed to decode base64 credentials: {e}")
+
+        # Method 2: Try file path (local development)
+        if cred is None:
+            cred_path = os.getenv('FIREBASE_CREDENTIALS_PATH', 'firebase-credentials.json')
+
+            if os.path.exists(cred_path):
+                cred = credentials.Certificate(cred_path)
+                print(f"OK: Using Firebase credentials from {cred_path}")
+            else:
+                print(f"WARNING: Firebase credentials not found at {cred_path}")
+
+        # If no credentials found, fall back to JSON files
+        if cred is None:
+            print("WARNING: No Firebase credentials found")
+            print("   For Vercel: Set FIREBASE_CREDENTIALS_BASE64 environment variable")
+            print("   For local: Place firebase-credentials.json in project root")
             print("   Continuing with fallback to JSON files for development...")
             return None
 
         # Initialize Firebase Admin
-        cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred)
 
         # Get Firestore client
