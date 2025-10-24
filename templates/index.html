@@ -140,7 +140,7 @@
 
                     <div class="form-group">
                         <label for="role">I am a *</label>
-                        <select id="role" required>
+                        <select id="role" required onchange="showDepartmentField()">
                             <option value="">Select your role</option>
                             <option value="student">Student</option>
                             <option value="teacher">Teacher</option>
@@ -148,6 +148,11 @@
                             <option value="staff">Staff Member</option>
                             <option value="other">Other</option>
                         </select>
+                    </div>
+
+                    <div class="form-group" id="department-field" style="display: none;">
+                        <label for="department" id="department-label">Department *</label>
+                        <input type="text" id="department" placeholder="e.g., Computer Science, Mathematics, Business">
                     </div>
                 </div>
 

@@ -205,6 +205,8 @@ function validateCurrentStep() {
         const email = document.getElementById('email').value.trim();
         const emailConfirm = document.getElementById('email_confirm').value.trim();
         const role = document.getElementById('role').value;
+        const departmentField = document.getElementById('department-field');
+        const department = document.getElementById('department').value.trim();
 
         if (!name || !email || !emailConfirm || !role) {
             showNotification('Please fill in all required fields', 'error');
@@ -221,6 +223,12 @@ function validateCurrentStep() {
         if (email !== emailConfirm) {
             showNotification('Email addresses do not match. Please check and try again.', 'error');
             document.getElementById('email-match-hint').style.display = 'block';
+            return false;
+        }
+
+        // Department/Major validation (if field is visible)
+        if (departmentField.style.display !== 'none' && !department) {
+            showNotification('Please enter your department or major', 'error');
             return false;
         }
 
@@ -407,12 +415,17 @@ async function confirmBooking() {
     const roomNumber = document.getElementById('room_number').value.trim();
     const fullLocation = building && roomNumber ? `${building} - ${roomNumber}` : '';
 
+    // Get department/major if visible
+    const departmentField = document.getElementById('department-field');
+    const department = departmentField.style.display !== 'none' ? document.getElementById('department').value.trim() : null;
+
     // Get form data
     const formData = {
         full_name: document.getElementById('full_name').value.trim(),
         email: document.getElementById('email').value.trim(),
         phone: null, // Phone is no longer collected
         role: document.getElementById('role').value,
+        department: department, // Add department/major
         selected_slot: document.getElementById('selected_slot').value,
         selected_room: fullLocation,
         selected_building: building,
@@ -816,5 +829,35 @@ async function submitContactForm(event) {
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnText;
+    }
+}
+
+// Show/hide department field based on role selection
+function showDepartmentField() {
+    const role = document.getElementById('role').value;
+    const departmentField = document.getElementById('department-field');
+    const departmentLabel = document.getElementById('department-label');
+    const departmentInput = document.getElementById('department');
+
+    if (role && role !== '') {
+        departmentField.style.display = 'block';
+
+        // Update label based on role
+        if (role === 'student') {
+            departmentLabel.textContent = 'Major *';
+            departmentInput.placeholder = 'e.g., Computer Science, Psychology, Business';
+        } else if (role === 'teacher' || role === 'advisor') {
+            departmentLabel.textContent = 'Department *';
+            departmentInput.placeholder = 'e.g., Computer Science, Mathematics, English';
+        } else {
+            departmentLabel.textContent = 'Department *';
+            departmentInput.placeholder = 'e.g., IT, Administration, Counseling';
+        }
+
+        // Make field required
+        departmentInput.setAttribute('required', 'required');
+    } else {
+        departmentField.style.display = 'none';
+        departmentInput.removeAttribute('required');
     }
 }

@@ -658,6 +658,7 @@
                         <th>Name</th>
                         <th>Email</th>
                         <th>Role</th>
+                        <th>Dept/Major</th>
                         <th>AI Level</th>
                         <th>Primary Use</th>
                         <th>Time Slot</th>
@@ -873,11 +874,13 @@
 
                 const aiLevel = user.ai_familiarity || 'N/A';
                 const primaryUse = user.primary_use || 'N/A';
+                const department = user.department || 'N/A';
 
                 row.innerHTML = `
                     <td><strong>${user.full_name}</strong></td>
                     <td>${user.email}</td>
                     <td><span class="badge badge-role">${user.role}</span></td>
+                    <td>${department}</td>
                     <td><span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #8B5CF6;">${aiLevel}</span></td>
                     <td>${primaryUse}</td>
                     <td>${formatSlotId(user.selected_slot)}</td>
@@ -1072,6 +1075,10 @@
                         <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
                             <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Role</div>
                             <div style="font-weight: 600;">${user.role}</div>
+                        </div>
+                        <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                            <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">${user.role === 'student' ? 'Major' : 'Department'}</div>
+                            <div style="font-weight: 600;">${user.department || 'Not specified'}</div>
                         </div>
                         <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
                             <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Location</div>
