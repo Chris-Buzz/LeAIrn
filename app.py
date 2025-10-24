@@ -105,6 +105,13 @@ def send_confirmation_email(user_data, slot_data):
 
                     <p style="margin-top: 30px;">See you soon!</p>
                     <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn</p>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.9rem; color: #9CA3AF; text-align: center;">
+                            <strong>Need to cancel or reschedule?</strong><br>
+                            Visit <a href="https://uleairn.com" style="color: #6366F1;">uleairn.com</a>, click the "View My Booking" button, and you can manage your booking from there.
+                        </p>
+                    </div>
                 </div>
             </body>
         </html>
@@ -123,10 +130,198 @@ def send_confirmation_email(user_data, slot_data):
         print(f"Error sending email: {e}")
         return False
 
+def send_admin_notification_email(user_data, slot_data):
+    """Send booking notification email to admin"""
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = f'New Booking: {user_data["full_name"]} - LeAIrn'
+        msg['From'] = EMAIL_FROM
+        msg['To'] = EMAIL_RECIPIENT
+        msg['Reply-To'] = user_data['email']
+
+        # Create HTML email
+        html = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h1 style="color: #6366F1;">New AI Learning Session Booked</h1>
+                    <p>A new session has been scheduled on LeAIrn.</p>
+
+                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Student Information</h2>
+                        <p><strong>Name:</strong> {user_data['full_name']}</p>
+                        <p><strong>Email:</strong> <a href="mailto:{user_data['email']}">{user_data['email']}</a></p>
+                        <p><strong>Role:</strong> {user_data.get('role', 'N/A')}</p>
+                        <p><strong>Department/Major:</strong> {user_data.get('department', 'Not specified')}</p>
+                    </div>
+
+                    <div style="background: #f0fdf4; border-left: 4px solid #10B981; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Session Details</h2>
+                        <p><strong>Date & Time:</strong> {slot_data['day']}, {slot_data['date']} at {slot_data['time']}</p>
+                        <p><strong>Location:</strong> {user_data['selected_room']}</p>
+                        <p><strong>Duration:</strong> 30 minutes</p>
+                    </div>
+
+                    <div style="background: #fef3c7; border-left: 4px solid #F59E0B; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Student Background</h2>
+                        <p><strong>AI Experience Level:</strong> {user_data.get('ai_familiarity', 'Not specified')}</p>
+                        <p><strong>AI Tools Used:</strong> {user_data.get('ai_tools', 'None')}</p>
+                        <p><strong>Primary Interests:</strong> {user_data.get('primary_use', 'Not specified')}</p>
+                        <p><strong>Learning Goals:</strong> {user_data.get('learning_goal', 'Not specified')}</p>
+                        <p><strong>Confidence Level:</strong> {user_data.get('confidence_level', 'N/A')}/5</p>
+                        {f"<p><strong>Additional Comments:</strong> {user_data.get('personal_comments')}</p>" if user_data.get('personal_comments') else ""}
+                    </div>
+
+                    <p style="margin-top: 30px; color: #6B7280; font-size: 0.9rem;">
+                        This is an automated notification from LeAIrn. You can view and manage all bookings in your
+                        <a href="https://uleairn.com/admin" style="color: #6366F1;">admin dashboard</a>.
+                    </p>
+                </div>
+            </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html, 'html'))
+
+        # Send email
+        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_USER, EMAIL_PASSWORD)
+            server.send_message(msg)
+
+        print(f"OK: Admin notification email sent for booking by {user_data['full_name']}")
+        return True
+    except Exception as e:
+        print(f"Error sending admin notification email: {e}")
+        return False
+
+def send_booking_update_email(user_data, old_slot_data=None, new_slot_data=None, old_room=None, new_room=None):
+    """Send email to user when their booking is updated"""
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'Your AI Learning Session Has Been Updated - LeAIrn'
+        msg['From'] = EMAIL_FROM
+        msg['To'] = user_data['email']
+
+        # Determine what changed
+        changes = []
+        if old_slot_data and new_slot_data:
+            changes.append(f"<li><strong>Time Changed:</strong> From {old_slot_data['day']}, {old_slot_data['date']} at {old_slot_data['time']} → To {new_slot_data['day']}, {new_slot_data['date']} at {new_slot_data['time']}</li>")
+        if old_room and new_room and old_room != new_room:
+            changes.append(f"<li><strong>Location Changed:</strong> From {old_room} → To {new_room}</li>")
+
+        changes_html = ''.join(changes) if changes else '<li>Booking details updated</li>'
+        current_slot = new_slot_data if new_slot_data else old_slot_data
+        current_room = new_room if new_room else old_room
+
+        # Create HTML email
+        html = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h1 style="color: #F59E0B;">Your Session Has Been Updated</h1>
+                    <p>Hi {user_data['full_name']},</p>
+                    <p>Your AI learning session with Christopher Buzaid has been updated by an administrator.</p>
+
+                    <div style="background: #fef3c7; border-left: 4px solid #F59E0B; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">What Changed</h2>
+                        <ul style="margin: 0; padding-left: 20px;">
+                            {changes_html}
+                        </ul>
+                    </div>
+
+                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Updated Session Details</h2>
+                        <p><strong>Date & Time:</strong> {current_slot['day']}, {current_slot['date']} at {current_slot['time']}</p>
+                        <p><strong>Location:</strong> {current_room}</p>
+                        <p><strong>Duration:</strong> 30 minutes</p>
+                        <p><strong>Your AI Mentor:</strong> Christopher Buzaid</p>
+                    </div>
+
+                    <p style="margin-top: 30px;">If you have any questions or concerns about this change, please contact me directly.</p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com">cjpbuzaid@gmail.com</a></p>
+                </div>
+            </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html, 'html'))
+
+        # Send email
+        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_USER, EMAIL_PASSWORD)
+            server.send_message(msg)
+
+        print(f"OK: Booking update email sent to {user_data['email']}")
+        return True
+    except Exception as e:
+        print(f"Error sending booking update email: {e}")
+        return False
+
+def send_booking_deletion_email(user_data, slot_data):
+    """Send email to user when their booking is deleted"""
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'Your AI Learning Session Has Been Cancelled - LeAIrn'
+        msg['From'] = EMAIL_FROM
+        msg['To'] = user_data['email']
+
+        # Create HTML email
+        html = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h1 style="color: #EF4444;">Your Session Has Been Cancelled</h1>
+                    <p>Hi {user_data['full_name']},</p>
+                    <p>Your AI learning session with Christopher Buzaid has been cancelled.</p>
+
+                    <div style="background: #fee2e2; border-left: 4px solid #EF4444; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Cancelled Session Details</h2>
+                        <p><strong>Date & Time:</strong> {slot_data['day']}, {slot_data['date']} at {slot_data['time']}</p>
+                        <p><strong>Location:</strong> {user_data['selected_room']}</p>
+                    </div>
+
+                    <div style="background: #f0fdf4; border-left: 4px solid #10B981; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Want to Reschedule?</h2>
+                        <p>I'd still love to meet with you! You can book a new session anytime that works for you.</p>
+                        <p style="margin-top: 15px;">
+                            <a href="https://uleairn.com" style="display: inline-block; padding: 12px 24px; background: #6366F1; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                                Book a New Session
+                            </a>
+                        </p>
+                    </div>
+
+                    <p style="margin-top: 30px;">If you have any questions, please don't hesitate to reach out.</p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com">cjpbuzaid@gmail.com</a></p>
+                </div>
+            </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html, 'html'))
+
+        # Send email
+        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_USER, EMAIL_PASSWORD)
+            server.send_message(msg)
+
+        print(f"OK: Booking deletion email sent to {user_data['email']}")
+        return True
+    except Exception as e:
+        print(f"Error sending booking deletion email: {e}")
+        return False
+
 def get_gemini_teaching_insights(user_data):
     """Use Gemini AI to generate personalized teaching recommendations"""
     try:
         model = genai.GenerativeModel('gemini-2.5-flash')
+
+        # Include personal comments if available
+        comments_section = ""
+        if user_data.get('personal_comments'):
+            comments_section = f"\n- Student's Comments: {user_data.get('personal_comments')}"
 
         prompt = f"""
 You are an AI education expert preparing teaching notes for a 30-minute learning session. Analyze this student's profile and provide concise, actionable teaching recommendations.
@@ -134,28 +329,29 @@ You are an AI education expert preparing teaching notes for a 30-minute learning
 Student Profile:
 - Name: {user_data['full_name']}
 - Role: {user_data['role']}
+- Department/Major: {user_data.get('department', 'Not specified')}
 - AI Familiarity: {user_data.get('ai_familiarity', 'Not specified')}
 - Current Tools: {user_data.get('ai_tools', 'None')}
 - Primary Interest: {user_data.get('primary_use', 'Not specified')}
 - Learning Goal: {user_data.get('learning_goal', 'Not specified')}
-- Confidence Level: {user_data.get('confidence_level', 'Not specified')}/5
+- Confidence Level: {user_data.get('confidence_level', 'Not specified')}/5{comments_section}
 
 Provide practical teaching guidance in plain text format (no markdown, no special formatting):
 
 TEACHING APPROACH:
-Write 3-4 sentences explaining the best teaching style for this learner based on their experience level and goals.
+Write 3-4 sentences explaining the best teaching style for this learner based on their experience level and goals. {f"Pay special attention to their comments: {user_data.get('personal_comments')}" if user_data.get('personal_comments') else ""}
 
 RECOMMENDED AI TOOLS:
-List 3-5 specific AI tools they should learn, with one brief sentence per tool explaining why it fits their interests.
+List 3-5 specific AI tools they should learn, with one brief sentence per tool explaining why it fits their interests. {f"Consider their specific request: {user_data.get('personal_comments')}" if user_data.get('personal_comments') else ""}
 
 30-MINUTE SESSION PLAN:
 Provide a clear outline of what to cover in the session:
 - Introduction (5 min): What to demonstrate
-- Hands-on Practice (15 min): Specific exercises or examples to work through
+- Hands-on Practice (15 min): Specific exercises or examples to work through {f"(address: {user_data.get('personal_comments')})" if user_data.get('personal_comments') else ""}
 - Next Steps (10 min): What they should practice after the session
 
 ACTIONABLE TAKEAWAYS:
-List 2-3 concrete things they can start doing immediately to build their AI skills for their specific use case.
+List 2-3 concrete things they can start doing immediately to build their AI skills for their specific use case. {f"Make sure to address their question: {user_data.get('personal_comments')}" if user_data.get('personal_comments') else ""}
 
 Keep all text conversational, practical, and focused on helping them build real solutions. No jargon unless necessary.
         """
@@ -329,9 +525,13 @@ def submit_data():
         if not booking_id:
             return jsonify({'success': False, 'message': 'Failed to save booking'}), 500
 
-        # Send confirmation email
+        # Send confirmation email to user
         print(f"Sending confirmation email to {data['email']}...")
         email_sent = send_confirmation_email(data, selected_slot_data)
+
+        # Send notification email to admin
+        print(f"Sending admin notification email...")
+        admin_email_sent = send_admin_notification_email(data, selected_slot_data)
 
         return jsonify({
             'success': True,
@@ -340,7 +540,8 @@ def submit_data():
                 'name': data['full_name'],
                 'slot': selected_slot_data,
                 'room': data['selected_room'],
-                'email_sent': email_sent
+                'email_sent': email_sent,
+                'admin_notified': admin_email_sent
             }
         })
 
@@ -457,6 +658,7 @@ def delete_booking(booking_id):
             return jsonify({'success': False, 'message': 'Booking not found'}), 404
 
         slot_id = deleted_user.get('selected_slot')
+        slot_details = deleted_user.get('slot_details', {})
 
         # Delete from Firestore
         success = db.delete_booking(booking_id)
@@ -466,6 +668,17 @@ def delete_booking(booking_id):
         # Free up the time slot
         if slot_id:
             db.unbook_slot(slot_id)
+
+        # Send deletion notification email to user
+        print(f"Sending deletion notification email to {deleted_user['email']}...")
+        try:
+            email_sent = send_booking_deletion_email(deleted_user, slot_details)
+            if email_sent:
+                print(f"OK: Deletion notification email sent successfully")
+            else:
+                print(f"WARNING: Deletion notification email failed to send")
+        except Exception as email_error:
+            print(f"ERROR: Exception while sending deletion email: {email_error}")
 
         return jsonify({'success': True, 'message': 'Booking deleted successfully'})
 
@@ -487,17 +700,29 @@ def update_booking(booking_id):
 
         old_slot = booking.get('selected_slot')
         new_slot = data.get('selected_slot', old_slot)
+        old_room = booking.get('selected_room')
+        new_room = data.get('selected_room', old_room)
+
+        # Track if anything changed
+        slot_changed = new_slot != old_slot
+        room_changed = new_room != old_room
 
         # Prepare update data
         update_data = {
             'full_name': data.get('full_name', booking['full_name']),
             'email': data.get('email', booking['email']),
             'phone': data.get('phone', booking['phone']),
-            'selected_room': data.get('selected_room', booking['selected_room'])
+            'selected_room': new_room
         }
 
-        # If time slot changed, update slots
-        if new_slot != old_slot:
+        # Get slot details for email
+        old_slot_data = None
+        new_slot_data = None
+
+        if slot_changed:
+            # Get old slot details
+            old_slot_data = booking.get('slot_details', {})
+
             # Free old slot
             db.unbook_slot(old_slot)
 
@@ -510,10 +735,29 @@ def update_booking(booking_id):
 
             update_data['selected_slot'] = new_slot
 
+            # Get new slot details
+            all_slots = db.get_all_slots()
+            for slot in all_slots:
+                if slot.get('id') == new_slot:
+                    new_slot_data = slot
+                    update_data['slot_details'] = slot
+                    break
+
         # Update booking in Firestore
         success = db.update_booking(booking_id, update_data)
         if not success:
             return jsonify({'success': False, 'message': 'Failed to update booking'}), 500
+
+        # Send update notification email if something changed
+        if slot_changed or room_changed:
+            print(f"Sending update notification email to {booking['email']}...")
+            send_booking_update_email(
+                booking,
+                old_slot_data=old_slot_data,
+                new_slot_data=new_slot_data,
+                old_room=old_room,
+                new_room=new_room
+            )
 
         # Get updated booking
         updated_booking = db.get_booking_by_id(booking_id)
@@ -879,6 +1123,179 @@ def lookup_booking():
 
     except Exception as e:
         print(f"Error looking up booking: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/booking/delete-by-email', methods=['POST'])
+def delete_booking_by_email():
+    """Delete a booking by email address - for user self-deletion"""
+    try:
+        data = request.json
+        email = data.get('email', '').strip()
+        confirmed = data.get('confirmed', False)
+
+        if not email:
+            return jsonify({'success': False, 'message': 'Email address required'}), 400
+
+        if not confirmed:
+            return jsonify({'success': False, 'message': 'Deletion not confirmed'}), 400
+
+        # Get all bookings from Firestore
+        bookings = db.get_all_bookings()
+
+        # Get current time
+        now = datetime.now().isoformat()
+
+        # Find booking with matching email AND future booking
+        booking_to_delete = None
+        for booking in bookings:
+            if booking.get('email', '').lower() == email.lower():
+                # Check if this booking is in the future
+                slot_details = booking.get('slot_details', {})
+                slot_datetime = slot_details.get('datetime', '')
+
+                # Only delete if the booking is in the future
+                if slot_datetime and slot_datetime > now:
+                    booking_to_delete = booking
+                    break
+
+        if not booking_to_delete:
+            return jsonify({'success': False, 'message': 'No upcoming booking found to delete'}), 404
+
+        # Get the booking ID and slot ID
+        booking_id = booking_to_delete.get('id')
+        slot_id = booking_to_delete.get('selected_slot')
+        slot_details = booking_to_delete.get('slot_details', {})
+
+        # Delete from Firestore
+        success = db.delete_booking(booking_id)
+        if not success:
+            return jsonify({'success': False, 'message': 'Failed to delete booking'}), 500
+
+        # Free up the time slot
+        if slot_id:
+            db.unbook_slot(slot_id)
+
+        # Send deletion notification email to user
+        print(f"Sending deletion notification email to {booking_to_delete['email']}...")
+        try:
+            email_sent = send_booking_deletion_email(booking_to_delete, slot_details)
+            if email_sent:
+                print(f"OK: Deletion notification email sent successfully")
+            else:
+                print(f"WARNING: Deletion notification email failed to send")
+        except Exception as email_error:
+            print(f"ERROR: Exception while sending deletion email: {email_error}")
+
+        return jsonify({'success': True, 'message': 'Booking deleted successfully'})
+
+    except Exception as e:
+        print(f"Error deleting booking: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/booking/update-by-email', methods=['POST'])
+def update_booking_by_email():
+    """Update a booking by email address - for user self-edit"""
+    try:
+        data = request.json
+        email = data.get('email', '').strip()
+        new_slot_id = data.get('selected_slot')
+        new_building = data.get('selected_building')
+        new_room_number = data.get('room_number', '').strip()
+
+        if not email:
+            return jsonify({'success': False, 'message': 'Email address required'}), 400
+
+        # Get all bookings from Firestore
+        bookings = db.get_all_bookings()
+
+        # Get current time
+        now = datetime.now().isoformat()
+
+        # Find booking with matching email AND future booking
+        booking_to_update = None
+        for booking in bookings:
+            if booking.get('email', '').lower() == email.lower():
+                # Check if this booking is in the future
+                slot_details = booking.get('slot_details', {})
+                slot_datetime = slot_details.get('datetime', '')
+
+                # Only update if the booking is in the future
+                if slot_datetime and slot_datetime > now:
+                    booking_to_update = booking
+                    break
+
+        if not booking_to_update:
+            return jsonify({'success': False, 'message': 'No upcoming booking found to update'}), 404
+
+        booking_id = booking_to_update.get('id')
+        old_slot_id = booking_to_update.get('selected_slot')
+        old_room = booking_to_update.get('selected_room')
+        old_slot_data = booking_to_update.get('slot_details', {})
+
+        # Prepare update data
+        new_room = f"{new_building} - {new_room_number}" if new_building and new_room_number else old_room
+        update_data = {
+            'selected_room': new_room,
+            'selected_building': new_building,
+            'room_number': new_room_number
+        }
+
+        # Track changes
+        slot_changed = False
+        room_changed = new_room != old_room
+        new_slot_data = None
+
+        # If time slot changed, update slots
+        if new_slot_id and new_slot_id != old_slot_id:
+            # Free old slot
+            db.unbook_slot(old_slot_id)
+
+            # Book new slot
+            success = db.book_slot(new_slot_id, email, new_room)
+            if not success:
+                # Re-book the old slot since new one failed
+                db.book_slot(old_slot_id, email, old_room)
+                return jsonify({'success': False, 'message': 'New time slot already booked'}), 400
+
+            update_data['selected_slot'] = new_slot_id
+            slot_changed = True
+
+            # Get new slot details
+            all_slots = db.get_all_slots()
+            for slot in all_slots:
+                if slot.get('id') == new_slot_id:
+                    new_slot_data = slot
+                    update_data['slot_details'] = slot
+                    break
+
+        # Update booking in Firestore
+        success = db.update_booking(booking_id, update_data)
+        if not success:
+            return jsonify({'success': False, 'message': 'Failed to update booking'}), 500
+
+        # Send update notification email if something changed
+        if slot_changed or room_changed:
+            print(f"Sending update notification email to {email}...")
+            try:
+                email_sent = send_booking_update_email(
+                    booking_to_update,
+                    old_slot_data=old_slot_data if slot_changed else None,
+                    new_slot_data=new_slot_data if slot_changed else None,
+                    old_room=old_room if room_changed else None,
+                    new_room=new_room if room_changed else None
+                )
+                if email_sent:
+                    print(f"OK: Update notification email sent successfully")
+            except Exception as email_error:
+                print(f"ERROR: Exception while sending update email: {email_error}")
+
+        # Get updated booking
+        updated_booking = db.get_booking_by_id(booking_id)
+
+        return jsonify({'success': True, 'message': 'Booking updated successfully', 'booking': updated_booking})
+
+    except Exception as e:
+        print(f"Error updating booking: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/contact', methods=['POST'])

@@ -731,7 +731,15 @@ async function lookupBooking() {
 
                     <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 0.9rem;">
                         <p>A confirmation email was sent to <strong>${booking.email}</strong></p>
-                        <p style="margin-top: 0.5rem;">If you need to make changes, please contact: <a href="mailto:cjpbuzaid@gmail.com" style="color: var(--primary);">cjpbuzaid@gmail.com</a></p>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 0.75rem;">
+                        <button onclick="showEditBookingForm('${email}', ${JSON.stringify(booking).replace(/"/g, '&quot;')})" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                            Edit Booking
+                        </button>
+                        <button onclick="confirmDeleteBooking('${email}')" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                            Delete Booking
+                        </button>
                     </div>
                 </div>
             `;
@@ -859,5 +867,264 @@ function showDepartmentField() {
     } else {
         departmentField.style.display = 'none';
         departmentInput.removeAttribute('required');
+    }
+}
+
+// Delete Booking Confirmation Dialog
+function confirmDeleteBooking(email) {
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 11000;
+        animation: fadeIn 0.3s ease;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: var(--surface); border-radius: 1rem; max-width: 500px; width: 90%; padding: 2rem; box-shadow: var(--shadow-lg); position: relative;">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--error)" stroke-width="2" style="margin: 0 auto 1rem;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                <h2 style="color: var(--text-primary); margin-bottom: 0.5rem;">Delete Your Booking?</h2>
+                <p style="color: var(--text-secondary); font-size: 0.95rem;">Are you sure you want to delete your booking? This action cannot be undone.</p>
+            </div>
+
+            <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--error); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
+                <p style="color: var(--text-primary); font-size: 0.9rem; margin: 0;">
+                    <strong>Warning:</strong> Your time slot will be released and available for others to book.
+                </p>
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="flex: 1; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                    Cancel
+                </button>
+                <button onclick="deleteBookingByEmail('${email}', this.parentElement.parentElement.parentElement)" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                    Yes, Delete My Booking
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+}
+
+async function deleteBookingByEmail(email, confirmModal) {
+    // Get the button and show loading state
+    const deleteBtn = confirmModal.querySelector('button[onclick*="deleteBookingByEmail"]');
+    const originalBtnText = deleteBtn.innerHTML;
+    deleteBtn.disabled = true;
+    deleteBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem;"><span style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>Deleting...</span>';
+
+    try {
+        const response = await fetch('/api/booking/delete-by-email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email: email, confirmed: true })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            // Close confirmation modal
+            confirmModal.remove();
+
+            // Show success message
+            showNotification('Your booking has been deleted successfully', 'success');
+
+            // Update the booking lookup result to show deletion success
+            const resultDiv = document.getElementById('booking-lookup-result');
+            if (resultDiv) {
+                resultDiv.innerHTML = `
+                    <div style="background: var(--bg); border: 2px solid var(--success); border-radius: 1rem; padding: 1.5rem; text-align: center;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" style="margin: 0 auto 1rem;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9 12l2 2 4-4"></path>
+                        </svg>
+                        <h3 style="margin-bottom: 0.5rem; color: var(--success);">Booking Deleted</h3>
+                        <p style="color: var(--text-secondary);">Your booking has been successfully deleted. The time slot is now available for others.</p>
+                        <button onclick="closeViewBookingModal()" style="margin-top: 1rem; padding: 0.75rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600;">
+                            Close
+                        </button>
+                    </div>
+                `;
+            }
+        } else {
+            // Show error and restore button
+            showNotification('Error: ' + result.message, 'error');
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = originalBtnText;
+        }
+    } catch (error) {
+        console.error('Error deleting booking:', error);
+        showNotification('Failed to delete booking. Please try again.', 'error');
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = originalBtnText;
+    }
+}
+
+// Show edit booking form
+async function showEditBookingForm(email, bookingData) {
+    const booking = typeof bookingData === 'string' ? JSON.parse(bookingData) : bookingData;
+
+    // Parse the room to get building and room number
+    const roomParts = (booking.selected_room || '').split(' - ');
+    const currentBuilding = booking.selected_building || roomParts[0] || '';
+    const currentRoomNumber = booking.room_number || roomParts[1] || '';
+
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 11000;
+        animation: fadeIn 0.3s ease;
+        overflow-y: auto;
+        padding: 2rem;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: var(--surface); border-radius: 1rem; max-width: 600px; width: 100%; padding: 2rem; box-shadow: var(--shadow-lg); position: relative; max-height: 90vh; overflow-y: auto;">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <h2 style="color: var(--text-primary); margin-bottom: 0.5rem;">Edit Your Booking</h2>
+                <p style="color: var(--text-secondary); font-size: 0.95rem;">Update your time slot or location</p>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Select New Time Slot (Optional)</label>
+                <select id="edit_user_slot" style="width: 100%; padding: 0.875rem; border: 2px solid var(--border); border-radius: 0.75rem; background: var(--bg); color: var(--text-primary); font-size: 1rem;">
+                    <option value="">Keep current time slot</option>
+                </select>
+                <small id="slots-loading" style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem; display: block;">Loading available slots...</small>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Building *</label>
+                <select id="edit_user_building" style="width: 100%; padding: 0.875rem; border: 2px solid var(--border); border-radius: 0.75rem; background: var(--bg); color: var(--text-primary); font-size: 1rem;">
+                    <option value="">Select a building</option>
+                    <option value="Edison Hall" ${currentBuilding === 'Edison Hall' ? 'selected' : ''}>Edison Hall</option>
+                    <option value="Howard Hall" ${currentBuilding === 'Howard Hall' ? 'selected' : ''}>Howard Hall</option>
+                    <option value="Pozycki Hall" ${currentBuilding === 'Pozycki Hall' ? 'selected' : ''}>Pozycki Hall</option>
+                    <option value="McAllan Hall" ${currentBuilding === 'McAllan Hall' ? 'selected' : ''}>McAllan Hall</option>
+                    <option value="Great Hall" ${currentBuilding === 'Great Hall' ? 'selected' : ''}>Great Hall</option>
+                    <option value="Bey Hall" ${currentBuilding === 'Bey Hall' ? 'selected' : ''}>Bey Hall</option>
+                    <option value="Rebecca Stafford Student Center" ${currentBuilding === 'Rebecca Stafford Student Center' ? 'selected' : ''}>Rebecca Stafford Student Center</option>
+                    <option value="Guggenheim Memorial Library" ${currentBuilding === 'Guggenheim Memorial Library' ? 'selected' : ''}>Guggenheim Memorial Library</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Room Number / Office *</label>
+                <input type="text" id="edit_user_room_number" value="${currentRoomNumber}" placeholder="e.g., 301, Professor's Office" style="width: 100%; padding: 0.875rem; border: 2px solid var(--border); border-radius: 0.75rem; background: var(--bg); color: var(--text-primary); font-size: 1rem;">
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="flex: 1; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                    Cancel
+                </button>
+                <button onclick="saveUserBookingEdit('${email}', this.parentElement.parentElement.parentElement)" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Load available time slots
+    try {
+        const response = await fetch('/api/slots');
+        const slots = await response.json();
+        const select = document.getElementById('edit_user_slot');
+        const loadingText = document.getElementById('slots-loading');
+
+        slots.forEach(slot => {
+            const option = document.createElement('option');
+            option.value = slot.id;
+            option.textContent = `${slot.day}, ${slot.date} at ${slot.time}`;
+            if (slot.id === booking.selected_slot) {
+                option.textContent += ' (current)';
+            }
+            select.appendChild(option);
+        });
+
+        loadingText.textContent = `${slots.length} available time slots`;
+        loadingText.style.color = 'var(--success)';
+    } catch (error) {
+        console.error('Error loading slots:', error);
+        document.getElementById('slots-loading').textContent = 'Failed to load time slots';
+        document.getElementById('slots-loading').style.color = 'var(--error)';
+    }
+}
+
+async function saveUserBookingEdit(email, modal) {
+    const newSlotId = document.getElementById('edit_user_slot').value;
+    const newBuilding = document.getElementById('edit_user_building').value;
+    const newRoomNumber = document.getElementById('edit_user_room_number').value.trim();
+
+    if (!newBuilding || !newRoomNumber) {
+        showNotification('Please select a building and enter a room number', 'error');
+        return;
+    }
+
+    const saveBtn = modal.querySelector('button[onclick*="saveUserBookingEdit"]');
+    const originalBtnText = saveBtn.innerHTML;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem;"><span style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>Saving...</span>';
+
+    try {
+        const response = await fetch('/api/booking/update-by-email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: email,
+                selected_slot: newSlotId || undefined,
+                selected_building: newBuilding,
+                room_number: newRoomNumber
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            modal.remove();
+            showNotification('Your booking has been updated successfully!', 'success');
+
+            // Refresh the booking display
+            setTimeout(() => {
+                lookupBooking();
+            }, 500);
+        } else {
+            showNotification('Error: ' + result.message, 'error');
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalBtnText;
+        }
+    } catch (error) {
+        console.error('Error updating booking:', error);
+        showNotification('Failed to update booking. Please try again.', 'error');
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalBtnText;
     }
 }
