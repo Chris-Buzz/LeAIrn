@@ -161,9 +161,16 @@
             font-size: 0.95rem;
         }
 
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 1200px;
         }
 
         thead {
@@ -171,23 +178,63 @@
         }
 
         th {
-            padding: 1rem 1.5rem;
+            padding: 0.875rem 0.75rem;
             text-align: left;
             font-weight: 700;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            white-space: nowrap;
         }
 
         td {
-            padding: 1.25rem 1.5rem;
+            padding: 0.875rem 0.75rem;
             border-top: 1px solid var(--border);
             color: var(--text-primary);
+            font-size: 0.9rem;
         }
 
         tr:hover {
             background: var(--bg);
+        }
+
+        /* Action buttons in table - make it sticky and wider */
+        th:last-child,
+        td:last-child {
+            position: sticky;
+            right: 0;
+            background: var(--surface);
+            min-width: 200px;
+            width: 200px;
+            padding-right: 1rem;
+            box-shadow: -4px 0 6px rgba(0, 0, 0, 0.08);
+            z-index: 10;
+        }
+
+        thead th:last-child {
+            z-index: 20;
+        }
+
+        tr:hover td:last-child {
+            background: var(--bg);
+        }
+
+        /* Ensure action buttons fit properly */
+        td:last-child > div {
+            display: flex;
+            gap: 0.25rem;
+            justify-content: flex-start;
+            flex-wrap: nowrap;
+        }
+
+        /* Make other columns more compact */
+        td:nth-child(5),
+        td:nth-child(6) {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .badge {
@@ -652,29 +699,31 @@
                 <h2>All Bookings</h2>
                 <p>Manage all AI learning session bookings</p>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Dept/Major</th>
-                        <th>AI Level</th>
-                        <th>Primary Use</th>
-                        <th>Time Slot</th>
-                        <th>Location</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="bookingsTable">
-                    <tr>
-                        <td colspan="7" class="empty-state">
-                            <div class="spinner"></div>
-                            <p>Loading bookings...</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Dept/Major</th>
+                            <th>AI Level</th>
+                            <th>Primary Use</th>
+                            <th>Time Slot</th>
+                            <th>Location</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookingsTable">
+                        <tr>
+                            <td colspan="9" class="empty-state">
+                                <div class="spinner"></div>
+                                <p>Loading bookings...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- Time Slot Management Section -->
@@ -882,19 +931,21 @@
                     <td><span class="badge badge-role">${user.role}</span></td>
                     <td>${department}</td>
                     <td><span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #8B5CF6;">${aiLevel}</span></td>
-                    <td>${primaryUse}</td>
-                    <td>${formatSlotId(user.selected_slot)}</td>
+                    <td title="${primaryUse}">${primaryUse}</td>
+                    <td style="white-space: nowrap;">${formatSlotId(user.selected_slot)}</td>
                     <td>${user.selected_room || 'Not specified'}</td>
-                    <td style="display: flex; gap: 0.5rem;">
-                        <button onclick="viewUserDetails(${index})" style="padding: 0.5rem 0.75rem; background: var(--primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 0.85rem;">
-                            View
-                        </button>
-                        <button onclick="editBooking(${index})" style="padding: 0.5rem 0.75rem; background: #F59E0B; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 0.85rem;">
-                            Edit
-                        </button>
-                        <button onclick="deleteBooking(${index})" style="padding: 0.5rem 0.75rem; background: var(--error); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 0.85rem;">
-                            Delete
-                        </button>
+                    <td>
+                        <div style="display: flex; gap: 0.25rem; flex-wrap: nowrap;">
+                            <button onclick="viewUserDetails(${index})" title="View Details" style="flex: 1; min-width: 50px; padding: 0.45rem 0.5rem; background: var(--primary); color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.75rem; font-weight: 600; white-space: nowrap; transition: all 0.2s;">
+                                View
+                            </button>
+                            <button onclick="editBooking(${index})" title="Edit Booking" style="flex: 1; min-width: 45px; padding: 0.45rem 0.5rem; background: #F59E0B; color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.75rem; font-weight: 600; white-space: nowrap; transition: all 0.2s;">
+                                Edit
+                            </button>
+                            <button onclick="deleteBooking(${index})" title="Delete Booking" style="flex: 1; min-width: 55px; padding: 0.45rem 0.5rem; background: var(--error); color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.75rem; font-weight: 600; white-space: nowrap; transition: all 0.2s;">
+                                Delete
+                            </button>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -914,16 +965,22 @@
 
                 const result = await response.json();
 
-                if (response.ok && result.success) {
-                    alert('Booking deleted successfully!');
-                    loadUsers();
-                    loadTimeSlots();
+                console.log('Delete response:', response.ok, result);
+
+                if (response.ok) {
+                    if (result.success) {
+                        alert('Booking deleted successfully!');
+                        loadUsers();
+                        loadTimeSlots();
+                    } else {
+                        alert('Error: ' + (result.message || 'Unknown error'));
+                    }
                 } else {
-                    alert('Error: ' + result.message);
+                    alert('Error: ' + (result.message || 'Failed to delete booking'));
                 }
             } catch (error) {
                 console.error('Error deleting booking:', error);
-                alert('Failed to delete booking');
+                alert('Failed to delete booking: ' + error.message);
             }
         }
 
@@ -1096,6 +1153,13 @@
                             <div><strong>Confidence Level:</strong> ${user.confidence_level || 'N/A'}/5</div>
                         </div>
                     </div>
+
+                    ${user.personal_comments ? `
+                    <h3 style="margin: 2rem 0 1rem; color: var(--text-primary);">Student's Comments</h3>
+                    <div style="background: rgba(245, 158, 11, 0.05); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(245, 158, 11, 0.2); margin-bottom: 2rem;">
+                        <div style="line-height: 1.6; white-space: pre-wrap; color: var(--text-primary);">${user.personal_comments}</div>
+                    </div>
+                    ` : ''}
 
                     <h3 style="margin: 2rem 0 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.75rem;">
                         AI Teaching Insights
