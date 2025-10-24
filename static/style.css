@@ -1560,7 +1560,7 @@ textarea:hover {
     left: 1.5rem;
     top: 1.5rem;
     z-index: 9999;
-    max-width: 280px;
+    max-width: clamp(280px, 25vw, 380px);
     animation: slideInLeft 0.5s ease-out;
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
