@@ -205,8 +205,8 @@
             position: sticky;
             right: 0;
             background: var(--surface);
-            min-width: 200px;
-            width: 200px;
+            min-width: 280px;
+            width: 280px;
             padding-right: 1rem;
             box-shadow: -4px 0 6px rgba(0, 0, 0, 0.08);
             z-index: 10;
@@ -765,6 +765,34 @@
                 </div>
             </div>
         </div>
+
+        <!-- Feedback Section -->
+        <div class="table-card" style="margin-top: 2rem;">
+            <div class="table-header">
+                <h2>Session Feedback</h2>
+                <p>View ratings and comments from completed sessions</p>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Rating</th>
+                            <th>Comments</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="feedbackTable">
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                <div class="spinner"></div>
+                                <p>Loading feedback...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -942,6 +970,9 @@
                             <button onclick="editBooking(${index})" title="Edit Booking" style="flex: 1; min-width: 45px; padding: 0.45rem 0.5rem; background: #F59E0B; color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.75rem; font-weight: 600; white-space: nowrap; transition: all 0.2s;">
                                 Edit
                             </button>
+                            <button onclick="markComplete(${index})" title="Mark Complete & Send Feedback" style="flex: 1; min-width: 40px; padding: 0.5rem; background: #10B981; color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 1.25rem; font-weight: 600; white-space: nowrap; transition: all 0.2s;">
+                                ✓
+                            </button>
                             <button onclick="deleteBooking(${index})" title="Delete Booking" style="flex: 1; min-width: 55px; padding: 0.45rem 0.5rem; background: var(--error); color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.75rem; font-weight: 600; white-space: nowrap; transition: all 0.2s;">
                                 Delete
                             </button>
@@ -950,6 +981,32 @@
                 `;
                 tbody.appendChild(row);
             });
+        }
+
+        async function markComplete(index) {
+            const user = allUsers[index];
+            if (!confirm(`Mark session complete for ${user.full_name}? This will send a feedback request email and delete the booking.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/booking/${user.id}/complete`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert(`Session marked complete! Feedback email sent to ${user.email}`);
+                    loadUsers();
+                    loadTimeSlots();
+                } else {
+                    alert('Error: ' + (result.message || 'Failed to mark complete'));
+                }
+            } catch (error) {
+                console.error('Error marking complete:', error);
+                alert('Failed to mark session complete: ' + error.message);
+            }
         }
 
         async function deleteBooking(index) {
@@ -1008,10 +1065,6 @@
                             <input id="edit_email" type="email" value="${user.email}" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 0.5rem; background: var(--bg); color: var(--text-primary);">
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Phone</label>
-                            <input id="edit_phone" type="tel" value="${user.phone}" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 0.5rem; background: var(--bg); color: var(--text-primary);">
-                        </div>
-                        <div>
                             <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Location</label>
                             <input id="edit_room" type="text" value="${user.selected_room}" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 0.5rem; background: var(--bg); color: var(--text-primary);">
                         </div>
@@ -1061,7 +1114,6 @@
             const updatedData = {
                 full_name: document.getElementById('edit_name').value,
                 email: document.getElementById('edit_email').value,
-                phone: document.getElementById('edit_phone').value,
                 selected_room: document.getElementById('edit_room').value,
                 selected_slot: document.getElementById('edit_slot').value
             };
@@ -1086,6 +1138,75 @@
                 console.error('Error updating booking:', error);
                 alert('Failed to update booking');
             }
+        }
+
+        // Helper functions to format user data for display
+        function formatExperienceLevel(value) {
+            const levels = {
+                'new': "I'm completely new to AI",
+                'casual': "I've tried AI a few times",
+                'basic': 'I use AI sometimes',
+                'practical': 'I use AI regularly',
+                'advanced': "I'm very experienced with AI"
+            };
+            return levels[value] || value;
+        }
+
+        function formatAITools(tools) {
+            if (!tools) return 'None';
+            const toolNames = {
+                'chatgpt': 'ChatGPT',
+                'gemini': 'Google Gemini',
+                'claude': 'Claude',
+                'image_gen': 'Image Generators',
+                'coding': 'Coding Assistants',
+                'research': 'Research & Search',
+                'video': 'Video & Audio',
+                'writing': 'Writing Assistants',
+                'productivity': 'Productivity Tools',
+                'none': 'None yet'
+            };
+            return tools.split(', ').map(tool => toolNames[tool] || tool).join(', ');
+        }
+
+        function formatPrimaryUse(uses) {
+            if (!uses) return 'N/A';
+            const useNames = {
+                'writing': 'Writing & Content',
+                'coding': 'Coding & Programming',
+                'research': 'Research & Analysis',
+                'creative': 'Creative Projects',
+                'productivity': 'Productivity & Organization',
+                'education': 'School & Studying',
+                'business': 'Work & Professional',
+                'not_sure': 'Not sure yet'
+            };
+            return uses.split(', ').map(use => useNames[use] || use).join(', ');
+        }
+
+        function formatLearningGoals(goals) {
+            if (!goals) return 'N/A';
+            const goalNames = {
+                'use_tools': 'Get better at using AI',
+                'understand': 'Understand how AI works',
+                'build': 'Build my own AI projects',
+                'integrate': 'Add AI to my projects',
+                'career': 'Build career skills',
+                'productivity': 'Work more efficiently',
+                'explore': 'Just curious to learn'
+            };
+            return goals.split(', ').map(goal => goalNames[goal] || goal).join(', ');
+        }
+
+        function formatConfidenceLevel(value) {
+            const levels = {
+                '1': 'Not confident',
+                '2': 'A little comfortable',
+                '3': 'Somewhat comfortable',
+                '4': 'Very comfortable',
+                '5': 'Expert level'
+            };
+            return levels[value] || value;
         }
 
         async function viewUserDetails(index) {
@@ -1126,12 +1247,8 @@
                             <div style="font-weight: 600;">${user.email}</div>
                         </div>
                         <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
-                            <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Phone</div>
-                            <div style="font-weight: 600;">${user.phone}</div>
-                        </div>
-                        <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
                             <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Role</div>
-                            <div style="font-weight: 600;">${user.role}</div>
+                            <div style="font-weight: 600; text-transform: capitalize;">${user.role}</div>
                         </div>
                         <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
                             <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">${user.role === 'student' ? 'Major' : 'Department'}</div>
@@ -1146,16 +1263,16 @@
                     <h3 style="margin: 2rem 0 1rem; color: var(--text-primary);">AI Experience Profile</h3>
                     <div style="background: rgba(99, 102, 241, 0.05); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(99, 102, 241, 0.2); margin-bottom: 2rem;">
                         <div style="display: grid; gap: 1rem;">
-                            <div><strong>AI Familiarity:</strong> ${user.ai_familiarity || 'N/A'}</div>
-                            <div><strong>Tools Used:</strong> ${user.ai_tools || 'None'}</div>
-                            <div><strong>Primary Use:</strong> ${user.primary_use || 'N/A'}</div>
-                            <div><strong>Learning Goal:</strong> ${user.learning_goal || 'N/A'}</div>
-                            <div><strong>Confidence Level:</strong> ${user.confidence_level || 'N/A'}/5</div>
+                            <div><strong>Experience Level:</strong> ${formatExperienceLevel(user.ai_familiarity)}</div>
+                            <div><strong>AI Tools Used:</strong> ${formatAITools(user.ai_tools)}</div>
+                            <div><strong>Primary Use:</strong> ${formatPrimaryUse(user.primary_use)}</div>
+                            <div><strong>Learning Goals:</strong> ${formatLearningGoals(user.learning_goal)}</div>
+                            <div><strong>Confidence Level:</strong> ${formatConfidenceLevel(user.confidence_level)}</div>
                         </div>
                     </div>
 
                     ${user.personal_comments ? `
-                    <h3 style="margin: 2rem 0 1rem; color: var(--text-primary);">Student's Comments</h3>
+                    <h3 style="margin: 2rem 0 1rem; color: var(--text-primary);">${user.role === 'student' ? "Student's" : user.role === 'teacher' ? "Teacher's" : user.role === 'advisor' ? "Advisor's" : "User's"} Comments</h3>
                     <div style="background: rgba(245, 158, 11, 0.05); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(245, 158, 11, 0.2); margin-bottom: 2rem;">
                         <div style="line-height: 1.6; white-space: pre-wrap; color: var(--text-primary);">${user.personal_comments}</div>
                     </div>
@@ -1717,10 +1834,71 @@
             }
         }
 
+        async function loadFeedback() {
+            try {
+                const response = await fetch('/api/feedback');
+                const feedbackList = await response.json();
+
+                const tbody = document.getElementById('feedbackTable');
+                tbody.innerHTML = '';
+
+                if (feedbackList.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><p>No feedback received yet</p></td></tr>';
+                    return;
+                }
+
+                // Sort by timestamp, newest first
+                feedbackList.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                feedbackList.forEach(feedback => {
+                    const row = document.createElement('tr');
+
+                    // Format rating as stars
+                    const stars = '⭐'.repeat(feedback.rating);
+
+                    // Format date
+                    const date = new Date(feedback.timestamp);
+                    const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+
+                    // Truncate comments if too long
+                    let comments = feedback.comments || 'No comments';
+                    const maxLength = 100;
+                    if (comments.length > maxLength) {
+                        comments = comments.substring(0, maxLength) + '...';
+                    }
+
+                    // Get user info
+                    const userName = feedback.user_name || 'Unknown User';
+                    const userEmail = feedback.user_email || 'N/A';
+
+                    row.innerHTML = `
+                        <td>
+                            <div style="font-weight: 600; margin-bottom: 0.25rem;">${userName}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">${userEmail}</div>
+                        </td>
+                        <td>
+                            <span style="font-size: 1.25rem;">${stars}</span>
+                            <span style="margin-left: 0.5rem; font-weight: 600;">${feedback.rating}/5</span>
+                        </td>
+                        <td style="max-width: 400px;">
+                            <div style="white-space: normal; line-height: 1.5;">${comments}</div>
+                        </td>
+                        <td style="white-space: nowrap;">${formattedDate}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading feedback:', error);
+                const tbody = document.getElementById('feedbackTable');
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><p>Error loading feedback</p></td></tr>';
+            }
+        }
+
         // Load everything on page load
         document.addEventListener('DOMContentLoaded', () => {
             loadUsers();
             loadTimeSlots();
+            loadFeedback();
         });
     </script>
 </body>

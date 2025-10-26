@@ -148,10 +148,10 @@ def send_admin_notification_email(user_data, slot_data):
                     <p>A new session has been scheduled on LeAIrn.</p>
 
                     <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
-                        <h2 style="margin-top: 0;">Student Information</h2>
+                        <h2 style="margin-top: 0;">Participant Information</h2>
                         <p><strong>Name:</strong> {user_data['full_name']}</p>
                         <p><strong>Email:</strong> <a href="mailto:{user_data['email']}">{user_data['email']}</a></p>
-                        <p><strong>Role:</strong> {user_data.get('role', 'N/A')}</p>
+                        <p><strong>Role:</strong> {user_data.get('role', 'N/A').capitalize()}</p>
                         <p><strong>Department/Major:</strong> {user_data.get('department', 'Not specified')}</p>
                     </div>
 
@@ -163,13 +163,12 @@ def send_admin_notification_email(user_data, slot_data):
                     </div>
 
                     <div style="background: #fef3c7; border-left: 4px solid #F59E0B; padding: 20px; margin: 20px 0;">
-                        <h2 style="margin-top: 0;">Student Background</h2>
-                        <p><strong>AI Experience Level:</strong> {user_data.get('ai_familiarity', 'Not specified')}</p>
-                        <p><strong>AI Tools Used:</strong> {user_data.get('ai_tools', 'None')}</p>
+                        <h2 style="margin-top: 0;">AI Experience Profile</h2>
+                        <p><strong>Experience Level:</strong> {user_data.get('ai_familiarity', 'Not specified')}</p>
+                        <p><strong>Tools Used:</strong> {user_data.get('ai_tools', 'None')}</p>
                         <p><strong>Primary Interests:</strong> {user_data.get('primary_use', 'Not specified')}</p>
                         <p><strong>Learning Goals:</strong> {user_data.get('learning_goal', 'Not specified')}</p>
-                        <p><strong>Confidence Level:</strong> {user_data.get('confidence_level', 'N/A')}/5</p>
-                        {f"<p><strong>Additional Comments:</strong> {user_data.get('personal_comments')}</p>" if user_data.get('personal_comments') else ""}
+                        {f"<p><strong>Personal Comments:</strong> {user_data.get('personal_comments')}</p>" if user_data.get('personal_comments') else ""}
                     </div>
 
                     <p style="margin-top: 30px; color: #6B7280; font-size: 0.9rem;">
@@ -313,6 +312,67 @@ def send_booking_deletion_email(user_data, slot_data):
         print(f"Error sending booking deletion email: {e}")
         return False
 
+def send_feedback_request_email(user_data):
+    """Send feedback request email to user after completing session"""
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'How Was Your AI Learning Session? Share Your Feedback - LeAIrn'
+        msg['From'] = EMAIL_FROM
+        msg['To'] = user_data['email']
+
+        # Generate a unique feedback token (using booking ID)
+        feedback_token = user_data['id']
+
+        # Create HTML email
+        html = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h1 style="color: #6366F1;">Thanks for Your Session!</h1>
+                    <p>Hi {user_data['full_name']},</p>
+                    <p>I hope you enjoyed our AI learning session! Your feedback helps me improve and provide better experiences for future students.</p>
+
+                    <div style="background: #f0f9ff; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0; color: #6366F1;">Share Your Feedback</h2>
+                        <p>It'll only take a minute - rate your experience and optionally share any comments.</p>
+                        <p style="margin-top: 20px; margin-bottom: 0;">
+                            <a href="https://uleairn.com/feedback?token={feedback_token}" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #6366F1, #8B5CF6); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                                Leave Feedback
+                            </a>
+                        </p>
+                    </div>
+
+                    <div style="background: #f0fdf4; border-left: 4px solid #10B981; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Want to Learn More?</h2>
+                        <p>Feel free to book another session anytime. I'm always happy to help you dive deeper into AI!</p>
+                        <p style="margin-top: 15px;">
+                            <a href="https://uleairn.com" style="display: inline-block; padding: 12px 24px; background: #10B981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                                Book Another Session
+                            </a>
+                        </p>
+                    </div>
+
+                    <p style="margin-top: 30px;">Thank you for taking the time to learn with me!</p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com">cjpbuzaid@gmail.com</a></p>
+                </div>
+            </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html, 'html'))
+
+        # Send email
+        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_USER, EMAIL_PASSWORD)
+            server.send_message(msg)
+
+        print(f"OK: Feedback request email sent to {user_data['email']}")
+        return True
+    except Exception as e:
+        print(f"Error sending feedback request email: {e}")
+        return False
+
 def get_gemini_teaching_insights(user_data):
     """Use Gemini AI to generate personalized teaching recommendations"""
     try:
@@ -324,36 +384,83 @@ def get_gemini_teaching_insights(user_data):
             comments_section = f"\n- Student's Comments: {user_data.get('personal_comments')}"
 
         prompt = f"""
-You are an AI education expert preparing teaching notes for a 30-minute learning session. Analyze this student's profile and provide concise, actionable teaching recommendations.
+You are an experienced AI instructor preparing a comprehensive, practical lesson plan for a 30-minute one-on-one teaching session. Create a detailed, actionable plan that this person can immediately apply to their daily life.
 
-Student Profile:
+STUDENT PROFILE:
 - Name: {user_data['full_name']}
 - Role: {user_data['role']}
 - Department/Major: {user_data.get('department', 'Not specified')}
-- AI Familiarity: {user_data.get('ai_familiarity', 'Not specified')}
-- Current Tools: {user_data.get('ai_tools', 'None')}
-- Primary Interest: {user_data.get('primary_use', 'Not specified')}
-- Learning Goal: {user_data.get('learning_goal', 'Not specified')}
+- AI Experience: {user_data.get('ai_familiarity', 'Not specified')}
+- Tools Used: {user_data.get('ai_tools', 'None')}
+- Interested In: {user_data.get('primary_use', 'Not specified')}
+- Goals: {user_data.get('learning_goal', 'Not specified')}
 - Confidence Level: {user_data.get('confidence_level', 'Not specified')}/5{comments_section}
 
-Provide practical teaching guidance in plain text format (no markdown, no special formatting):
+Create a detailed lesson plan in plain text format (no markdown formatting):
 
-TEACHING APPROACH:
-Write 3-4 sentences explaining the best teaching style for this learner based on their experience level and goals. {f"Pay special attention to their comments: {user_data.get('personal_comments')}" if user_data.get('personal_comments') else ""}
+SESSION OVERVIEW:
+Write 2-3 sentences describing this student's current level and what they'll learn today. Make it personal and encouraging.
 
-RECOMMENDED AI TOOLS:
-List 3-5 specific AI tools they should learn, with one brief sentence per tool explaining why it fits their interests. {f"Consider their specific request: {user_data.get('personal_comments')}" if user_data.get('personal_comments') else ""}
+RECOMMENDED TOOLS FOR THEIR NEEDS:
+List 3-4 specific AI tools with:
+- Tool name
+- Why it's perfect for their interests and goals
+- One practical example of how they'd use it in their daily life
+Be specific - if they're interested in writing, suggest the exact writing scenario. If coding, mention the exact programming task.
 
-30-MINUTE SESSION PLAN:
-Provide a clear outline of what to cover in the session:
-- Introduction (5 min): What to demonstrate
-- Hands-on Practice (15 min): Specific exercises or examples to work through {f"(address: {user_data.get('personal_comments')})" if user_data.get('personal_comments') else ""}
-- Next Steps (10 min): What they should practice after the session
+DETAILED 30-MINUTE LESSON PLAN:
 
-ACTIONABLE TAKEAWAYS:
-List 2-3 concrete things they can start doing immediately to build their AI skills for their specific use case. {f"Make sure to address their question: {user_data.get('personal_comments')}" if user_data.get('personal_comments') else ""}
+Minutes 0-5 (Quick Assessment & Setup):
+- Specific questions to ask them to understand their current knowledge
+- What to demonstrate first based on their experience level
+- How to set up their first AI tool (exact steps)
 
-Keep all text conversational, practical, and focused on helping them build real solutions. No jargon unless necessary.
+Minutes 5-15 (Hands-On Practice - Core Skills):
+- EXACT prompting technique to teach (with real example prompts they can type)
+- Specific exercise tailored to their interest area (give them the actual task)
+- Common mistakes to watch for and how to fix them
+- Live example: Write out a complete prompt they should try based on their goals
+
+Minutes 15-25 (Advanced Techniques):
+- 2-3 power techniques for better results (with examples)
+- How to iterate and improve AI responses
+- Real-world application: Walk through solving an actual problem from their field/interest
+- Practice prompt: Give them another specific prompt to practice
+
+Minutes 25-30 (Action Plan):
+- What to practice this week (specific daily exercises)
+- Resources to explore (exact links or tool names)
+- How to measure their progress
+
+KEY PROMPTING TECHNIQUES TO TEACH:
+List 4-5 specific prompting strategies with:
+1. The technique name
+2. When to use it
+3. Example prompt showing the technique
+4. Expected improvement in results
+Tailor examples to their specific interests and goals.
+
+REAL-WORLD APPLICATIONS:
+Based on their interests, provide 3-4 specific scenarios where they can use AI this week:
+- Describe the exact situation
+- What tool to use
+- What to prompt for
+- What result to expect
+Make these hyper-relevant to their role, major, and interests.
+
+PRACTICE HOMEWORK:
+Give them 3 specific tasks to complete before their next session:
+1. [Specific task with exact instructions]
+2. [Another task building on the first]
+3. [Challenge task to stretch their skills]
+
+QUESTIONS THEY MIGHT ASK:
+Anticipate 3-4 questions they might have based on their profile and prepare concise answers.
+
+PITFALLS TO AVOID:
+List 3 common mistakes people at their level make and how to avoid them.
+
+Keep everything practical, specific, and immediately actionable. Use their exact interests and goals in every example. Speak conversationally like you're talking to them in person.{f" CRITICAL: Address their specific comment throughout the lesson: {user_data.get('personal_comments')}" if user_data.get('personal_comments') else ""}
         """
 
         response = model.generate_content(prompt)
@@ -465,6 +572,11 @@ def generate_time_slots(weeks_ahead=6):
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/feedback')
+def feedback():
+    """Feedback page for users to rate their session"""
+    return render_template('feedback.html')
 
 @app.route('/api/submit', methods=['POST'])
 def submit_data():
@@ -604,6 +716,16 @@ def get_users():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/feedback', methods=['GET'])
+@login_required
+def get_all_feedback():
+    """Get all feedback for admin view"""
+    try:
+        feedback_list = db.get_all_feedback()
+        return jsonify(feedback_list)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/export/csv', methods=['GET'])
 @login_required
 def export_csv():
@@ -686,6 +808,106 @@ def delete_booking(booking_id):
         print(f"Error deleting booking: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@app.route('/api/booking/<booking_id>/complete', methods=['POST'])
+@login_required
+def mark_booking_complete(booking_id):
+    """Mark a booking as complete, send feedback request, and delete it"""
+    try:
+        # Get all bookings
+        users = db.get_all_bookings()
+
+        # Find the booking
+        completed_user = None
+        for user in users:
+            if user.get('id') == booking_id:
+                completed_user = user
+                break
+
+        if not completed_user:
+            return jsonify({'success': False, 'message': 'Booking not found'}), 404
+
+        slot_id = completed_user.get('selected_slot')
+
+        # Send feedback request email
+        print(f"Sending feedback request email to {completed_user['email']}...")
+        try:
+            email_sent = send_feedback_request_email(completed_user)
+            if email_sent:
+                print(f"OK: Feedback request email sent successfully")
+            else:
+                print(f"WARNING: Feedback request email failed to send")
+        except Exception as email_error:
+            print(f"ERROR: Exception while sending feedback email: {email_error}")
+
+        # Store user info for feedback association (before deleting booking)
+        db.store_feedback_metadata(booking_id, {
+            'user_name': completed_user.get('full_name', 'Unknown'),
+            'user_email': completed_user.get('email', 'Unknown')
+        })
+
+        # Delete the booking
+        success = db.delete_booking(booking_id)
+        if not success:
+            return jsonify({'success': False, 'message': 'Failed to delete booking'}), 500
+
+        # Free up the time slot
+        if slot_id:
+            db.unbook_slot(slot_id)
+
+        return jsonify({'success': True, 'message': 'Session marked complete and feedback email sent'})
+
+    except Exception as e:
+        print(f"Error marking booking complete: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/feedback', methods=['POST'])
+def submit_feedback():
+    """Submit feedback for a completed session"""
+    try:
+        data = request.json
+
+        # Validate required fields
+        if not data.get('token'):
+            return jsonify({'success': False, 'message': 'Invalid feedback link'}), 400
+
+        if not data.get('rating') or not isinstance(data.get('rating'), int) or data.get('rating') < 1 or data.get('rating') > 5:
+            return jsonify({'success': False, 'message': 'Please provide a rating between 1 and 5'}), 400
+
+        booking_id = data['token']
+        rating = data['rating']
+        comments = data.get('comments', '').strip()
+
+        # Check if feedback already exists for this booking
+        existing_feedback = db.get_feedback_by_booking_id(booking_id)
+        if existing_feedback:
+            return jsonify({'success': False, 'message': 'Feedback has already been submitted for this session'}), 400
+
+        # Get user metadata for this booking
+        user_metadata = db.get_feedback_metadata(booking_id)
+
+        # Create feedback document
+        feedback_data = {
+            'booking_id': booking_id,
+            'rating': rating,
+            'comments': comments,
+            'timestamp': datetime.now().isoformat(),
+            'user_name': user_metadata.get('user_name', 'Unknown') if user_metadata else 'Unknown',
+            'user_email': user_metadata.get('user_email', 'Unknown') if user_metadata else 'Unknown'
+        }
+
+        # Save to Firestore
+        feedback_id = db.add_feedback(feedback_data)
+
+        if feedback_id:
+            print(f"OK: Feedback submitted - Rating: {rating}/5, Booking ID: {booking_id}")
+            return jsonify({'success': True, 'message': 'Thank you for your feedback!', 'feedback_id': feedback_id})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to save feedback'}), 500
+
+    except Exception as e:
+        print(f"Error submitting feedback: {e}")
+        return jsonify({'success': False, 'message': 'An error occurred while submitting feedback'}), 500
+
 @app.route('/api/booking/<booking_id>', methods=['PUT'])
 @login_required
 def update_booking(booking_id):
@@ -711,7 +933,6 @@ def update_booking(booking_id):
         update_data = {
             'full_name': data.get('full_name', booking['full_name']),
             'email': data.get('email', booking['email']),
-            'phone': data.get('phone', booking['phone']),
             'selected_room': new_room
         }
 
