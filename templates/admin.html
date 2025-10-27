@@ -1278,10 +1278,18 @@
                     </div>
                     ` : ''}
 
-                    <h3 style="margin: 2rem 0 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.75rem;">
-                        AI Teaching Insights
-                        <span style="background: linear-gradient(135deg, #6366F1, #8B5CF6); padding: 0.25rem 0.75rem; border-radius: 0.5rem; font-size: 0.75rem; color: white; font-weight: 700;">Powered by Gemini</span>
-                    </h3>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin: 2rem 0 1rem;">
+                        <h3 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 0.75rem;">
+                            AI Teaching Insights
+                            <span style="background: linear-gradient(135deg, #6366F1, #8B5CF6); padding: 0.25rem 0.75rem; border-radius: 0.5rem; font-size: 0.75rem; color: white; font-weight: 700;">Powered by Gemini</span>
+                        </h3>
+                        <button id="refresh-insights-btn" onclick="regenerateInsights(${index})" style="padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; transition: all 0.3s;" title="Generate new insights">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
                     <div id="insights-container" style="background: var(--bg); padding: 1.5rem; border-radius: 0.75rem; border: 2px solid var(--border); line-height: 1.8; font-size: 0.95rem; ${user.ai_insights ? 'white-space: pre-wrap;' : ''}">
                         ${insightsContent}
                     </div>
@@ -1326,6 +1334,54 @@
                         insightsContainer.innerHTML = '<span style="color: var(--error);">Error generating insights: ' + error.message + '</span>';
                     }
                 }
+            }
+        }
+
+        // Regenerate insights function
+        async function regenerateInsights(index) {
+            const user = allUsers[index];
+            const refreshBtn = document.getElementById('refresh-insights-btn');
+            const insightsContainer = document.getElementById('insights-container');
+
+            if (!refreshBtn || !insightsContainer) return;
+
+            // Disable button and show loading state
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                </svg>
+                Generating...
+            `;
+            insightsContainer.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 2rem;">Generating new insights...</div>';
+
+            try {
+                const response = await fetch(`/api/generate-insights/${user.id}`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    insightsContainer.style.whiteSpace = 'pre-wrap';
+                    insightsContainer.textContent = result.insights;
+                    // Update local cache
+                    allUsers[index].ai_insights = result.insights;
+                } else {
+                    insightsContainer.innerHTML = '<span style="color: var(--error);">Failed to generate AI insights. Please try again.</span>';
+                }
+            } catch (error) {
+                console.error('Error regenerating insights:', error);
+                insightsContainer.innerHTML = '<span style="color: var(--error);">Error generating insights: ' + error.message + '</span>';
+            } finally {
+                // Re-enable button
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                    </svg>
+                    Refresh
+                `;
             }
         }
 

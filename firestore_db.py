@@ -493,6 +493,244 @@ def migrate_from_json(bookings_file: str = 'user_data.json',
         print(f"ERROR: Migration error: {e}")
         return False
 
+# ==================== FEEDBACK FUNCTIONS ====================
+
+def add_feedback(feedback_data: dict) -> Optional[str]:
+    """
+    Add feedback to Firestore.
+
+    Args:
+        feedback_data: Dictionary containing feedback information
+
+    Returns:
+        Feedback ID if successful, None otherwise
+    """
+    try:
+        initialize_firestore()
+
+        # Add timestamp if not present
+        if 'timestamp' not in feedback_data:
+            feedback_data['timestamp'] = datetime.now().isoformat()
+
+        # Add to Firestore
+        doc_ref = db.collection('feedback').add(feedback_data)
+        feedback_id = doc_ref[1].id
+
+        print(f"OK: Feedback added with ID: {feedback_id}")
+        return feedback_id
+
+    except Exception as e:
+        print(f"ERROR: Failed to add feedback: {e}")
+        return None
+
+def get_all_feedback() -> List[dict]:
+    """
+    Get all feedback from Firestore.
+
+    Returns:
+        List of feedback dictionaries with IDs
+    """
+    try:
+        initialize_firestore()
+
+        feedback_list = []
+        docs = db.collection('feedback').stream()
+
+        for doc in docs:
+            feedback = doc.to_dict()
+            feedback['id'] = doc.id
+            feedback_list.append(feedback)
+
+        return feedback_list
+
+    except Exception as e:
+        print(f"ERROR: Failed to get feedback: {e}")
+        return []
+
+def get_feedback_by_booking_id(booking_id: str) -> Optional[dict]:
+    """
+    Get feedback for a specific booking.
+
+    Args:
+        booking_id: The booking ID to look up
+
+    Returns:
+        Feedback dictionary if found, None otherwise
+    """
+    try:
+        initialize_firestore()
+
+        docs = db.collection('feedback').where('booking_id', '==', booking_id).limit(1).stream()
+
+        for doc in docs:
+            feedback = doc.to_dict()
+            feedback['id'] = doc.id
+            return feedback
+
+        return None
+
+    except Exception as e:
+        print(f"ERROR: Failed to get feedback by booking ID: {e}")
+        return None
+
+def store_feedback_metadata(booking_id: str, user_data: dict) -> bool:
+    """
+    Store user metadata for feedback association before deleting booking.
+
+    Args:
+        booking_id: The booking ID
+        user_data: Dictionary with user_name and user_email
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        metadata = {
+            'user_name': user_data.get('user_name', 'Unknown'),
+            'user_email': user_data.get('user_email', 'Unknown'),
+            'stored_at': datetime.now().isoformat()
+        }
+
+        # Store in feedback_metadata collection with booking_id as document ID
+        db.collection('feedback_metadata').document(booking_id).set(metadata)
+
+        print(f"OK: Feedback metadata stored for booking {booking_id}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to store feedback metadata: {e}")
+        return False
+
+def get_feedback_metadata(booking_id: str) -> Optional[dict]:
+    """
+    Get stored user metadata for feedback.
+
+    Args:
+        booking_id: The booking ID
+
+    Returns:
+        Dictionary with user_name and user_email, or None if not found
+    """
+    try:
+        initialize_firestore()
+
+        doc = db.collection('feedback_metadata').document(booking_id).get()
+
+        if doc.exists:
+            return doc.to_dict()
+
+        return None
+
+    except Exception as e:
+        print(f"ERROR: Failed to get feedback metadata: {e}")
+        return None
+
+def store_verification_code(email: str, code: str, expires_at: str) -> bool:
+    """
+    Store email verification code for booking lookup.
+
+    Args:
+        email: User's email address
+        code: 6-digit verification code
+        expires_at: ISO format timestamp when code expires
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        verification_data = {
+            'email': email.lower(),
+            'code': code,
+            'created_at': datetime.now().isoformat(),
+            'expires_at': expires_at,
+            'used': False
+        }
+
+        # Store with email as document ID (overwrites any existing code for this email)
+        db.collection('verification_codes').document(email.lower()).set(verification_data)
+
+        print(f"OK: Verification code stored for {email}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to store verification code: {e}")
+        return False
+
+def get_verification_code(email: str) -> Optional[dict]:
+    """
+    Get verification code for email.
+
+    Args:
+        email: User's email address
+
+    Returns:
+        Verification code data if found and valid, None otherwise
+    """
+    try:
+        initialize_firestore()
+
+        doc = db.collection('verification_codes').document(email.lower()).get()
+
+        if doc.exists:
+            data = doc.to_dict()
+            # Check if code has expired
+            if data.get('expires_at', '') > datetime.now().isoformat():
+                return data
+
+        return None
+
+    except Exception as e:
+        print(f"ERROR: Failed to get verification code: {e}")
+        return None
+
+def mark_verification_code_used(email: str) -> bool:
+    """
+    Mark verification code as used.
+
+    Args:
+        email: User's email address
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        db.collection('verification_codes').document(email.lower()).update({'used': True})
+
+        print(f"OK: Verification code marked as used for {email}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to mark verification code as used: {e}")
+        return False
+
+def delete_verification_code(email: str) -> bool:
+    """
+    Delete verification code for email.
+
+    Args:
+        email: User's email address
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        db.collection('verification_codes').document(email.lower()).delete()
+
+        print(f"OK: Verification code deleted for {email}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to delete verification code: {e}")
+        return False
+
 
 if __name__ == "__main__":
     # Test connection

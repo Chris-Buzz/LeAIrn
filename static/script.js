@@ -139,9 +139,9 @@ function updateThemeIcons() {
 }
 
 // Step Navigation
-function goToStep(stepNumber) {
-    // Validate before moving forward
-    if (stepNumber > currentStep && !validateCurrentStep()) {
+function goToStep(stepNumber, skipValidation = false) {
+    // Validate before moving forward (unless skipped for restoration)
+    if (!skipValidation && stepNumber > currentStep && !validateCurrentStep()) {
         return;
     }
 
@@ -253,27 +253,27 @@ function validateCurrentStep() {
         return true; // Checkboxes are optional
     }
 
-    // Question 3: Primary Use (now checkboxes - at least one required)
+    // Question 3: Primary Use (checkboxes - at least one required)
     if (currentStep === 4) {
         const primaryUse = document.querySelectorAll('input[name="primary_use"]:checked');
         if (primaryUse.length === 0) {
-            showNotification('Please select at least one area of interest', 'error');
+            showNotification('Please select at least one option', 'error');
             return false;
         }
         return true;
     }
 
-    // Question 4: Learning Goal (now checkboxes - at least one required)
+    // Question 4: Learning Goal (checkboxes - at least one required)
     if (currentStep === 5) {
         const learningGoal = document.querySelectorAll('input[name="learning_goal"]:checked');
         if (learningGoal.length === 0) {
-            showNotification('Please select at least one learning goal', 'error');
+            showNotification('Please select at least one option', 'error');
             return false;
         }
         return true;
     }
 
-    // Question 5: Confidence Level
+    // Question 5: Confidence Level (radio - required)
     if (currentStep === 6) {
         const confidence = document.querySelector('input[name="confidence_level"]:checked');
         if (!confidence) {
@@ -283,7 +283,7 @@ function validateCurrentStep() {
         return true;
     }
 
-    // Step 7: Personal Comments (optional)
+    // Question 6: Personal Comments (optional)
     if (currentStep === 7) {
         return true; // Comments are optional
     }
@@ -402,11 +402,11 @@ async function confirmBooking() {
     const aiTools = Array.from(document.querySelectorAll('input[name="ai_tools"]:checked'))
         .map(cb => cb.value);
 
-    // Get primary use (now checkboxes - multiple selections)
+    // Get primary use (checkboxes - multiple selections)
     const primaryUse = Array.from(document.querySelectorAll('input[name="primary_use"]:checked'))
         .map(cb => cb.value);
 
-    // Get learning goals (now checkboxes - multiple selections)
+    // Get learning goals (checkboxes - multiple selections)
     const learningGoals = Array.from(document.querySelectorAll('input[name="learning_goal"]:checked'))
         .map(cb => cb.value);
 
@@ -676,6 +676,8 @@ function closeViewBookingModal() {
     }
 }
 
+let verificationEmail = '';
+
 async function lookupBooking() {
     const email = document.getElementById('lookup_email').value.trim();
     const resultDiv = document.getElementById('booking-lookup-result');
@@ -693,15 +695,107 @@ async function lookupBooking() {
 
     try {
         // Show loading state
-        resultDiv.innerHTML = '<div style="text-align: center; padding: 2rem;"><div class="spinner" style="margin: 0 auto; border-color: rgba(99, 102, 241, 0.3); border-top-color: var(--primary);"></div><p style="margin-top: 1rem; color: var(--text-secondary);">Looking up your booking...</p></div>';
+        resultDiv.innerHTML = '<div style="text-align: center; padding: 2rem;"><div class="spinner" style="margin: 0 auto; border-color: rgba(99, 102, 241, 0.3); border-top-color: var(--primary);"></div><p style="margin-top: 1rem; color: var(--text-secondary);">Checking for booking...</p></div>';
         resultDiv.style.display = 'block';
 
-        const response = await fetch(`/api/booking/lookup?email=${encodeURIComponent(email)}`);
+        const response = await fetch('/api/booking/lookup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email: email })
+        });
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            // Verification code sent - show verification form
+            verificationEmail = email;
+            showNotification('Verification code sent to your email!', 'success');
+
+            resultDiv.innerHTML = `
+                <div style="background: var(--bg); border: 2px solid var(--primary); border-radius: 1rem; padding: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem; color: var(--primary);">Check Your Email</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">We've sent a 6-digit verification code to <strong>${email}</strong></p>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Enter Verification Code</label>
+                        <input type="text" id="verification_code" maxlength="6" placeholder="000000"
+                            style="width: 100%; padding: 0.875rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1.5rem; text-align: center; letter-spacing: 0.5rem; font-weight: 600;"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                        <small style="display: block; margin-top: 0.5rem; color: var(--text-tertiary);">Code expires in 10 minutes</small>
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button onclick="verifyCode()" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                            Verify Code
+                        </button>
+                        <button onclick="resendVerificationCode()" style="flex: 1; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                            Resend Code
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Focus on code input
+            setTimeout(() => {
+                document.getElementById('verification_code').focus();
+            }, 100);
+        } else {
+            resultDiv.innerHTML = `
+                <div style="background: var(--bg); border: 2px solid var(--border); border-radius: 1rem; padding: 1.5rem; text-align: center;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-tertiary); margin-bottom: 1rem;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <h3 style="margin-bottom: 0.5rem;">No Upcoming Booking Found</h3>
+                    <p style="color: var(--text-secondary);">We couldn't find an upcoming booking with this email address.</p>
+                    <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">Past bookings are not shown. Please book a new session if needed.</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error looking up booking:', error);
+        resultDiv.innerHTML = `
+            <div style="background: var(--bg); border: 2px solid var(--error); border-radius: 1rem; padding: 1.5rem; text-align: center;">
+                <h3 style="margin-bottom: 0.5rem; color: var(--error);">Error</h3>
+                <p style="color: var(--text-secondary);">Failed to lookup booking. Please try again.</p>
+            </div>
+        `;
+    }
+}
+
+async function verifyCode() {
+    const code = document.getElementById('verification_code').value.trim();
+    const resultDiv = document.getElementById('booking-lookup-result');
+
+    if (!code || code.length !== 6) {
+        showNotification('Please enter the 6-digit code', 'error');
+        return;
+    }
+
+    try {
+        // Show loading state
+        resultDiv.innerHTML = '<div style="text-align: center; padding: 2rem;"><div class="spinner" style="margin: 0 auto; border-color: rgba(99, 102, 241, 0.3); border-top-color: var(--primary);"></div><p style="margin-top: 1rem; color: var(--text-secondary);">Verifying code...</p></div>';
+
+        const response = await fetch('/api/booking/verify', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: verificationEmail,
+                code: code
+            })
+        });
+
         const result = await response.json();
 
         if (response.ok && result.success && result.booking) {
             const booking = result.booking;
             const slotDetails = booking.slot_details || {};
+
+            showNotification('Verification successful!', 'success');
 
             resultDiv.innerHTML = `
                 <div style="background: var(--bg); border: 2px solid var(--primary); border-radius: 1rem; padding: 1.5rem;">
@@ -734,37 +828,55 @@ async function lookupBooking() {
                     </div>
 
                     <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 0.75rem;">
-                        <button onclick="showEditBookingForm('${email}', ${JSON.stringify(booking).replace(/"/g, '&quot;')})" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                        <button onclick="showEditBookingForm('${verificationEmail}', ${JSON.stringify(booking).replace(/"/g, '&quot;')})" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
                             Edit Booking
                         </button>
-                        <button onclick="confirmDeleteBooking('${email}')" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                        <button onclick="confirmDeleteBooking('${verificationEmail}')" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
                             Delete Booking
                         </button>
                     </div>
                 </div>
             `;
         } else {
-            resultDiv.innerHTML = `
-                <div style="background: var(--bg); border: 2px solid var(--border); border-radius: 1rem; padding: 1.5rem; text-align: center;">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-tertiary); margin-bottom: 1rem;">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                    </svg>
-                    <h3 style="margin-bottom: 0.5rem;">No Upcoming Booking Found</h3>
-                    <p style="color: var(--text-secondary);">We couldn't find an upcoming booking with this email address.</p>
-                    <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">Past bookings are not shown. Please book a new session if needed.</p>
-                </div>
-            `;
+            showNotification(result.message || 'Invalid verification code', 'error');
+            // Show verification form again with error
+            document.getElementById('verification_code').value = '';
+            document.getElementById('verification_code').focus();
+            document.getElementById('verification_code').style.borderColor = 'var(--error)';
         }
     } catch (error) {
-        console.error('Error looking up booking:', error);
-        resultDiv.innerHTML = `
-            <div style="background: var(--bg); border: 2px solid var(--error); border-radius: 1rem; padding: 1.5rem; text-align: center;">
-                <h3 style="margin-bottom: 0.5rem; color: var(--error);">Error</h3>
-                <p style="color: var(--text-secondary);">Failed to lookup booking. Please try again.</p>
-            </div>
-        `;
+        console.error('Error verifying code:', error);
+        showNotification('Failed to verify code. Please try again.', 'error');
+    }
+}
+
+async function resendVerificationCode() {
+    if (!verificationEmail) {
+        showNotification('Please enter your email first', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/booking/lookup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email: verificationEmail })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            showNotification('New verification code sent!', 'success');
+            document.getElementById('verification_code').value = '';
+            document.getElementById('verification_code').focus();
+        } else {
+            showNotification(result.message || 'Failed to resend code', 'error');
+        }
+    } catch (error) {
+        console.error('Error resending code:', error);
+        showNotification('Failed to resend code. Please try again.', 'error');
     }
 }
 

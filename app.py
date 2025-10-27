@@ -373,6 +373,55 @@ def send_feedback_request_email(user_data):
         print(f"Error sending feedback request email: {e}")
         return False
 
+def send_verification_email(email: str, code: str) -> bool:
+    """Send verification code email for booking lookup"""
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'Your Verification Code - LeAIrn'
+        msg['From'] = EMAIL_FROM
+        msg['To'] = email
+
+        # Create HTML email
+        html = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h1 style="color: #6366F1;">Verify Your Email</h1>
+                    <p>Hi there,</p>
+                    <p>Someone requested to view a booking associated with this email address. To continue, please use the verification code below:</p>
+
+                    <div style="background: #f0f9ff; border: 2px solid #6366F1; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+                        <h2 style="margin: 0; color: #6366F1; font-size: 32px; letter-spacing: 8px; font-weight: 700;">{code}</h2>
+                    </div>
+
+                    <p style="color: #6B7280; font-size: 14px;">This code will expire in 10 minutes.</p>
+                    <p style="color: #6B7280; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
+
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="color: #6B7280; font-size: 14px; margin: 0;">
+                            - LeAIrn Team<br>
+                            <a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a>
+                        </p>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html, 'html'))
+
+        # Send email
+        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_USER, EMAIL_PASSWORD)
+            server.send_message(msg)
+
+        print(f"OK: Verification email sent to {email}")
+        return True
+    except Exception as e:
+        print(f"Error sending verification email: {e}")
+        return False
+
 def get_gemini_teaching_insights(user_data):
     """Use Gemini AI to generate personalized teaching recommendations"""
     try:
@@ -384,7 +433,7 @@ def get_gemini_teaching_insights(user_data):
             comments_section = f"\n- Student's Comments: {user_data.get('personal_comments')}"
 
         prompt = f"""
-You are an experienced AI instructor preparing a comprehensive, practical lesson plan for a 30-minute one-on-one teaching session. Create a detailed, actionable plan that this person can immediately apply to their daily life.
+You are preparing a teaching guide for an AI instructor who will teach someone how to USE AI to solve their own problems. The instructor doesn't need to know all the answers - their job is to show the student HOW to leverage AI tools effectively.
 
 STUDENT PROFILE:
 - Name: {user_data['full_name']}
@@ -396,71 +445,34 @@ STUDENT PROFILE:
 - Goals: {user_data.get('learning_goal', 'Not specified')}
 - Confidence Level: {user_data.get('confidence_level', 'Not specified')}/5{comments_section}
 
-Create a detailed lesson plan in plain text format (no markdown formatting):
+Create a brief teaching guide in plain text format (no markdown formatting):
 
-SESSION OVERVIEW:
-Write 2-3 sentences describing this student's current level and what they'll learn today. Make it personal and encouraging.
+THEIR PROBLEMS/NEEDS (2-3 sentences):
+What challenges or problems does this person likely face in their role? What do they need help with?
 
-RECOMMENDED TOOLS FOR THEIR NEEDS:
-List 3-4 specific AI tools with:
-- Tool name
-- Why it's perfect for their interests and goals
-- One practical example of how they'd use it in their daily life
-Be specific - if they're interested in writing, suggest the exact writing scenario. If coding, mention the exact programming task.
+AI TOOLS THAT CAN HELP THEM (2-3 tools):
+List specific AI tools that can solve THEIR problems. For each tool, explain what problems it solves for them.
 
-DETAILED 30-MINUTE LESSON PLAN:
+SESSION OUTLINE - Teaching Them to Fish:
+1. Opening (0-5 min): Ask about their specific challenges/problems. Show them how AI can help solve one example problem.
+2. Core Skills (5-15 min): Teach them HOW to ask AI for help with their problems. Show 2-3 example prompts they can use to get AI to solve problems in their area.
+3. Practice (15-25 min): Have THEM try using AI to solve one of their actual problems. Guide them on refining their prompts.
+4. Wrap-up (25-30 min): Give them a framework for solving future problems with AI on their own.
 
-Minutes 0-5 (Quick Assessment & Setup):
-- Specific questions to ask them to understand their current knowledge
-- What to demonstrate first based on their experience level
-- How to set up their first AI tool (exact steps)
+PROMPTING TECHNIQUES FOR THEIR PROBLEMS (3-4 techniques):
+Specific prompting strategies they can use to get AI to help solve their types of problems. Include example prompts like:
+- "How to ask AI for help when stuck on [their type of problem]"
+- "How to get AI to break down complex [their domain] problems"
+- "How to iterate with AI to refine solutions"
 
-Minutes 5-15 (Hands-On Practice - Core Skills):
-- EXACT prompting technique to teach (with real example prompts they can type)
-- Specific exercise tailored to their interest area (give them the actual task)
-- Common mistakes to watch for and how to fix them
-- Live example: Write out a complete prompt they should try based on their goals
+HOW TO HELP THEM SOLVE THEIR OWN PROBLEMS:
+Give the instructor a framework for teaching this person to independently use AI. Focus on:
+- What questions to ask them to identify their real problems
+- How to demonstrate AI solving a similar problem
+- How to guide them to prompt AI themselves
+- How to teach them to evaluate and refine AI responses
 
-Minutes 15-25 (Advanced Techniques):
-- 2-3 power techniques for better results (with examples)
-- How to iterate and improve AI responses
-- Real-world application: Walk through solving an actual problem from their field/interest
-- Practice prompt: Give them another specific prompt to practice
-
-Minutes 25-30 (Action Plan):
-- What to practice this week (specific daily exercises)
-- Resources to explore (exact links or tool names)
-- How to measure their progress
-
-KEY PROMPTING TECHNIQUES TO TEACH:
-List 4-5 specific prompting strategies with:
-1. The technique name
-2. When to use it
-3. Example prompt showing the technique
-4. Expected improvement in results
-Tailor examples to their specific interests and goals.
-
-REAL-WORLD APPLICATIONS:
-Based on their interests, provide 3-4 specific scenarios where they can use AI this week:
-- Describe the exact situation
-- What tool to use
-- What to prompt for
-- What result to expect
-Make these hyper-relevant to their role, major, and interests.
-
-PRACTICE HOMEWORK:
-Give them 3 specific tasks to complete before their next session:
-1. [Specific task with exact instructions]
-2. [Another task building on the first]
-3. [Challenge task to stretch their skills]
-
-QUESTIONS THEY MIGHT ASK:
-Anticipate 3-4 questions they might have based on their profile and prepare concise answers.
-
-PITFALLS TO AVOID:
-List 3 common mistakes people at their level make and how to avoid them.
-
-Keep everything practical, specific, and immediately actionable. Use their exact interests and goals in every example. Speak conversationally like you're talking to them in person.{f" CRITICAL: Address their specific comment throughout the lesson: {user_data.get('personal_comments')}" if user_data.get('personal_comments') else ""}
+Remember: The instructor's job is NOT to solve their problems directly, but to teach them HOW to use AI tools and prompts to solve their own problems effectively.{f" IMPORTANT: Address their comment: {user_data.get('personal_comments')}" if user_data.get('personal_comments') else ""}
         """
 
         response = model.generate_content(prompt)
@@ -1306,11 +1318,12 @@ def generate_insights_for_booking(booking_id):
         print(f"Error generating insights: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/booking/lookup', methods=['GET'])
+@app.route('/api/booking/lookup', methods=['POST'])
 def lookup_booking():
-    """Look up a booking by email address - only returns future bookings"""
+    """Send verification code to email for booking lookup"""
     try:
-        email = request.args.get('email', '').strip()
+        data = request.json
+        email = data.get('email', '').strip()
 
         if not email:
             return jsonify({'success': False, 'message': 'Email address required'}), 400
@@ -1337,13 +1350,83 @@ def lookup_booking():
         if not user_booking:
             return jsonify({'success': False, 'message': 'No upcoming booking found'}), 404
 
+        # Generate 6-digit verification code
+        import random
+        code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+
+        # Set expiration (10 minutes from now)
+        expires_at = (datetime.now() + timedelta(minutes=10)).isoformat()
+
+        # Store verification code
+        success = db.store_verification_code(email, code, expires_at)
+        if not success:
+            return jsonify({'success': False, 'message': 'Failed to generate verification code'}), 500
+
+        # Send verification email
+        email_sent = send_verification_email(email, code)
+        if not email_sent:
+            return jsonify({'success': False, 'message': 'Failed to send verification email'}), 500
+
+        return jsonify({
+            'success': True,
+            'message': 'Verification code sent to your email'
+        })
+
+    except Exception as e:
+        print(f"Error in booking lookup: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/booking/verify', methods=['POST'])
+def verify_booking_code():
+    """Verify code and return booking details"""
+    try:
+        data = request.json
+        email = data.get('email', '').strip()
+        code = data.get('code', '').strip()
+
+        if not email or not code:
+            return jsonify({'success': False, 'message': 'Email and code required'}), 400
+
+        # Get verification code from database
+        verification = db.get_verification_code(email)
+
+        if not verification:
+            return jsonify({'success': False, 'message': 'Invalid or expired code'}), 400
+
+        # Check if code was already used
+        if verification.get('used'):
+            return jsonify({'success': False, 'message': 'This code has already been used'}), 400
+
+        # Verify code matches
+        if verification.get('code') != code:
+            return jsonify({'success': False, 'message': 'Invalid verification code'}), 400
+
+        # Mark code as used
+        db.mark_verification_code_used(email)
+
+        # Get booking
+        bookings = db.get_all_bookings()
+        now = datetime.now().isoformat()
+
+        user_booking = None
+        for booking in bookings:
+            if booking.get('email', '').lower() == email.lower():
+                slot_details = booking.get('slot_details', {})
+                slot_datetime = slot_details.get('datetime', '')
+                if slot_datetime and slot_datetime > now:
+                    user_booking = booking
+                    break
+
+        if not user_booking:
+            return jsonify({'success': False, 'message': 'No upcoming booking found'}), 404
+
         return jsonify({
             'success': True,
             'booking': user_booking
         })
 
     except Exception as e:
-        print(f"Error looking up booking: {e}")
+        print(f"Error verifying code: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/booking/delete-by-email', methods=['POST'])
