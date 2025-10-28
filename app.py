@@ -433,7 +433,9 @@ def get_gemini_teaching_insights(user_data):
             comments_section = f"\n- Student's Comments: {user_data.get('personal_comments')}"
 
         prompt = f"""
-You are preparing a teaching guide for an AI instructor who will teach someone how to USE AI to solve their own problems. The instructor doesn't need to know all the answers - their job is to show the student HOW to leverage AI tools effectively.
+You are preparing a 30-minute personalized AI Teaching Guide for an instructor. The instructor’s job is to teach the student how to USE AI tools to solve their own problems effectively — not to solve the problems for them. 
+
+The guide should be practical, tool-specific, and centered around showing the student how to think, prompt, and experiment with AI.
 
 STUDENT PROFILE:
 - Name: {user_data['full_name']}
@@ -443,36 +445,52 @@ STUDENT PROFILE:
 - Tools Used: {user_data.get('ai_tools', 'None')}
 - Interested In: {user_data.get('primary_use', 'Not specified')}
 - Goals: {user_data.get('learning_goal', 'Not specified')}
-- Confidence Level: {user_data.get('confidence_level', 'Not specified')}/5{comments_section}
+- Confidence Level: {user_data.get('confidence_level', 'Not specified')}/5
+{comments_section}
 
-Create a brief teaching guide in plain text format (no markdown formatting):
+TASK:
+Generate a concise, practical teaching guide that helps the instructor run a 30-minute session tailored to this student. 
+The instructor should walk away knowing exactly how to:
+1. Identify the student’s biggest real-world challenges.
+2. Match them with relevant AI tools that can genuinely help them.
+3. Teach them how to use those tools step-by-step.
+4. Help them refine their prompts to get useful results.
+5. Equip them with a repeatable method for solving future problems independently.
 
-THEIR PROBLEMS/NEEDS (2-3 sentences):
-What challenges or problems does this person likely face in their role? What do they need help with?
+STRUCTURE OF OUTPUT:
 
-AI TOOLS THAT CAN HELP THEM (2-3 tools):
-List specific AI tools that can solve THEIR problems. For each tool, explain what problems it solves for them.
+THEIR PROBLEMS/NEEDS (2–3 sentences):
+Describe what kinds of problems or challenges this student likely faces in their role, based on their profile and goals.
 
-SESSION OUTLINE - Teaching Them to Fish:
-1. Opening (0-5 min): Ask about their specific challenges/problems. Show them how AI can help solve one example problem.
-2. Core Skills (5-15 min): Teach them HOW to ask AI for help with their problems. Show 2-3 example prompts they can use to get AI to solve problems in their area.
-3. Practice (15-25 min): Have THEM try using AI to solve one of their actual problems. Guide them on refining their prompts.
-4. Wrap-up (25-30 min): Give them a framework for solving future problems with AI on their own.
+AI TOOLS THAT CAN HELP THEM (2–3 tools):
+List AI tools most relevant to this person’s work or goals. Choose tools across different categories (e.g., productivity, creativity, coding, analysis, research, communication, planning). For each tool, briefly explain what specific problem it helps them solve and how.
 
-PROMPTING TECHNIQUES FOR THEIR PROBLEMS (3-4 techniques):
-Specific prompting strategies they can use to get AI to help solve their types of problems. Include example prompts like:
-- "How to ask AI for help when stuck on [their type of problem]"
-- "How to get AI to break down complex [their domain] problems"
-- "How to iterate with AI to refine solutions"
+SESSION OUTLINE — Teaching Them to Fish (Total: 30 min):
+1. Opening (0–5 min): Discuss their daily challenges or frustrations. Show one quick example of AI solving a relevant problem.
+2. Core Skills (5–15 min): Demonstrate how to ask AI for help effectively. Show 2–3 example prompts tailored to their field.
+3. Practice (15–25 min): Let the student use AI to solve one of their actual problems. Guide them on refining their prompts, comparing outputs, and verifying accuracy.
+4. Wrap-up (25–30 min): Give them a framework for solving future problems using AI tools. Reinforce the process of experimenting, iterating, and validating results.
+
+PROMPTING TECHNIQUES FOR THEIR PROBLEMS (3–4 techniques):
+Provide 3–4 prompting strategies that are directly relevant to this student’s typical problems. Include clear examples such as:
+- “How to ask AI for help when stuck on [specific type of task].”
+- “How to get AI to break down complex [field-related] problems.”
+- “How to iterate with AI to refine solutions and check accuracy.”
 
 HOW TO HELP THEM SOLVE THEIR OWN PROBLEMS:
-Give the instructor a framework for teaching this person to independently use AI. Focus on:
-- What questions to ask them to identify their real problems
-- How to demonstrate AI solving a similar problem
-- How to guide them to prompt AI themselves
-- How to teach them to evaluate and refine AI responses
+Provide the instructor with a simple framework for teaching the student to become self-sufficient with AI. Focus on:
+- What kinds of questions to ask to uncover their real pain points.
+- How to demonstrate AI solving a similar or smaller problem first.
+- How to guide the student to prompt and explore on their own.
+- How to teach them to evaluate, refine, and verify AI responses.
 
-Remember: The instructor's job is NOT to solve their problems directly, but to teach them HOW to use AI tools and prompts to solve their own problems effectively.{f" IMPORTANT: Address their comment: {user_data.get('personal_comments')}" if user_data.get('personal_comments') else ""}
+IMPORTANT:
+- The AI must recommend tools and strategies that *genuinely fit the student’s needs and experience level.*
+- Avoid generic or overly broad suggestions — make them actionable and relevant.
+- If personal comments or special context are included, use them to make the guide more human and personalized.
+
+{f"Address their comment: {user_data.get('personal_comments')}" if user_data.get('personal_comments') else ""}
+
         """
 
         response = model.generate_content(prompt)
