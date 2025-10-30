@@ -1001,6 +1001,20 @@ def get_session_overviews():
         print(f"Error getting session overviews: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/session-overviews/<booking_id>', methods=['DELETE'])
+@login_required
+def delete_session_overview(booking_id):
+    """Delete a session overview"""
+    try:
+        success = db.delete_session_overview(booking_id)
+        if success:
+            return jsonify({'success': True, 'message': 'Overview deleted successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to delete overview'}), 500
+    except Exception as e:
+        print(f"Error deleting session overview: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/api/send-reminders', methods=['POST'])
 @login_required
 def manual_send_reminders():
