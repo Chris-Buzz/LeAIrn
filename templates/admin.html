@@ -1687,7 +1687,9 @@
             } catch (error) {
                 console.error('Error loading time slots:', error);
                 document.getElementById('slotsManagement').innerHTML = `
-                    <p style="color: var(--error); text-align: center;">Error loading time slots</p>
+                    <div style="padding: 2rem;">
+                        <p style="color: var(--error); text-align: center;">Error loading time slots</p>
+                    </div>
                 `;
             }
         }
@@ -1696,7 +1698,7 @@
             const container = document.getElementById('slotsManagement');
 
             if (slots.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: var(--text-tertiary);">No time slots available</p>';
+                container.innerHTML = '<div style="padding: 2rem;"><p style="text-align: center; color: var(--text-tertiary);">No time slots available</p></div>';
                 return;
             }
 
@@ -1708,53 +1710,55 @@
             const pastUnbooked = past.filter(s => !s.booked).length;
 
             container.innerHTML = `
-                <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--surface); border-radius: 0.75rem; border: 1px solid var(--border);">
-                    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
-                        <div>
-                            <div style="font-size: 0.85rem; color: var(--text-tertiary);">Total Slots</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">${slots.length}</div>
-                        </div>
-                        <div>
-                            <div style="font-size: 0.85rem; color: var(--text-tertiary);">Upcoming</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: #10B981;">${upcoming.length}</div>
-                        </div>
-                        <div>
-                            <div style="font-size: 0.85rem; color: var(--text-tertiary);">Past Slots</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-tertiary);">${past.length}</div>
-                        </div>
-                        ${pastUnbooked > 0 ? `
-                        <div style="flex: 1; display: flex; align-items: center; justify-content: flex-end;">
-                            <button onclick="cleanupOldSlots(event)" style="padding: 0.75rem 1.5rem; background: #F59E0B; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600;">
-                                Clean Up ${pastUnbooked} Old Slots
-                            </button>
-                        </div>
-                        ` : ''}
-                    </div>
-                </div>
-                <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Upcoming Time Slots (${upcoming.length})</h3>
-                <div class="slots-grid-container">
-                    ${upcoming.map(slot => `
-                        <div class="slot-card ${slot.booked ? 'booked' : 'available'}">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
-                                <span class="slot-status ${slot.booked ? 'booked' : 'available'}">
-                                    ${slot.booked ? 'Booked' : 'Available'}
-                                </span>
+                <div style="padding: 2rem;">
+                    <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--surface); border-radius: 0.75rem; border: 1px solid var(--border);">
+                        <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                            <div>
+                                <div style="font-size: 0.85rem; color: var(--text-tertiary);">Total Slots</div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">${slots.length}</div>
                             </div>
-                            <div class="slot-info">
-                                <div class="slot-day">${slot.day}</div>
-                                <div class="slot-date">${slot.date}</div>
-                                <div class="slot-time">${slot.time}</div>
-                                ${slot.booked ? `<div class="slot-booked-by">Booked by: ${slot.booked_by}</div>` : ''}
+                            <div>
+                                <div style="font-size: 0.85rem; color: var(--text-tertiary);">Upcoming</div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #10B981;">${upcoming.length}</div>
                             </div>
-                            ${!slot.booked ? `
-                                <div class="slot-actions">
-                                    <button onclick="deleteSlot('${slot.id}')">
-                                        Delete Slot
-                                    </button>
-                                </div>
+                            <div>
+                                <div style="font-size: 0.85rem; color: var(--text-tertiary);">Past Slots</div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-tertiary);">${past.length}</div>
+                            </div>
+                            ${pastUnbooked > 0 ? `
+                            <div style="flex: 1; display: flex; align-items: center; justify-content: flex-end;">
+                                <button onclick="cleanupOldSlots(event)" style="padding: 0.75rem 1.5rem; background: #F59E0B; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600;">
+                                    Clean Up ${pastUnbooked} Old Slots
+                                </button>
+                            </div>
                             ` : ''}
                         </div>
-                    `).join('')}
+                    </div>
+                    <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Upcoming Time Slots (${upcoming.length})</h3>
+                    <div class="slots-grid-container">
+                        ${upcoming.map(slot => `
+                            <div class="slot-card ${slot.booked ? 'booked' : 'available'}">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                                    <span class="slot-status ${slot.booked ? 'booked' : 'available'}">
+                                        ${slot.booked ? 'Booked' : 'Available'}
+                                    </span>
+                                </div>
+                                <div class="slot-info">
+                                    <div class="slot-day">${slot.day}</div>
+                                    <div class="slot-date">${slot.date}</div>
+                                    <div class="slot-time">${slot.time}</div>
+                                    ${slot.booked ? `<div class="slot-booked-by">Booked by: ${slot.booked_by}</div>` : ''}
+                                </div>
+                                ${!slot.booked ? `
+                                    <div class="slot-actions">
+                                        <button onclick="deleteSlot('${slot.id}')">
+                                            Delete Slot
+                                        </button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
             `;
         }
