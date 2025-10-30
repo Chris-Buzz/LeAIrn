@@ -1663,7 +1663,8 @@
             slotsExpanded = !slotsExpanded;
 
             if (slotsExpanded) {
-                slotsContent.style.maxHeight = '3000px';
+                slotsContent.style.maxHeight = '800px';
+                slotsContent.style.overflowY = 'auto';
                 slotsContent.style.opacity = '1';
                 chevron.style.transform = 'rotate(180deg)';
                 // Load slots when expanded for the first time
@@ -1672,6 +1673,7 @@
                 }
             } else {
                 slotsContent.style.maxHeight = '0';
+                slotsContent.style.overflowY = 'hidden';
                 slotsContent.style.opacity = '0';
                 chevron.style.transform = 'rotate(0deg)';
             }
