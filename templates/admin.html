@@ -670,48 +670,50 @@
                 min-width: 120px;
             }
 
-            /* Session Overviews table mobile - make action buttons icon-only */
-            #overviewsTable td:last-child > div {
-                flex-direction: row !important;
-                gap: 0.25rem !important;
-            }
-
-            #overviewsTable td:last-child button {
-                padding: 0.5rem !important;
-                font-size: 0 !important;
-                min-width: auto !important;
-                width: auto !important;
-                aspect-ratio: 1;
-            }
-
-            #overviewsTable td:last-child button::before {
-                font-size: 0.75rem;
-            }
-
-            /* Add icons to overview buttons */
-            #overviewsTable button:first-child::before {
-                content: '👁️';
-                font-size: 1rem;
-            }
-
-            #overviewsTable button:last-child::before {
-                content: '🗑️';
-                font-size: 1rem;
-            }
-
-            /* Bookings table mobile - hide less important columns */
+            /* Mobile: Make Actions column collapsible */
             @media (max-width: 768px) {
-                /* Hide Created column on bookings */
-                #usersTable th:nth-last-child(2),
-                #usersTable td:nth-last-child(2) {
+                /* Hide Actions columns by default on mobile */
+                .mobile-actions-collapsed #bookingsTable th:last-child,
+                .mobile-actions-collapsed #bookingsTable td:last-child,
+                .mobile-actions-collapsed #overviewsTable th:last-child,
+                .mobile-actions-collapsed #overviewsTable td:last-child {
                     display: none;
                 }
 
-                /* Make action buttons more compact */
-                #usersTable td:last-child button {
-                    padding: 0.4rem 0.6rem !important;
-                    font-size: 0.75rem !important;
+                /* Hide Created column on bookings */
+                #bookingsTable th:nth-last-child(2),
+                #bookingsTable td:nth-last-child(2) {
+                    display: none;
                 }
+
+                /* Add toggle button for actions on mobile */
+                .mobile-actions-toggle {
+                    display: inline-flex !important;
+                    align-items: center;
+                    gap: 0.5rem;
+                    padding: 0.5rem 1rem;
+                    background: var(--primary);
+                    color: white;
+                    border: none;
+                    border-radius: 0.5rem;
+                    cursor: pointer;
+                    font-weight: 600;
+                    font-size: 0.85rem;
+                    margin-left: 0.5rem;
+                }
+
+                .mobile-actions-toggle svg {
+                    transition: transform 0.3s;
+                }
+
+                .mobile-actions-toggle.expanded svg {
+                    transform: rotate(180deg);
+                }
+            }
+
+            /* Hide toggle button on desktop */
+            .mobile-actions-toggle {
+                display: none;
             }
         }
 
@@ -862,10 +864,18 @@
 
         <div class="table-card">
             <div class="table-header">
-                <h2>All Bookings</h2>
-                <p>Manage all AI learning session bookings</p>
+                <div>
+                    <h2 style="display: inline-block;">All Bookings</h2>
+                    <button class="mobile-actions-toggle" onclick="toggleMobileActions('bookings')" id="bookingsActionsToggle">
+                        <span>Actions</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <p style="margin: 0;">Manage all AI learning session bookings</p>
+                </div>
             </div>
-            <div class="table-wrapper">
+            <div class="table-wrapper" id="bookingsTableWrapper">
                 <table>
                     <thead>
                         <tr>
@@ -980,8 +990,14 @@
         <div class="table-card" style="margin-top: 2rem;">
             <div class="table-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h2>Session Overviews</h2>
-                    <p>View notes and summaries from completed sessions</p>
+                    <h2 style="display: inline-block;">Session Overviews</h2>
+                    <button class="mobile-actions-toggle" onclick="toggleMobileActions('overviews')" id="overviewsActionsToggle">
+                        <span>Actions</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <p style="margin: 0;">View notes and summaries from completed sessions</p>
                 </div>
                 <button onclick="showManualOverviewModal()" style="width: 44px; height: 44px; background: var(--primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Add Manual Overview">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -990,7 +1006,7 @@
                     </svg>
                 </button>
             </div>
-            <div class="table-wrapper">
+            <div class="table-wrapper" id="overviewsTableWrapper">
                 <table>
                     <thead>
                         <tr>
@@ -2706,12 +2722,27 @@
             }
         }
 
+        // Toggle mobile actions column visibility
+        function toggleMobileActions(tableType) {
+            const wrapper = document.getElementById(tableType === 'bookings' ? 'bookingsTableWrapper' : 'overviewsTableWrapper');
+            const button = document.getElementById(tableType === 'bookings' ? 'bookingsActionsToggle' : 'overviewsActionsToggle');
+
+            wrapper.classList.toggle('mobile-actions-collapsed');
+            button.classList.toggle('expanded');
+        }
+
         // Load everything on page load
         document.addEventListener('DOMContentLoaded', () => {
             loadUsers();
             // loadTimeSlots(); // Now loads only when section is expanded
             loadFeedback();
             loadSessionOverviews();
+
+            // Initialize mobile actions as collapsed on mobile
+            if (window.innerWidth <= 768) {
+                document.getElementById('bookingsTableWrapper').classList.add('mobile-actions-collapsed');
+                document.getElementById('overviewsTableWrapper').classList.add('mobile-actions-collapsed');
+            }
         });
     </script>
 
