@@ -731,6 +731,86 @@ def delete_verification_code(email: str) -> bool:
         print(f"ERROR: Failed to delete verification code: {e}")
         return False
 
+def store_session_overview(booking_id: str, overview_data: dict) -> bool:
+    """
+    Store session overview/notes for a completed session.
+
+    Args:
+        booking_id: The booking ID
+        overview_data: Dictionary containing session notes and metadata
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        overview = {
+            'booking_id': booking_id,
+            'notes': overview_data.get('notes', ''),
+            'enhanced_notes': overview_data.get('enhanced_notes', ''),
+            'user_name': overview_data.get('user_name', ''),
+            'user_email': overview_data.get('user_email', ''),
+            'session_date': overview_data.get('session_date', ''),
+            'created_at': datetime.now().isoformat(),
+            'created_by': overview_data.get('created_by', 'admin')
+        }
+
+        # Store with booking_id as document ID
+        db.collection('session_overviews').document(booking_id).set(overview)
+
+        print(f"OK: Session overview stored for booking {booking_id}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to store session overview: {e}")
+        return False
+
+def get_session_overview(booking_id: str) -> Optional[dict]:
+    """
+    Get session overview for a booking.
+
+    Args:
+        booking_id: The booking ID
+
+    Returns:
+        Overview data if found, None otherwise
+    """
+    try:
+        initialize_firestore()
+
+        doc = db.collection('session_overviews').document(booking_id).get()
+
+        if doc.exists:
+            overview = doc.to_dict()
+            overview['id'] = doc.id
+            return overview
+
+        return None
+
+    except Exception as e:
+        print(f"ERROR: Failed to get session overview: {e}")
+        return None
+
+def get_all_session_overviews() -> List[dict]:
+    """Get all session overviews from Firestore"""
+    try:
+        initialize_firestore()
+
+        overviews = []
+        docs = db.collection('session_overviews').stream()
+
+        for doc in docs:
+            overview = doc.to_dict()
+            overview['id'] = doc.id
+            overviews.append(overview)
+
+        return overviews
+
+    except Exception as e:
+        print(f"ERROR: Failed to get session overviews: {e}")
+        return []
+
 
 if __name__ == "__main__":
     # Test connection

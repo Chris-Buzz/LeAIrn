@@ -10,6 +10,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import google.generativeai as genai
 from dotenv import load_dotenv
+import threading
+import time
 
 # Import Firestore database functions
 import firestore_db as db
@@ -336,7 +338,7 @@ def send_feedback_request_email(user_data):
                         <h2 style="margin-top: 0; color: #6366F1;">Share Your Feedback</h2>
                         <p>It'll only take a minute - rate your experience and optionally share any comments.</p>
                         <p style="margin-top: 20px; margin-bottom: 0;">
-                            <a href="https://uleairn.com/feedback?token={feedback_token}" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #6366F1, #8B5CF6); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                            <a href="https://uleairn.com/feedback?token={feedback_token}" style="display: inline-block; padding: 14px 28px; background: #6366F1; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.5); border: 2px solid #4F46E5;">
                                 Leave Feedback
                             </a>
                         </p>
@@ -421,6 +423,238 @@ def send_verification_email(email: str, code: str) -> bool:
     except Exception as e:
         print(f"Error sending verification email: {e}")
         return False
+
+def enhance_session_notes_with_ai(notes: str, user_data: dict) -> str:
+    """Use Gemini AI to enhance and format session notes"""
+    try:
+        model = genai.GenerativeModel('gemini-2.5-flash')
+
+        prompt = f"""
+You are helping format session notes from an AI teaching session. Take the raw notes provided and create a professional, well-organized summary that the student can use as a reference.
+
+STUDENT INFO:
+- Name: {user_data.get('full_name', 'Student')}
+- Role: {user_data.get('role', 'N/A')}
+
+RAW SESSION NOTES:
+{notes}
+
+Create a clean, organized summary in plain text (no markdown) with these sections:
+
+SESSION OVERVIEW
+Brief summary of what was covered in the session (2-3 sentences).
+
+TOOLS INTRODUCED
+List the specific AI tools that were demonstrated or discussed.
+
+PROMPTING TECHNIQUES TAUGHT
+List the key prompting strategies and techniques covered.
+
+KEY CONCEPTS
+Main ideas and concepts explained during the session.
+
+ACTION ITEMS
+What the student should practice or work on next.
+
+Keep it concise, professional, and easy to read. Focus on the practical takeaways.
+"""
+
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        print(f"ERROR: Error enhancing notes with AI: {e}")
+        return notes  # Return original notes if AI fails
+
+def send_session_overview_email(user_data: dict, overview: str) -> bool:
+    """Send session overview email to user"""
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'Your AI Learning Session Summary - LeAIrn'
+        msg['From'] = EMAIL_FROM
+        msg['To'] = user_data['email']
+
+        # Create HTML email
+        html = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h1 style="color: #6366F1;">Your Session Summary</h1>
+                    <p>Hi {user_data['full_name']},</p>
+                    <p>Here's a summary of what we covered in your AI learning session. Keep this for your reference!</p>
+
+                    <div style="background: #f0f9ff; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                        <pre style="white-space: pre-wrap; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.8; margin: 0;">{overview}</pre>
+                    </div>
+
+                    <div style="background: #f0fdf4; border-left: 4px solid #10B981; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Keep Learning!</h2>
+                        <p>Feel free to book another session anytime if you have questions or want to dive deeper.</p>
+                        <p style="margin-top: 15px;">
+                            <a href="https://uleairn.com" style="display: inline-block; padding: 12px 24px; background: #10B981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                                Book Another Session
+                            </a>
+                        </p>
+                    </div>
+
+                    <p style="margin-top: 30px;">Happy learning!</p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com">cjpbuzaid@gmail.com</a></p>
+                </div>
+            </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html, 'html'))
+
+        # Send email
+        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_USER, EMAIL_PASSWORD)
+            server.send_message(msg)
+
+        print(f"OK: Session overview email sent to {user_data['email']}")
+        return True
+    except Exception as e:
+        print(f"Error sending session overview email: {e}")
+        return False
+
+def send_meeting_reminder_email(user_data: dict) -> bool:
+    """Send meeting reminder email to user the morning of their session"""
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'Reminder: Your AI Learning Session Today - LeAIrn'
+        msg['From'] = EMAIL_FROM
+        msg['To'] = user_data['email']
+
+        slot_details = user_data.get('slot_details', {})
+        day = slot_details.get('day', 'Today')
+        date = slot_details.get('date', '')
+        time = slot_details.get('time', 'your scheduled time')
+        location = user_data.get('selected_room', 'the scheduled location')
+
+        # Create HTML email
+        html = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h1 style="color: #6366F1;">Your Session is Today!</h1>
+                    <p>Hi {user_data['full_name']},</p>
+                    <p>This is a friendly reminder that your AI learning session is scheduled for today.</p>
+
+                    <div style="background: linear-gradient(135deg, #6366F1, #8B5CF6); color: white; border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
+                        <h2 style="margin: 0 0 15px 0; font-size: 24px;">Session Details</h2>
+                        <div style="background: rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">TIME</div>
+                            <div style="font-size: 22px; font-weight: 700;">{time}</div>
+                        </div>
+                        <div style="background: rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 15px;">
+                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">LOCATION</div>
+                            <div style="font-size: 20px; font-weight: 700;">{location}</div>
+                        </div>
+                    </div>
+
+                    <div style="background: #f0f9ff; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #6366F1;">What to Bring</h3>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>Your laptop or device</li>
+                            <li>Any specific questions or topics you want to cover</li>
+                            <li>An open mind and eagerness to learn!</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: #fff7ed; border-left: 4px solid #F59E0B; padding: 20px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #F59E0B;">Need to Reschedule?</h3>
+                        <p style="margin: 10px 0;">If something came up, please let me know as soon as possible.</p>
+                        <p style="margin: 10px 0;">
+                            <a href="https://uleairn.com" style="color: #F59E0B; font-weight: 600;">Visit LeAIrn to manage your booking</a>
+                        </p>
+                    </div>
+
+                    <p style="margin-top: 30px;">Looking forward to seeing you today!</p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
+                </div>
+            </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html, 'html'))
+
+        # Send email
+        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_USER, EMAIL_PASSWORD)
+            server.send_message(msg)
+
+        print(f"OK: Meeting reminder email sent to {user_data['email']}")
+        return True
+    except Exception as e:
+        print(f"Error sending meeting reminder email: {e}")
+        return False
+
+def check_and_send_meeting_reminders():
+    """Check for bookings today and send reminder emails"""
+    try:
+        print("Checking for meetings today to send reminders...")
+
+        # Get all bookings
+        bookings = db.get_all_bookings()
+
+        # Get today's date
+        today = datetime.now().date()
+
+        reminders_sent = 0
+        for booking in bookings:
+            slot_details = booking.get('slot_details', {})
+            slot_datetime_str = slot_details.get('datetime', '')
+
+            if not slot_datetime_str:
+                continue
+
+            # Parse the slot datetime
+            try:
+                slot_datetime = datetime.fromisoformat(slot_datetime_str)
+                slot_date = slot_datetime.date()
+
+                # Check if booking is today
+                if slot_date == today:
+                    # Send reminder email
+                    print(f"Sending reminder to {booking['full_name']} for session at {slot_details.get('time')}")
+                    success = send_meeting_reminder_email(booking)
+                    if success:
+                        reminders_sent += 1
+                        print(f"✓ Reminder sent to {booking['email']}")
+                    else:
+                        print(f"✗ Failed to send reminder to {booking['email']}")
+            except Exception as e:
+                print(f"Error parsing datetime for booking {booking.get('id')}: {e}")
+                continue
+
+        print(f"Meeting reminder check complete. Sent {reminders_sent} reminder(s).")
+        return reminders_sent
+
+    except Exception as e:
+        print(f"ERROR: Error in check_and_send_meeting_reminders: {e}")
+        return 0
+
+def morning_reminder_scheduler():
+    """Background thread that sends reminders at 8:30 AM every day"""
+    while True:
+        try:
+            now = datetime.now()
+
+            # Check if it's 8:30 AM (or between 8:30-8:31 to allow for execution time)
+            if now.hour == 8 and now.minute == 30:
+                print("=== Running morning reminder scheduler at 8:30 AM ===")
+                check_and_send_meeting_reminders()
+
+                # Sleep for 60 seconds to avoid sending multiple times in the same minute
+                time.sleep(60)
+
+            # Check every 30 seconds
+            time.sleep(30)
+
+        except Exception as e:
+            print(f"ERROR: Exception in morning_reminder_scheduler: {e}")
+            time.sleep(60)  # Sleep for a minute before retrying
 
 def get_gemini_teaching_insights(user_data):
     """Use Gemini AI to generate personalized teaching recommendations"""
@@ -756,6 +990,87 @@ def get_all_feedback():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/session-overviews', methods=['GET'])
+@login_required
+def get_session_overviews():
+    """Get all session overviews for admin view"""
+    try:
+        overviews = db.get_all_session_overviews()
+        return jsonify(overviews)
+    except Exception as e:
+        print(f"Error getting session overviews: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/send-reminders', methods=['POST'])
+@login_required
+def manual_send_reminders():
+    """Manually trigger reminder emails for testing"""
+    try:
+        count = check_and_send_meeting_reminders()
+        return jsonify({
+            'success': True,
+            'message': f'Sent {count} reminder email(s)',
+            'reminders_sent': count
+        })
+    except Exception as e:
+        print(f"Error sending reminders: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/session-overviews/manual', methods=['POST'])
+@login_required
+def create_manual_overview():
+    """Create a manual session overview for past sessions"""
+    try:
+        data = request.json
+        user_name = data.get('user_name', '').strip()
+        user_email = data.get('user_email', '').strip()
+        session_date = data.get('session_date', '').strip()
+        notes = data.get('notes', '').strip()
+        send_email = data.get('send_email', False)
+
+        # Validation
+        if not user_name or not user_email or not notes:
+            return jsonify({'success': False, 'message': 'Name, email, and notes are required'}), 400
+
+        # Generate a unique booking ID for this manual overview
+        import uuid
+        booking_id = f"manual_{uuid.uuid4().hex[:12]}"
+
+        # Store session overview
+        overview_data = {
+            'notes': notes,
+            'enhanced_notes': notes,  # For manual entries, enhanced = raw
+            'user_name': user_name,
+            'user_email': user_email,
+            'session_date': session_date or 'Not specified',
+            'created_by': 'admin_manual'
+        }
+        success = db.store_session_overview(booking_id, overview_data)
+
+        if not success:
+            return jsonify({'success': False, 'message': 'Failed to save overview'}), 500
+
+        # Send email if requested
+        if send_email:
+            print(f"Sending manual overview email to {user_email}...")
+            user_data = {
+                'full_name': user_name,
+                'email': user_email
+            }
+            email_sent = send_session_overview_email(user_data, notes)
+            if not email_sent:
+                print(f"WARNING: Failed to send overview email")
+
+        return jsonify({
+            'success': True,
+            'message': 'Overview saved successfully',
+            'email_sent': send_email
+        })
+
+    except Exception as e:
+        print(f"Error creating manual overview: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/api/export/csv', methods=['GET'])
 @login_required
 def export_csv():
@@ -841,8 +1156,12 @@ def delete_booking(booking_id):
 @app.route('/api/booking/<booking_id>/complete', methods=['POST'])
 @login_required
 def mark_booking_complete(booking_id):
-    """Mark a booking as complete, send feedback request, and delete it"""
+    """Mark a booking as complete, send feedback request and session overview, then delete it"""
     try:
+        data = request.json or {}
+        session_notes = data.get('notes', '').strip()
+        skip_ai = data.get('skip_ai', False)
+
         # Get all bookings
         users = db.get_all_bookings()
 
@@ -857,6 +1176,40 @@ def mark_booking_complete(booking_id):
             return jsonify({'success': False, 'message': 'Booking not found'}), 404
 
         slot_id = completed_user.get('selected_slot')
+        slot_details = completed_user.get('slot_details', {})
+        session_date = f"{slot_details.get('day', '')}, {slot_details.get('date', '')} at {slot_details.get('time', '')}"
+
+        # Process session notes if provided
+        enhanced_notes = ''
+        if session_notes:
+            if skip_ai:
+                print(f"Skipping AI enhancement, using raw notes...")
+                enhanced_notes = session_notes
+            else:
+                print(f"Enhancing session notes with AI...")
+                enhanced_notes = enhance_session_notes_with_ai(session_notes, completed_user)
+
+            # Store session overview
+            overview_data = {
+                'notes': session_notes,
+                'enhanced_notes': enhanced_notes,
+                'user_name': completed_user.get('full_name', ''),
+                'user_email': completed_user.get('email', ''),
+                'session_date': session_date,
+                'created_by': 'admin'
+            }
+            db.store_session_overview(booking_id, overview_data)
+
+            # Send session overview email
+            print(f"Sending session overview email to {completed_user['email']}...")
+            try:
+                overview_sent = send_session_overview_email(completed_user, enhanced_notes)
+                if overview_sent:
+                    print(f"OK: Session overview email sent successfully")
+                else:
+                    print(f"WARNING: Session overview email failed to send")
+            except Exception as email_error:
+                print(f"ERROR: Exception while sending overview email: {email_error}")
 
         # Send feedback request email
         print(f"Sending feedback request email to {completed_user['email']}...")
@@ -1694,6 +2047,12 @@ init_time_slots()
 app = app
 
 if __name__ == '__main__':
+    # Start the morning reminder scheduler in a background thread
+    print("Starting morning reminder scheduler...")
+    reminder_thread = threading.Thread(target=morning_reminder_scheduler, daemon=True)
+    reminder_thread.start()
+    print("✓ Morning reminder scheduler started (runs at 8:30 AM daily)")
+
     # Check if running in production or development
     is_production = os.getenv('FLASK_ENV') == 'production'
 
