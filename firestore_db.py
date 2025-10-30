@@ -811,6 +811,19 @@ def get_all_session_overviews() -> List[dict]:
         print(f"ERROR: Failed to get session overviews: {e}")
         return []
 
+def delete_session_overview(booking_id: str) -> bool:
+    """Delete a session overview from Firestore"""
+    try:
+        initialize_firestore()
+
+        db.collection('session_overviews').document(booking_id).delete()
+        print(f"OK: Deleted session overview: {booking_id}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to delete session overview {booking_id}: {e}")
+        return False
+
 
 if __name__ == "__main__":
     # Test connection

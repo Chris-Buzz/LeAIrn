@@ -885,10 +885,12 @@
                     </div>
                 </div>
             </div>
-            <div id="slotsManagement" style="padding: 2rem; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out;">
-                <div class="loading-container">
-                    <div class="spinner"></div>
-                    <p>Loading time slots...</p>
+            <div id="slotsManagement" style="max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.3s ease-out, opacity 0.3s ease-out;">
+                <div style="padding: 2rem;">
+                    <div class="loading-container">
+                        <div class="spinner"></div>
+                        <p>Loading time slots...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1661,7 +1663,8 @@
             slotsExpanded = !slotsExpanded;
 
             if (slotsExpanded) {
-                slotsContent.style.maxHeight = '2000px';
+                slotsContent.style.maxHeight = '3000px';
+                slotsContent.style.opacity = '1';
                 chevron.style.transform = 'rotate(180deg)';
                 // Load slots when expanded for the first time
                 if (allSlots.length === 0) {
@@ -1669,6 +1672,7 @@
                 }
             } else {
                 slotsContent.style.maxHeight = '0';
+                slotsContent.style.opacity = '0';
                 chevron.style.transform = 'rotate(0deg)';
             }
         }
@@ -2418,9 +2422,14 @@
                         </td>
                         <td style="white-space: nowrap;">${formattedCreated}</td>
                         <td>
-                            <button onclick='showOverviewModal(${JSON.stringify(overview).replace(/'/g, "\\'")} )' style="padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.85rem;">
-                                View Full
-                            </button>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button onclick='showOverviewModal(${JSON.stringify(overview).replace(/'/g, "\\'")} )' style="padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.85rem;">
+                                    View Full
+                                </button>
+                                <button onclick='deleteOverview("${overview.booking_id}", "${userName}")' style="padding: 0.5rem 1rem; background: #EF4444; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.85rem;">
+                                    Delete
+                                </button>
+                            </div>
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -2495,6 +2504,31 @@
             const modal = document.getElementById('overviewModal');
             modal.classList.remove('active');
             document.body.style.overflow = '';
+        }
+
+        // Delete overview
+        async function deleteOverview(bookingId, userName) {
+            if (!confirm(`Delete session overview for ${userName}?\n\nThis action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/session-overviews/${bookingId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert('Session overview deleted successfully');
+                    loadSessionOverviews(); // Reload the list
+                } else {
+                    alert('Error: ' + (result.message || 'Failed to delete overview'));
+                }
+            } catch (error) {
+                console.error('Error deleting overview:', error);
+                alert('Error deleting overview. Please try again.');
+            }
         }
 
         // Manual overview modal
