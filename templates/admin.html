@@ -669,6 +669,50 @@
             .table-card:has(#feedbackTable) td:nth-child(2) {
                 min-width: 120px;
             }
+
+            /* Session Overviews table mobile - make action buttons icon-only */
+            #overviewsTable td:last-child > div {
+                flex-direction: row !important;
+                gap: 0.25rem !important;
+            }
+
+            #overviewsTable td:last-child button {
+                padding: 0.5rem !important;
+                font-size: 0 !important;
+                min-width: auto !important;
+                width: auto !important;
+                aspect-ratio: 1;
+            }
+
+            #overviewsTable td:last-child button::before {
+                font-size: 0.75rem;
+            }
+
+            /* Add icons to overview buttons */
+            #overviewsTable button:first-child::before {
+                content: '👁️';
+                font-size: 1rem;
+            }
+
+            #overviewsTable button:last-child::before {
+                content: '🗑️';
+                font-size: 1rem;
+            }
+
+            /* Bookings table mobile - hide less important columns */
+            @media (max-width: 768px) {
+                /* Hide Created column on bookings */
+                #usersTable th:nth-last-child(2),
+                #usersTable td:nth-last-child(2) {
+                    display: none;
+                }
+
+                /* Make action buttons more compact */
+                #usersTable td:last-child button {
+                    padding: 0.4rem 0.6rem !important;
+                    font-size: 0.75rem !important;
+                }
+            }
         }
 
         /* Expandable feedback viewer */
