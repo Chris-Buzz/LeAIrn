@@ -1732,21 +1732,20 @@ def lookup_booking():
         # Get current time
         now = datetime.now().isoformat()
 
-        # Find booking with matching email AND future booking
-        user_booking = None
+        # Find all future bookings with matching email
+        user_bookings = []
         for booking in bookings:
             if booking.get('email', '').lower() == email.lower():
                 # Check if this booking is in the future
                 slot_details = booking.get('slot_details', {})
                 slot_datetime = slot_details.get('datetime', '')
 
-                # Only return if the booking is in the future
+                # Only include if the booking is in the future
                 if slot_datetime and slot_datetime > now:
-                    user_booking = booking
-                    break
+                    user_bookings.append(booking)
 
-        if not user_booking:
-            return jsonify({'success': False, 'message': 'No upcoming booking found'}), 404
+        if not user_bookings:
+            return jsonify({'success': False, 'message': 'No upcoming bookings found'}), 404
 
         # Generate 6-digit verification code
         import random
@@ -1802,25 +1801,27 @@ def verify_booking_code():
         # Mark code as used
         db.mark_verification_code_used(email)
 
-        # Get booking
+        # Get all bookings for this user
         bookings = db.get_all_bookings()
         now = datetime.now().isoformat()
 
-        user_booking = None
+        user_bookings = []
         for booking in bookings:
             if booking.get('email', '').lower() == email.lower():
                 slot_details = booking.get('slot_details', {})
                 slot_datetime = slot_details.get('datetime', '')
                 if slot_datetime and slot_datetime > now:
-                    user_booking = booking
-                    break
+                    user_bookings.append(booking)
 
-        if not user_booking:
-            return jsonify({'success': False, 'message': 'No upcoming booking found'}), 404
+        if not user_bookings:
+            return jsonify({'success': False, 'message': 'No upcoming bookings found'}), 404
+
+        # Sort bookings by datetime (earliest first)
+        user_bookings.sort(key=lambda x: x.get('slot_details', {}).get('datetime', ''))
 
         return jsonify({
             'success': True,
-            'booking': user_booking
+            'bookings': user_bookings
         })
 
     except Exception as e:
