@@ -138,10 +138,120 @@ function updateThemeIcons() {
     }
 }
 
+// Informed Consent Modal
+function showConsentModal(nextStep) {
+    const modal = document.createElement('div');
+    modal.id = 'consentModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        padding: 1rem;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: var(--surface); border-radius: 1rem; max-width: 800px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 2.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+            <h2 style="margin-bottom: 1rem; color: var(--primary); font-size: 1.5rem; text-align: center;">INFORMED CONSENT FOR RESEARCH PARTICIPATION</h2>
+            <h3 style="margin-bottom: 1.5rem; color: var(--text-primary); font-size: 1.1rem; text-align: center;">Improving Efficiency in Higher Education through Customized AI Training</h3>
+
+            <div style="color: var(--text-primary); line-height: 1.7; font-size: 0.95rem;">
+                <p style="margin-bottom: 1rem;"><strong>Principal Investigator:</strong> Weihao Qu, Phone: 732-263-5396, Email: wqu@monmouth.edu</p>
+                <p style="margin-bottom: 1.5rem;"><strong>Co-Investigator:</strong> Ling Zheng, Phone: 732-571-4459, Email: lzheng@monmouth.edu</p>
+
+                <p style="margin-bottom: 1rem; font-weight: 600;">You are being asked to be a participant in a research study.</p>
+
+                <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">What is the purpose of this study?</h4>
+                <p style="margin-bottom: 1rem;">The purpose of this study is about how artificial intelligence (AI) tools can be used to improve efficiency in learning, studying, and working at a mid-sized college. The goal of this project is to design and test customized AI training workshops, one-on-one sessions, and online modules for students, staff, and faculty.</p>
+
+                <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">What will you have to do, if you agree to be in the study?</h4>
+                <p style="margin-bottom: 0.5rem;">If you agree to be in this study, your part will involve:</p>
+                <ul style="margin: 0.5rem 0 1rem 1.5rem; list-style-type: disc;">
+                    <li>Finish an online pre-assessment on your own AI tool knowledge before the training session when you book the training.</li>
+                    <li>Attend a one-on-one training session (about 45–60 minutes).</li>
+                    <li>Complete a short survey (5–10 minutes) at the end of the training session.</li>
+                    <li>Receive a follow-up survey about one month later (5–10 minutes).</li>
+                </ul>
+                <p style="margin-bottom: 1rem;">Your total participation time will be about 55–70 minutes.</p>
+
+                <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">Are there any possible risks to being in this study?</h4>
+                <p style="margin-bottom: 1rem;">If you agree to be in this study, there are no foreseeable risks to you, above those that you experience in your daily life.</p>
+
+                <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">Are there any possible benefits to being in this study?</h4>
+                <p style="margin-bottom: 1rem;">There is no direct benefit to you by participating in this study.</p>
+
+                <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">How will your study information be protected?</h4>
+                <p style="margin-bottom: 1rem;">Your name will not be linked in any way to the information you provide. Neither IP addresses nor any other identifiable information will be collected. The registered email will be collected during the one-on-one training in order to contact the participants with the post survey.</p>
+                <p style="margin-bottom: 1rem;">Data will be collected using the Internet; no guarantees can be made regarding the interception of data sent via the Internet by any third party. Confidentiality will be maintained to the degree permitted by the technology used.</p>
+                <p style="margin-bottom: 1rem;">Your information will be viewed by the study team and other people within Monmouth University who help administer and oversee research. If information from this study is published or presented at scientific meetings, your name and other identifiable information will not be used.</p>
+
+                <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">Important Contact Information</h4>
+                <p style="margin-bottom: 1rem;">Please contact Dr. Weihao Qu at 732-263-5396 or via e-mail at wqu@monmouth.edu if you have any questions about the study, or if you believe you have experienced harm or injury as a result of being in this study.</p>
+                <p style="margin-bottom: 1rem; font-size: 0.9rem;">If your participation in this research study has caused you to feel uncomfortable in any way, or if by participating in this research study it has prompted you to consider personal matters about which you are concerned, we encourage you to immediately stop participating in this research study and strongly encourage you to contact support services. If you are a Monmouth University student, you can contact Monmouth University's Counseling and Psychological Services (CPS) to schedule a confidential appointment to speak to a counselor at 732-571-7517. If you are a Monmouth University employee, you can contact Monmouth University's Employee Assistance Program (EAP) at their confidential intake number at 1-800-300-0628. If you are a member of the general public, you may contact your local community mental health center or the National Helpline of the Substance Abuse and Mental Health Services Administration (SAMHSA) at 1-800-662-HELP (4357) — a free, confidential, 24/7 resource for individuals seeking counseling or mental health support.</p>
+                <p style="margin-bottom: 1rem;">In addition, for any questions about your rights as a research participant, please contact the Monmouth University Institutional Review Board via e-mail at IRB@monmouth.edu.</p>
+
+                <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">Your participation is voluntary!</h4>
+                <p style="margin-bottom: 1rem;">Your participation in this study is voluntary. You may decide not to participate at all or, if you start the study, you may withdraw at any time without any penalty. Withdrawal or refusing to participate will not affect your relationship with Monmouth University in any way.</p>
+
+                <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--primary); padding: 1rem; border-radius: 0.5rem; margin: 1.5rem 0;">
+                    <p style="margin: 0; font-weight: 600;">If you click 'I ACCEPT' below, it means that you have (a) read this consent form, (b) you agree to be a participant in this study, and (c) you are over 18 years old.</p>
+                    <p style="margin: 0.5rem 0 0 0;">If you click 'I DO NOT ACCEPT', you will still go through the steps listed within the purpose of the study, but your data will not be used for research purposes.</p>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button onclick="handleConsent(false, ${nextStep})" style="flex: 1; padding: 1rem; background: linear-gradient(135deg, #EF4444, #DC2626); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); transition: all 0.3s;">
+                    I DO NOT ACCEPT
+                </button>
+                <button onclick="handleConsent(true, ${nextStep})" style="flex: 1; padding: 1rem; background: linear-gradient(135deg, #10B981, #059669); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: all 0.3s;">
+                    I ACCEPT
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+}
+
+function handleConsent(accepted, nextStep) {
+    consentGiven = accepted;
+
+    // Remove the consent modal
+    const modal = document.getElementById('consentModal');
+    if (modal) {
+        modal.remove();
+    }
+
+    // Show notification
+    if (accepted) {
+        showNotification('Thank you for your consent. Your participation helps improve AI training.', 'success');
+    } else {
+        showNotification('You may continue with the booking. Your data will not be used for research.', 'info');
+    }
+
+    // Continue to next step
+    goToStep(nextStep, true);
+}
+
 // Step Navigation
+// Track consent status
+let consentGiven = null; // null = not asked yet, true = accepted, false = declined
+
 function goToStep(stepNumber, skipValidation = false) {
     // Validate before moving forward (unless skipped for restoration)
     if (!skipValidation && stepNumber > currentStep && !validateCurrentStep()) {
+        return;
+    }
+
+    // Show consent modal when moving from step 1 to step 2 (after personal info, before questions)
+    if (currentStep === 1 && stepNumber === 2 && consentGiven === null) {
+        showConsentModal(stepNumber);
         return;
     }
 
@@ -430,6 +540,8 @@ async function confirmBooking() {
         selected_room: fullLocation,
         selected_building: building,
         room_number: roomNumber,
+        // Research consent status
+        research_consent: consentGiven, // true = consented, false = declined, null = not asked
         // Questionnaire data
         ai_familiarity: document.querySelector('input[name="ai_familiarity"]:checked')?.value,
         ai_tools: aiTools.join(', '),
