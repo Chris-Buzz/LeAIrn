@@ -1098,6 +1098,38 @@ def create_manual_overview():
         print(f"Error creating manual overview: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@app.route('/api/session-overviews/preview', methods=['POST'])
+@login_required
+def preview_session_overview():
+    """Preview AI-enhanced session notes before completing"""
+    try:
+        data = request.json
+        notes = data.get('notes', '').strip()
+        user_name = data.get('user_name', '')
+        user_role = data.get('user_role', '')
+        skip_ai = data.get('skip_ai', False)
+
+        if not notes:
+            return jsonify({'success': False, 'message': 'Notes are required'}), 400
+
+        if skip_ai:
+            enhanced_notes = notes
+        else:
+            user_data = {
+                'full_name': user_name,
+                'role': user_role
+            }
+            enhanced_notes = enhance_session_notes_with_ai(notes, user_data)
+
+        return jsonify({
+            'success': True,
+            'enhanced_notes': enhanced_notes
+        })
+
+    except Exception as e:
+        print(f"Error previewing session overview: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/api/export/csv', methods=['GET'])
 @login_required
 def export_csv():
