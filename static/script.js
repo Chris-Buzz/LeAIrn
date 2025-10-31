@@ -158,10 +158,10 @@ function showConsentModal(nextStep) {
 
     modal.innerHTML = `
         <div style="background: var(--surface); border-radius: 1rem; max-width: 800px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 2.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
-            <h2 style="margin-bottom: 1rem; color: var(--primary); font-size: 1.5rem; text-align: center;">INFORMED CONSENT FOR RESEARCH PARTICIPATION</h2>
-            <h3 style="margin-bottom: 1.5rem; color: var(--text-primary); font-size: 1.1rem; text-align: center;">Improving Efficiency in Higher Education through Customized AI Training</h3>
+            <h2 style="margin-bottom: 0.75rem; color: var(--primary); font-size: 1.2rem; text-align: center;">INFORMED CONSENT FOR RESEARCH PARTICIPATION</h2>
+            <h3 style="margin-bottom: 1rem; color: var(--text-primary); font-size: 0.95rem; text-align: center;">Improving Efficiency in Higher Education through Customized AI Training</h3>
 
-            <div style="color: var(--text-primary); line-height: 1.7; font-size: 0.95rem;">
+            <div style="color: var(--text-primary); line-height: 1.5; font-size: 0.8rem;">
                 <p style="margin-bottom: 1rem;"><strong>Principal Investigator:</strong> Weihao Qu, Phone: 732-263-5396, Email: wqu@monmouth.edu</p>
                 <p style="margin-bottom: 1.5rem;"><strong>Co-Investigator:</strong> Ling Zheng, Phone: 732-571-4459, Email: lzheng@monmouth.edu</p>
 
@@ -193,7 +193,7 @@ function showConsentModal(nextStep) {
 
                 <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">Important Contact Information</h4>
                 <p style="margin-bottom: 1rem;">Please contact Dr. Weihao Qu at 732-263-5396 or via e-mail at wqu@monmouth.edu if you have any questions about the study, or if you believe you have experienced harm or injury as a result of being in this study.</p>
-                <p style="margin-bottom: 1rem; font-size: 0.9rem;">If your participation in this research study has caused you to feel uncomfortable in any way, or if by participating in this research study it has prompted you to consider personal matters about which you are concerned, we encourage you to immediately stop participating in this research study and strongly encourage you to contact support services. If you are a Monmouth University student, you can contact Monmouth University's Counseling and Psychological Services (CPS) to schedule a confidential appointment to speak to a counselor at 732-571-7517. If you are a Monmouth University employee, you can contact Monmouth University's Employee Assistance Program (EAP) at their confidential intake number at 1-800-300-0628. If you are a member of the general public, you may contact your local community mental health center or the National Helpline of the Substance Abuse and Mental Health Services Administration (SAMHSA) at 1-800-662-HELP (4357) — a free, confidential, 24/7 resource for individuals seeking counseling or mental health support.</p>
+                <p style="margin-bottom: 1rem; font-size: 0.75rem;">If your participation in this research study has caused you to feel uncomfortable in any way, or if by participating in this research study it has prompted you to consider personal matters about which you are concerned, we encourage you to immediately stop participating in this research study and strongly encourage you to contact support services. If you are a Monmouth University student, you can contact Monmouth University's Counseling and Psychological Services (CPS) to schedule a confidential appointment to speak to a counselor at 732-571-7517. If you are a Monmouth University employee, you can contact Monmouth University's Employee Assistance Program (EAP) at their confidential intake number at 1-800-300-0628. If you are a member of the general public, you may contact your local community mental health center or the National Helpline of the Substance Abuse and Mental Health Services Administration (SAMHSA) at 1-800-662-HELP (4357) — a free, confidential, 24/7 resource for individuals seeking counseling or mental health support.</p>
                 <p style="margin-bottom: 1rem;">In addition, for any questions about your rights as a research participant, please contact the Monmouth University Institutional Review Board via e-mail at IRB@monmouth.edu.</p>
 
                 <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">Your participation is voluntary!</h4>
