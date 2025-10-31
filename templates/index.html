@@ -103,15 +103,23 @@
                 <div class="step-label">Questions</div>
             </div>
             <div class="progress-line"></div>
-            <div class="progress-step" data-step="8">
+            <div class="progress-step" data-step="6">
                 <div class="step-circle">3</div>
                 <div class="step-label">Booking</div>
             </div>
             <div class="progress-line"></div>
-            <div class="progress-step" data-step="10">
+            <div class="progress-step" data-step="8">
                 <div class="step-circle">4</div>
                 <div class="step-label">Done</div>
             </div>
+        </div>
+
+        <!-- Detailed Progress Bar -->
+        <div id="detailedProgress" class="detailed-progress" style="display: none;">
+            <div class="detailed-progress-bar">
+                <div class="detailed-progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="detailed-progress-text" id="progressText">0% Complete</div>
         </div>
 
         <!-- Form Card -->
@@ -159,45 +167,58 @@
                 <button class="btn-primary" onclick="goToStep(2)">Continue to AI Experience</button>
             </div>
 
-            <!-- Step 2: Question 1 - AI Familiarity -->
+            <!-- Step 2: Question 1 - AI Experience & Familiarity -->
             <div id="step2" class="step">
-                <div class="question-progress">Question 1 of 6</div>
-                <h2>What's your current AI experience level?</h2>
-                <p class="step-description">This helps us tailor the session to your needs.</p>
+                <div class="question-progress">Question 1 of 4</div>
+                <h2>What's your AI experience level?</h2>
+                <p class="step-description">This helps us tailor the perfect session for you.</p>
 
                 <div class="question-group">
-                    <div class="radio-group">
-                        <label class="radio-option">
+                    <div class="radio-group-enhanced">
+                        <label class="radio-option-enhanced">
                             <input type="radio" name="ai_familiarity" value="new" required>
-                            <span>I'm completely new to AI
-                                <small class="option-hint">Never used AI or just heard about it</small>
-                            </span>
+                            <div class="option-content">
+                                <div class="option-icon">🌱</div>
+                                <div class="option-text">
+                                    <span class="option-title">Beginner</span>
+                                    <small class="option-hint">Never used AI or just getting started</small>
+                                </div>
+                            </div>
                         </label>
-                        <label class="radio-option">
+                        <label class="radio-option-enhanced">
                             <input type="radio" name="ai_familiarity" value="casual">
-                            <span>I've tried AI a few times
-                                <small class="option-hint">Used it occasionally for questions or basic tasks</small>
-                            </span>
+                            <div class="option-content">
+                                <div class="option-icon">🚀</div>
+                                <div class="option-text">
+                                    <span class="option-title">Learning</span>
+                                    <small class="option-hint">Tried it a few times, want to improve</small>
+                                </div>
+                            </div>
                         </label>
-                        <label class="radio-option">
-                            <input type="radio" name="ai_familiarity" value="basic">
-                            <span>I use AI sometimes
-                                <small class="option-hint">Use it for homework, writing, or casual help</small>
-                            </span>
-                        </label>
-                        <label class="radio-option">
+                        <label class="radio-option-enhanced">
                             <input type="radio" name="ai_familiarity" value="practical">
-                            <span>I use AI regularly
-                                <small class="option-hint">Part of my daily routine for work or school</small>
-                            </span>
+                            <div class="option-content">
+                                <div class="option-icon">⚡</div>
+                                <div class="option-text">
+                                    <span class="option-title">Regular User</span>
+                                    <small class="option-hint">Use AI regularly for work or school</small>
+                                </div>
+                            </div>
                         </label>
-                        <label class="radio-option">
+                        <label class="radio-option-enhanced">
                             <input type="radio" name="ai_familiarity" value="advanced">
-                            <span>I'm very experienced with AI
-                                <small class="option-hint">Use advanced features or build AI-powered projects</small>
-                            </span>
+                            <div class="option-content">
+                                <div class="option-icon">🎯</div>
+                                <div class="option-text">
+                                    <span class="option-title">Advanced</span>
+                                    <small class="option-hint">Very experienced, exploring advanced uses</small>
+                                </div>
+                            </div>
                         </label>
                     </div>
+
+                    <!-- Hidden fields to capture confidence level data -->
+                    <input type="hidden" name="confidence_level" id="confidence_level" value="3">
                 </div>
 
                 <div class="button-group">
@@ -206,73 +227,93 @@
                 </div>
             </div>
 
-            <!-- Step 3: Question 2 - AI Tools -->
+            <!-- Step 3: Question 2 - AI Tools (Enhanced Visual Design) -->
             <div id="step3" class="step">
-                <div class="question-progress">Question 2 of 6</div>
-                <h2>Which AI tools have you tried?</h2>
-                <p class="step-description">Select all that apply. It's okay if you haven't used any yet.</p>
+                <div class="question-progress">Question 2 of 4</div>
+                <h2>Which AI tools have you explored?</h2>
+                <p class="step-description">Select all that apply - no worries if you're just starting!</p>
 
                 <div class="question-group">
-                    <div class="checkbox-group">
-                        <label class="checkbox-option">
+                    <div class="checkbox-grid-enhanced">
+                        <label class="checkbox-card">
                             <input type="checkbox" name="ai_tools" value="chatgpt">
-                            <span>ChatGPT
-                                <small class="option-hint">ChatGPT, GPT-4, Custom GPTs</small>
-                            </span>
+                            <div class="card-content">
+                                <div class="card-icon">💬</div>
+                                <span class="card-title">ChatGPT</span>
+                                <small class="card-hint">OpenAI's assistant</small>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
-                            <input type="checkbox" name="ai_tools" value="gemini">
-                            <span>Google Gemini
-                                <small class="option-hint">Google's AI chatbot (formerly Bard)</small>
-                            </span>
-                        </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-card">
                             <input type="checkbox" name="ai_tools" value="claude">
-                            <span>Claude
-                                <small class="option-hint">Anthropic's AI assistant</small>
-                            </span>
+                            <div class="card-content">
+                                <div class="card-icon">🤖</div>
+                                <span class="card-title">Claude</span>
+                                <small class="card-hint">Anthropic's AI</small>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="ai_tools" value="gemini">
+                            <div class="card-content">
+                                <div class="card-icon">✨</div>
+                                <span class="card-title">Gemini</span>
+                                <small class="card-hint">Google's AI</small>
+                            </div>
+                        </label>
+                        <label class="checkbox-card">
                             <input type="checkbox" name="ai_tools" value="image_gen">
-                            <span>Image Generators
-                                <small class="option-hint">Midjourney, DALL·E, Stable Diffusion</small>
-                            </span>
+                            <div class="card-content">
+                                <div class="card-icon">🎨</div>
+                                <span class="card-title">Image AI</span>
+                                <small class="card-hint">DALL·E, Midjourney</small>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-card">
                             <input type="checkbox" name="ai_tools" value="coding">
-                            <span>Coding Assistants
-                                <small class="option-hint">GitHub Copilot, Cursor, Replit</small>
-                            </span>
+                            <div class="card-content">
+                                <div class="card-icon">💻</div>
+                                <span class="card-title">Code AI</span>
+                                <small class="card-hint">Copilot, Cursor</small>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-card">
                             <input type="checkbox" name="ai_tools" value="research">
-                            <span>Research & Search
-                                <small class="option-hint">Perplexity, Consensus, Elicit</small>
-                            </span>
+                            <div class="card-content">
+                                <div class="card-icon">🔍</div>
+                                <span class="card-title">Research</span>
+                                <small class="card-hint">Perplexity, Elicit</small>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-card">
                             <input type="checkbox" name="ai_tools" value="video">
-                            <span>Video & Audio
-                                <small class="option-hint">Runway, Descript, ElevenLabs</small>
-                            </span>
+                            <div class="card-content">
+                                <div class="card-icon">🎬</div>
+                                <span class="card-title">Video/Audio</span>
+                                <small class="card-hint">Runway, ElevenLabs</small>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-card">
                             <input type="checkbox" name="ai_tools" value="writing">
-                            <span>Writing Assistants
-                                <small class="option-hint">Grammarly, Jasper, Notion AI</small>
-                            </span>
+                            <div class="card-content">
+                                <div class="card-icon">✍️</div>
+                                <span class="card-title">Writing</span>
+                                <small class="card-hint">Grammarly, Notion AI</small>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-card">
                             <input type="checkbox" name="ai_tools" value="productivity">
-                            <span>Productivity Tools
-                                <small class="option-hint">Microsoft Copilot, Zapier AI</small>
-                            </span>
+                            <div class="card-content">
+                                <div class="card-icon">⚙️</div>
+                                <span class="card-title">Productivity</span>
+                                <small class="card-hint">MS Copilot, Zapier</small>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-card none-option">
                             <input type="checkbox" name="ai_tools" value="none">
-                            <span>None yet
-                                <small class="option-hint">I'm just getting started</small>
-                            </span>
+                            <div class="card-content">
+                                <div class="card-icon">🌟</div>
+                                <span class="card-title">None Yet</span>
+                                <small class="card-hint">Just starting out</small>
+                            </div>
                         </label>
                     </div>
                 </div>
@@ -283,63 +324,88 @@
                 </div>
             </div>
 
-            <!-- Step 4: Question 3 - Primary Use -->
+            <!-- Step 4: Question 3 - Primary Use (Streamlined) -->
             <div id="step4" class="step">
-                <div class="question-progress">Question 3 of 6</div>
-                <h2>What interests you most about AI?</h2>
-                <p class="step-description">Select all areas you'd like to explore.</p>
+                <div class="question-progress">Question 3 of 4</div>
+                <h2>What do you want to use AI for?</h2>
+                <p class="step-description">Select all that interest you - we'll cover what matters most to you.</p>
 
                 <div class="question-group">
-                    <div class="checkbox-group">
-                        <label class="checkbox-option">
+                    <div class="checkbox-group-enhanced">
+                        <label class="checkbox-option-large">
                             <input type="checkbox" name="primary_use" value="writing">
-                            <span>Writing & Content
-                                <small class="option-hint">Essays, emails, social media, creative writing</small>
-                            </span>
+                            <div class="option-content-large">
+                                <div class="option-icon-large">✍️</div>
+                                <div class="option-text-large">
+                                    <span class="option-title-large">Writing & Content</span>
+                                    <small class="option-hint">Essays, emails, creative writing</small>
+                                </div>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
-                            <input type="checkbox" name="primary_use" value="coding">
-                            <span>Coding & Programming
-                                <small class="option-hint">Writing code, debugging, learning to program</small>
-                            </span>
-                        </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-option-large">
                             <input type="checkbox" name="primary_use" value="research">
-                            <span>Research & Analysis
-                                <small class="option-hint">Finding information, summarizing articles</small>
-                            </span>
+                            <div class="option-content-large">
+                                <div class="option-icon-large">🔬</div>
+                                <div class="option-text-large">
+                                    <span class="option-title-large">Research & Analysis</span>
+                                    <small class="option-hint">Finding info, summarizing articles</small>
+                                </div>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-option-large">
+                            <input type="checkbox" name="primary_use" value="coding">
+                            <div class="option-content-large">
+                                <div class="option-icon-large">👨‍💻</div>
+                                <div class="option-text-large">
+                                    <span class="option-title-large">Coding & Development</span>
+                                    <small class="option-hint">Building apps, debugging code</small>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="checkbox-option-large">
                             <input type="checkbox" name="primary_use" value="creative">
-                            <span>Creative Projects
-                                <small class="option-hint">Images, videos, art, design ideas</small>
-                            </span>
+                            <div class="option-content-large">
+                                <div class="option-icon-large">🎨</div>
+                                <div class="option-text-large">
+                                    <span class="option-title-large">Creative Projects</span>
+                                    <small class="option-hint">Images, videos, art, design</small>
+                                </div>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-option-large">
                             <input type="checkbox" name="primary_use" value="productivity">
-                            <span>Productivity & Organization
-                                <small class="option-hint">Planning, scheduling, task management</small>
-                            </span>
+                            <div class="option-content-large">
+                                <div class="option-icon-large">📊</div>
+                                <div class="option-text-large">
+                                    <span class="option-title-large">Work & Productivity</span>
+                                    <small class="option-hint">Efficiency, task management</small>
+                                </div>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-option-large">
                             <input type="checkbox" name="primary_use" value="education">
-                            <span>School & Studying
-                                <small class="option-hint">Homework help, exam prep, learning concepts</small>
-                            </span>
+                            <div class="option-content-large">
+                                <div class="option-icon-large">📚</div>
+                                <div class="option-text-large">
+                                    <span class="option-title-large">School & Learning</span>
+                                    <small class="option-hint">Studying, homework, exam prep</small>
+                                </div>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
-                            <input type="checkbox" name="primary_use" value="business">
-                            <span>Work & Professional
-                                <small class="option-hint">Presentations, reports, business tasks</small>
-                            </span>
-                        </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-option-large">
                             <input type="checkbox" name="primary_use" value="not_sure">
-                            <span>Not sure yet
-                                <small class="option-hint">Want to explore different possibilities</small>
-                            </span>
+                            <div class="option-content-large">
+                                <div class="option-icon-large">🤔</div>
+                                <div class="option-text-large">
+                                    <span class="option-title-large">Exploring Options</span>
+                                    <small class="option-hint">Want to see what's possible</small>
+                                </div>
+                            </div>
                         </label>
                     </div>
+
+                    <!-- Hidden field for business (combined with productivity) -->
+                    <input type="hidden" name="business_hidden" value="">
                 </div>
 
                 <div class="button-group">
@@ -348,132 +414,76 @@
                 </div>
             </div>
 
-            <!-- Step 5: Question 4 - Learning Goal -->
+            <!-- Step 5: Question 4 - Goals & Comments Combined -->
             <div id="step5" class="step">
-                <div class="question-progress">Question 4 of 6</div>
-                <h2>What would you like to accomplish?</h2>
-                <p class="step-description">Select all that apply to your learning goals.</p>
+                <div class="question-progress">Question 4 of 4</div>
+                <h2>What are your goals for this session?</h2>
+                <p class="step-description">Select what you'd like to accomplish and share any specific interests.</p>
 
                 <div class="question-group">
-                    <div class="checkbox-group">
-                        <label class="checkbox-option">
+                    <div class="checkbox-group-compact">
+                        <label class="checkbox-option-compact">
                             <input type="checkbox" name="learning_goal" value="use_tools">
-                            <span>Get better at using AI
-                                <small class="option-hint">Learn tips and tricks for better results</small>
-                            </span>
+                            <div class="compact-content">
+                                <span class="compact-icon">🎯</span>
+                                <span class="compact-text">Learn to use AI better</span>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-option-compact">
                             <input type="checkbox" name="learning_goal" value="understand">
-                            <span>Understand how AI works
-                                <small class="option-hint">Learn what AI can and can't do</small>
-                            </span>
+                            <div class="compact-content">
+                                <span class="compact-icon">🧠</span>
+                                <span class="compact-text">Understand how AI works</span>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-option-compact">
                             <input type="checkbox" name="learning_goal" value="build">
-                            <span>Build my own AI projects
-                                <small class="option-hint">Create custom AI-powered tools</small>
-                            </span>
+                            <div class="compact-content">
+                                <span class="compact-icon">🔨</span>
+                                <span class="compact-text">Build AI projects</span>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
-                            <input type="checkbox" name="learning_goal" value="integrate">
-                            <span>Add AI to my projects
-                                <small class="option-hint">Connect AI to apps or websites</small>
-                            </span>
-                        </label>
-                        <label class="checkbox-option">
-                            <input type="checkbox" name="learning_goal" value="career">
-                            <span>Build career skills
-                                <small class="option-hint">Stay competitive in my field</small>
-                            </span>
-                        </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-option-compact">
                             <input type="checkbox" name="learning_goal" value="productivity">
-                            <span>Work more efficiently
-                                <small class="option-hint">Save time on everyday tasks</small>
-                            </span>
+                            <div class="compact-content">
+                                <span class="compact-icon">⚡</span>
+                                <span class="compact-text">Work more efficiently</span>
+                            </div>
                         </label>
-                        <label class="checkbox-option">
+                        <label class="checkbox-option-compact">
+                            <input type="checkbox" name="learning_goal" value="career">
+                            <div class="compact-content">
+                                <span class="compact-icon">💼</span>
+                                <span class="compact-text">Build career skills</span>
+                            </div>
+                        </label>
+                        <label class="checkbox-option-compact">
                             <input type="checkbox" name="learning_goal" value="explore">
-                            <span>Just curious to learn
-                                <small class="option-hint">Explore and see what's possible</small>
-                            </span>
+                            <div class="compact-content">
+                                <span class="compact-icon">🌟</span>
+                                <span class="compact-text">Just exploring & curious</span>
+                            </div>
                         </label>
+                    </div>
+
+                    <!-- Hidden fields for removed questions -->
+                    <input type="hidden" name="integrate_hidden" value="">
+
+                    <div class="form-group" style="margin-top: 2rem;">
+                        <label for="personal_comments" style="font-weight: 600; font-size: 1.1rem; color: var(--text-primary);">Anything specific you'd like to focus on?</label>
+                        <textarea id="personal_comments" rows="4" placeholder="Optional: Share any specific topics, questions, or projects you want help with...&#10;&#10;For example: 'I want to learn prompt engineering' or 'I'm building an app and need AI integration help'"></textarea>
+                        <small class="form-hint">This helps me prepare the perfect session for you</small>
                     </div>
                 </div>
 
                 <div class="button-group">
                     <button class="btn-secondary" onclick="goToStep(4)">Back</button>
-                    <button class="btn-primary" onclick="goToStep(6)">Next Question</button>
+                    <button class="btn-primary" onclick="goToStep(6)">Continue to Time Selection</button>
                 </div>
             </div>
 
-            <!-- Step 6: Question 5 - Confidence Level -->
+            <!-- Step 6: Time Selection -->
             <div id="step6" class="step">
-                <div class="question-progress">Question 5 of 6</div>
-                <h2>How comfortable are you using AI tools?</h2>
-                <p class="step-description">Be honest - this helps us personalize your session.</p>
-
-                <div class="question-group">
-                    <div class="radio-group">
-                        <label class="radio-option">
-                            <input type="radio" name="confidence_level" value="1" required>
-                            <span>Not confident
-                                <small class="option-hint">Haven't used it or feel unsure</small>
-                            </span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="confidence_level" value="2">
-                            <span>A little comfortable
-                                <small class="option-hint">Tried it but struggle with results</small>
-                            </span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="confidence_level" value="3">
-                            <span>Somewhat comfortable
-                                <small class="option-hint">Can use basics, want to improve</small>
-                            </span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="confidence_level" value="4">
-                            <span>Very comfortable
-                                <small class="option-hint">Use it regularly with good results</small>
-                            </span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="confidence_level" value="5">
-                            <span>Expert level
-                                <small class="option-hint">Could teach others how to use AI</small>
-                            </span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="button-group">
-                    <button class="btn-secondary" onclick="goToStep(5)">Back</button>
-                    <button class="btn-primary" onclick="goToStep(7)">Next Question</button>
-                </div>
-            </div>
-
-            <!-- Step 7: Personal Comments -->
-            <div id="step7" class="step">
-                <div class="question-progress">Question 6 of 6</div>
-                <h2>Anything else you'd like to share?</h2>
-                <p class="step-description">Tell me about specific topics, questions, or goals you have in mind (optional).</p>
-
-                <div class="form-group">
-                    <label for="personal_comments">Your Comments (Optional)</label>
-                    <textarea id="personal_comments" rows="6" placeholder="For example:&#10;- I want to learn how to write better prompts&#10;- I'm working on a project and need help with...&#10;- I'm confused about how AI can help with...&#10;- I want to understand the differences between..."></textarea>
-                    <small class="form-hint">This helps me prepare a more personalized session for you</small>
-                </div>
-
-                <div class="button-group">
-                    <button class="btn-secondary" onclick="goToStep(6)">Back</button>
-                    <button class="btn-primary" onclick="goToStep(8)">Continue to Time Selection</button>
-                </div>
-            </div>
-
-            <!-- Step 8: Time Selection -->
-            <div id="step8" class="step">
                 <h2>Choose Your Preferred Time</h2>
                 <p class="step-description">Select a time slot that works best for you. Each session is 30 minutes.</p>
 
@@ -487,13 +497,13 @@
                 <input type="hidden" id="selected_slot">
 
                 <div class="button-group">
-                    <button class="btn-secondary" onclick="goToStep(7)">Back</button>
-                    <button id="continueToLocation" class="btn-primary" onclick="goToStep(9)" disabled>Continue to Location</button>
+                    <button class="btn-secondary" onclick="goToStep(5)">Back</button>
+                    <button id="continueToLocation" class="btn-primary" onclick="goToStep(7)" disabled>Continue to Location</button>
                 </div>
             </div>
 
-            <!-- Step 9: Location -->
-            <div id="step9" class="step">
+            <!-- Step 7: Location -->
+            <div id="step7" class="step">
                 <h2>Where Should We Meet?</h2>
                 <p class="step-description">Select a Monmouth University building and specify the room number or office.</p>
 
@@ -521,7 +531,7 @@
                 </div>
 
                 <div class="button-group">
-                    <button class="btn-secondary" onclick="goToStep(8)">Back</button>
+                    <button class="btn-secondary" onclick="goToStep(6)">Back</button>
                     <button class="btn-primary" onclick="confirmBooking()">
                         <span class="btn-text">Confirm Booking</span>
                         <span class="btn-spinner hidden"></span>
@@ -529,8 +539,8 @@
                 </div>
             </div>
 
-            <!-- Step 10: Success -->
-            <div id="step10" class="step">
+            <!-- Step 8: Success -->
+            <div id="step8" class="step">
                 <div class="success-container">
                     <div class="success-icon">
                         <svg viewBox="0 0 52 52">

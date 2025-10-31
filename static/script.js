@@ -49,7 +49,52 @@ document.addEventListener('DOMContentLoaded', () => {
         emailField.addEventListener('blur', checkEmailMatch);
         emailConfirmField.addEventListener('blur', checkEmailMatch);
     }
+
+    // Enhanced Question Interactions
+    setupEnhancedQuestionHandlers();
 });
+
+// Setup handlers for enhanced question interactions
+function setupEnhancedQuestionHandlers() {
+    // Auto-set confidence level based on AI familiarity selection
+    const familiarityRadios = document.querySelectorAll('input[name="ai_familiarity"]');
+    const confidenceLevelHidden = document.getElementById('confidence_level');
+
+    if (familiarityRadios.length > 0 && confidenceLevelHidden) {
+        familiarityRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                // Map familiarity to confidence level
+                const confidenceMap = {
+                    'new': '1',
+                    'casual': '2',
+                    'practical': '4',
+                    'advanced': '5'
+                };
+                confidenceLevelHidden.value = confidenceMap[this.value] || '3';
+            });
+        });
+    }
+
+    // Handle "None yet" checkbox for AI tools - uncheck all others
+    const noneCheckbox = document.querySelector('input[name="ai_tools"][value="none"]');
+    const toolCheckboxes = document.querySelectorAll('input[name="ai_tools"]:not([value="none"])');
+
+    if (noneCheckbox && toolCheckboxes.length > 0) {
+        noneCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                toolCheckboxes.forEach(cb => cb.checked = false);
+            }
+        });
+
+        toolCheckboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                if (this.checked) {
+                    noneCheckbox.checked = false;
+                }
+            });
+        });
+    }
+}
 
 // Welcome Modal Functions
 function showWelcomeModal() {
@@ -264,11 +309,14 @@ function goToStep(stepNumber, skipValidation = false) {
     // Update progress bar
     updateProgressBar(stepNumber);
 
+    // Update detailed progress percentage
+    updateDetailedProgress(stepNumber);
+
     // Save current step
     currentStep = stepNumber;
 
-    // Load time slots when entering step 8
-    if (stepNumber === 8) {
+    // Load time slots when entering step 6 (was step 8, now step 6)
+    if (stepNumber === 6) {
         loadTimeSlots();
     }
 
@@ -294,12 +342,12 @@ function updateProgressBar(activeStep) {
     steps.forEach((step, index) => {
         step.classList.remove('active', 'completed');
 
-        // Determine which section we're in
+        // Determine which section we're in (updated for 4 questions instead of 6)
         let sectionIndex = 0;
         if (activeStep === 1) sectionIndex = 0; // Info
-        else if (activeStep >= 2 && activeStep <= 7) sectionIndex = 1; // Questions (now includes 6 questions + comments)
-        else if (activeStep === 8 || activeStep === 9) sectionIndex = 2; // Time/Location
-        else if (activeStep === 10) sectionIndex = 3; // Done
+        else if (activeStep >= 2 && activeStep <= 5) sectionIndex = 1; // Questions (now 4 questions)
+        else if (activeStep === 6 || activeStep === 7) sectionIndex = 2; // Time/Location
+        else if (activeStep === 8) sectionIndex = 3; // Done
 
         if (index === sectionIndex) {
             step.classList.add('active');
@@ -307,6 +355,27 @@ function updateProgressBar(activeStep) {
             step.classList.add('completed');
         }
     });
+}
+
+// New function to update detailed progress percentage
+function updateDetailedProgress(activeStep) {
+    const progressBar = document.getElementById('detailedProgress');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+
+    // Show progress bar only during question steps (2-5)
+    if (activeStep >= 2 && activeStep <= 5) {
+        progressBar.style.display = 'block';
+
+        // Calculate percentage (4 questions total)
+        const questionNumber = activeStep - 1; // 2->1, 3->2, 4->3, 5->4
+        const percentage = (questionNumber / 4) * 100;
+
+        progressFill.style.width = percentage + '%';
+        progressText.textContent = Math.round(percentage) + '% Complete';
+    } else {
+        progressBar.style.display = 'none';
+    }
 }
 
 function validateCurrentStep() {
