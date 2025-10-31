@@ -1225,8 +1225,11 @@
                         <button onclick="this.parentElement.parentElement.parentElement.remove()" style="flex: 1; padding: 0.875rem; background: var(--bg); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; color: var(--text-primary);">
                             Cancel
                         </button>
+                        <button onclick="previewSessionOverview(${index}, this.parentElement.parentElement.parentElement)" id="previewBtn" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                            Preview & Edit
+                        </button>
                         <button onclick="submitSessionComplete(${index}, this.parentElement.parentElement.parentElement)" id="submitCompleteBtn" style="flex: 1; padding: 0.875rem; background: linear-gradient(135deg, #10B981, #059669); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
-                            Complete Session
+                            Complete Without Preview
                         </button>
                     </div>
                 </div>
@@ -1244,6 +1247,197 @@
                     textElement.textContent = 'Session notes will be enhanced with AI and emailed to student';
                 }
             });
+        }
+
+        async function previewSessionOverview(index, modal) {
+            const user = allUsers[index];
+            const notes = document.getElementById('sessionNotes').value.trim();
+            const skipAI = document.getElementById('skipAI').checked;
+            const previewBtn = document.getElementById('previewBtn');
+
+            if (!notes && !skipAI) {
+                alert('Please enter session notes to preview');
+                return;
+            }
+
+            // Disable button
+            previewBtn.disabled = true;
+            previewBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem;"><span class="spinner" style="border-width: 2px; width: 16px; height: 16px;"></span>Generating...</span>';
+
+            try {
+                const response = await fetch('/api/session-overviews/preview', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        notes: notes,
+                        user_name: user.full_name,
+                        user_role: user.role,
+                        skip_ai: skipAI
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    // Show preview modal
+                    showPreviewModal(index, modal, notes, result.enhanced_notes, skipAI);
+                } else {
+                    alert('Error: ' + (result.message || 'Failed to generate preview'));
+                }
+            } catch (error) {
+                console.error('Error generating preview:', error);
+                alert('Failed to generate preview: ' + error.message);
+            } finally {
+                previewBtn.disabled = false;
+                previewBtn.textContent = 'Preview & Edit';
+            }
+        }
+
+        function showPreviewModal(index, originalModal, rawNotes, enhancedNotes, skipAI) {
+            const user = allUsers[index];
+
+            const previewModal = document.createElement('div');
+            previewModal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10001;
+                padding: 1rem;
+            `;
+
+            previewModal.innerHTML = `
+                <div style="background: var(--surface); border-radius: 1rem; max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 2rem;">
+                    <h2 style="margin-bottom: 0.5rem; color: var(--text-primary);">Preview: ${user.full_name}'s Session Overview</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">${skipAI ? 'Review your raw notes before sending' : 'Review and edit the AI-enhanced overview before sending'}</p>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">${skipAI ? 'Your Notes' : 'AI-Enhanced Overview'}</label>
+                        <textarea id="editableOverview" style="width: 100%; min-height: 300px; padding: 1rem; border: 2px solid var(--border); border-radius: 0.75rem; font-family: inherit; font-size: 0.95rem; resize: vertical; background: var(--bg); color: var(--text-primary); line-height: 1.6;">${enhancedNotes}</textarea>
+                        <small style="display: block; margin-top: 0.5rem; color: var(--text-tertiary);">You can edit the text above before sending</small>
+                    </div>
+
+                    ${!skipAI ? `
+                    <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg); border-radius: 0.75rem; border: 1px solid var(--border);">
+                        <strong style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Original Notes:</strong>
+                        <p style="color: var(--text-secondary); margin: 0; white-space: pre-wrap; font-size: 0.9rem;">${rawNotes}</p>
+                    </div>
+                    ` : ''}
+
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" style="flex: 1; min-width: 120px; padding: 0.875rem; background: var(--bg); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; color: var(--text-primary);">
+                            Back to Edit
+                        </button>
+                        ${!skipAI ? `
+                        <button onclick="regenerateOverview(${index}, '${rawNotes.replace(/'/g, "\\'")}', this.parentElement.parentElement.parentElement)" style="flex: 1; min-width: 120px; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                            Regenerate
+                        </button>
+                        ` : ''}
+                        <button onclick="submitWithEditedOverview(${index}, this.parentElement.parentElement.parentElement)" id="submitEditedBtn" style="flex: 1; min-width: 120px; padding: 0.875rem; background: linear-gradient(135deg, #10B981, #059669); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                            Send & Complete
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(previewModal);
+            document.getElementById('editableOverview').focus();
+
+            // Store reference to original modal
+            previewModal.originalModal = originalModal;
+        }
+
+        async function regenerateOverview(index, rawNotes, previewModal) {
+            const user = allUsers[index];
+            const btn = event.target;
+            const originalText = btn.textContent;
+
+            btn.disabled = true;
+            btn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem;"><span class="spinner" style="border-width: 2px; width: 16px; height: 16px;"></span>Regenerating...</span>';
+
+            try {
+                const response = await fetch('/api/session-overviews/preview', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        notes: rawNotes,
+                        user_name: user.full_name,
+                        user_role: user.role,
+                        skip_ai: false
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    document.getElementById('editableOverview').value = result.enhanced_notes;
+                    alert('Overview regenerated! Review the new version above.');
+                } else {
+                    alert('Error: ' + (result.message || 'Failed to regenerate'));
+                }
+            } catch (error) {
+                console.error('Error regenerating:', error);
+                alert('Failed to regenerate: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function submitWithEditedOverview(index, previewModal) {
+            const user = allUsers[index];
+            const editedNotes = document.getElementById('editableOverview').value.trim();
+            const submitBtn = document.getElementById('submitEditedBtn');
+
+            if (!editedNotes) {
+                alert('Overview cannot be empty');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem;"><span class="spinner" style="border-width: 2px; width: 16px; height: 16px;"></span>Completing...</span>';
+
+            try {
+                const response = await fetch(`/api/booking/${user.id}/complete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        notes: editedNotes,
+                        skip_ai: true  // Already processed, send as-is
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    previewModal.remove();
+                    if (previewModal.originalModal) {
+                        previewModal.originalModal.remove();
+                    }
+                    alert(`Session completed!\\n\\n✓ Session overview sent to student\\n✓ Feedback request sent\\n✓ Booking removed`);
+                    loadUsers();
+                } else {
+                    alert('Error: ' + (result.message || 'Failed to complete'));
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Send & Complete';
+                }
+            } catch (error) {
+                console.error('Error completing:', error);
+                alert('Failed to complete: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send & Complete';
+            }
         }
 
         async function submitSessionComplete(index, modal) {
