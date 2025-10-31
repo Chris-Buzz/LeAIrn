@@ -791,51 +791,62 @@ async function verifyCode() {
 
         const result = await response.json();
 
-        if (response.ok && result.success && result.booking) {
-            const booking = result.booking;
-            const slotDetails = booking.slot_details || {};
+        if (response.ok && result.success && result.bookings) {
+            const bookings = result.bookings;
 
             showNotification('Verification successful!', 'success');
 
+            // Display all bookings
+            const bookingsHTML = bookings.map((booking, index) => {
+                const slotDetails = booking.slot_details || {};
+                return `
+                    <div style="background: var(--bg); border: 2px solid var(--primary); border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem;">
+                        <h3 style="margin-bottom: 1rem; color: var(--primary);">Booking ${bookings.length > 1 ? `#${index + 1}` : ''}</h3>
+
+                        <div style="display: grid; gap: 0.75rem;">
+                            <div>
+                                <strong style="color: var(--text-secondary);">Name:</strong>
+                                <div>${booking.full_name}</div>
+                            </div>
+
+                            <div>
+                                <strong style="color: var(--text-secondary);">Date & Time:</strong>
+                                <div>${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}</div>
+                            </div>
+
+                            <div>
+                                <strong style="color: var(--text-secondary);">Location:</strong>
+                                <div>${booking.selected_room || 'Not specified'}</div>
+                            </div>
+
+                            <div>
+                                <strong style="color: var(--text-secondary);">Status:</strong>
+                                <div style="color: var(--success); font-weight: 600;">✓ Confirmed</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 0.9rem;">
+                            <p>A confirmation email was sent to <strong>${booking.email}</strong></p>
+                        </div>
+
+                        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 0.75rem;">
+                            <button onclick="showEditBookingForm('${verificationEmail}', '${booking.id}')" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                Edit Booking
+                            </button>
+                            <button onclick="confirmDeleteSpecificBooking('${booking.id}', '${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}')" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                Delete Booking
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
             resultDiv.innerHTML = `
-                <div style="background: var(--bg); border: 2px solid var(--primary); border-radius: 1rem; padding: 1.5rem;">
-                    <h3 style="margin-bottom: 1rem; color: var(--primary);">Your Booking Details</h3>
-
-                    <div style="display: grid; gap: 0.75rem;">
-                        <div>
-                            <strong style="color: var(--text-secondary);">Name:</strong>
-                            <div>${booking.full_name}</div>
-                        </div>
-
-                        <div>
-                            <strong style="color: var(--text-secondary);">Date & Time:</strong>
-                            <div>${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}</div>
-                        </div>
-
-                        <div>
-                            <strong style="color: var(--text-secondary);">Location:</strong>
-                            <div>${booking.selected_room || 'Not specified'}</div>
-                        </div>
-
-                        <div>
-                            <strong style="color: var(--text-secondary);">Status:</strong>
-                            <div style="color: var(--success); font-weight: 600;">✓ Confirmed</div>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 0.9rem;">
-                        <p>A confirmation email was sent to <strong>${booking.email}</strong></p>
-                    </div>
-
-                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 0.75rem;">
-                        <button onclick="showEditBookingForm('${verificationEmail}', ${JSON.stringify(booking).replace(/"/g, '&quot;')})" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
-                            Edit Booking
-                        </button>
-                        <button onclick="confirmDeleteBooking('${verificationEmail}')" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
-                            Delete Booking
-                        </button>
-                    </div>
+                <div style="margin-bottom: 1rem;">
+                    <h3 style="color: var(--text-primary);">Your Booking${bookings.length > 1 ? 's' : ''}</h3>
+                    ${bookings.length > 1 ? `<p style="color: var(--text-secondary); font-size: 0.9rem;">You have ${bookings.length} upcoming sessions</p>` : ''}
                 </div>
+                ${bookingsHTML}
             `;
         } else {
             showNotification(result.message || 'Invalid verification code', 'error');
@@ -1086,6 +1097,87 @@ async function deleteBookingByEmail(email, confirmModal) {
         deleteBtn.disabled = false;
         deleteBtn.innerHTML = originalBtnText;
     }
+}
+
+// Delete a specific booking by ID
+function confirmDeleteSpecificBooking(bookingId, bookingDetails) {
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 11000;
+        animation: fadeIn 0.3s ease;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: var(--surface); border-radius: 1rem; max-width: 500px; width: 90%; padding: 2rem; box-shadow: var(--shadow-lg); position: relative;">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--error)" stroke-width="2" style="margin: 0 auto 1rem;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                <h2 style="color: var(--text-primary); margin-bottom: 0.5rem;">Delete This Booking?</h2>
+                <p style="color: var(--text-secondary); font-size: 0.95rem;">Are you sure you want to delete the booking for ${bookingDetails}?</p>
+            </div>
+
+            <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--error); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
+                <p style="color: var(--text-primary); font-size: 0.9rem; margin: 0;">This action cannot be undone. The time slot will become available for others to book.</p>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem;">
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="flex: 1; padding: 0.875rem; background: var(--bg); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; color: var(--text-primary); font-size: 1rem;">
+                    Cancel
+                </button>
+                <button id="confirmDeleteBtn" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                    Delete Booking
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Handle delete confirmation
+    const deleteBtn = document.getElementById('confirmDeleteBtn');
+    deleteBtn.onclick = async () => {
+        const originalBtnText = deleteBtn.innerHTML;
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem;"><span class="spinner" style="border-width: 2px; width: 16px; height: 16px;"></span>Deleting...</span>';
+
+        try {
+            const response = await fetch(`/api/booking/${bookingId}`, {
+                method: 'DELETE'
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                modal.remove();
+                showNotification('Booking deleted successfully', 'success');
+
+                // Reload the bookings to show updated list
+                verifyBookingCode();
+            } else {
+                showNotification('Error: ' + (result.message || 'Failed to delete booking'), 'error');
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalBtnText;
+            }
+        } catch (error) {
+            console.error('Error deleting booking:', error);
+            showNotification('Failed to delete booking. Please try again.', 'error');
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = originalBtnText;
+        }
+    };
 }
 
 // Show edit booking form
