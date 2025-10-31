@@ -157,47 +157,47 @@ function showConsentModal(nextStep) {
     `;
 
     modal.innerHTML = `
-        <div style="background: var(--surface); border-radius: 1rem; max-width: 800px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 2.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
-            <h2 style="margin-bottom: 0.75rem; color: var(--primary); font-size: 1.2rem; text-align: center;">INFORMED CONSENT FOR RESEARCH PARTICIPATION</h2>
-            <h3 style="margin-bottom: 1rem; color: var(--text-primary); font-size: 0.95rem; text-align: center;">Improving Efficiency in Higher Education through Customized AI Training</h3>
+        <div style="background: var(--surface); border-radius: 1rem; max-width: 800px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 2rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+            <h2 style="margin-bottom: 0.5rem; color: var(--primary); font-size: 1.1rem; text-align: center;">INFORMED CONSENT FOR RESEARCH PARTICIPATION</h2>
+            <h3 style="margin-bottom: 0.75rem; color: var(--text-primary); font-size: 0.85rem; text-align: center;">Improving Efficiency in Higher Education through Customized AI Training</h3>
 
-            <div style="color: var(--text-primary); line-height: 1.5; font-size: 0.8rem;">
-                <p style="margin-bottom: 1rem;"><strong>Principal Investigator:</strong> Weihao Qu, Phone: 732-263-5396, Email: wqu@monmouth.edu</p>
-                <p style="margin-bottom: 1.5rem;"><strong>Co-Investigator:</strong> Ling Zheng, Phone: 732-571-4459, Email: lzheng@monmouth.edu</p>
+            <div style="color: var(--text-primary); line-height: 1.4; font-size: 0.7rem;">
+                <p style="margin-bottom: 0.5rem;"><strong>Principal Investigator:</strong> Weihao Qu, Phone: 732-263-5396, Email: wqu@monmouth.edu</p>
+                <p style="margin-bottom: 0.75rem;"><strong>Co-Investigator:</strong> Ling Zheng, Phone: 732-571-4459, Email: lzheng@monmouth.edu</p>
 
-                <p style="margin-bottom: 1rem; font-weight: 600;">You are being asked to be a participant in a research study.</p>
+                <p style="margin-bottom: 0.75rem; font-weight: 600;">You are being asked to be a participant in a research study.</p>
 
-                <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">What is the purpose of this study?</h4>
-                <p style="margin-bottom: 1rem;">The purpose of this study is about how artificial intelligence (AI) tools can be used to improve efficiency in learning, studying, and working at a mid-sized college. The goal of this project is to design and test customized AI training workshops, one-on-one sessions, and online modules for students, staff, and faculty.</p>
+                <h4 style="color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;">What is the purpose of this study?</h4>
+                <p style="margin-bottom: 0.75rem;">The purpose of this study is about how artificial intelligence (AI) tools can be used to improve efficiency in learning, studying, and working at a mid-sized college. The goal of this project is to design and test customized AI training workshops, one-on-one sessions, and online modules for students, staff, and faculty.</p>
 
-                <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">What will you have to do, if you agree to be in the study?</h4>
-                <p style="margin-bottom: 0.5rem;">If you agree to be in this study, your part will involve:</p>
-                <ul style="margin: 0.5rem 0 1rem 1.5rem; list-style-type: disc;">
+                <h4 style="color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;">What will you have to do, if you agree to be in the study?</h4>
+                <p style="margin-bottom: 0.3rem;">If you agree to be in this study, your part will involve:</p>
+                <ul style="margin: 0.3rem 0 0.75rem 1.5rem; list-style-type: disc;">
                     <li>Finish an online pre-assessment on your own AI tool knowledge before the training session when you book the training.</li>
                     <li>Attend a one-on-one training session (about 45–60 minutes).</li>
                     <li>Complete a short survey (5–10 minutes) at the end of the training session.</li>
                     <li>Receive a follow-up survey about one month later (5–10 minutes).</li>
                 </ul>
-                <p style="margin-bottom: 1rem;">Your total participation time will be about 55–70 minutes.</p>
+                <p style="margin-bottom: 0.75rem;">Your total participation time will be about 55–70 minutes.</p>
 
-                <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">Are there any possible risks to being in this study?</h4>
-                <p style="margin-bottom: 1rem;">If you agree to be in this study, there are no foreseeable risks to you, above those that you experience in your daily life.</p>
+                <h4 style="color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;">Are there any possible risks to being in this study?</h4>
+                <p style="margin-bottom: 0.75rem;">If you agree to be in this study, there are no foreseeable risks to you, above those that you experience in your daily life.</p>
 
-                <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">Are there any possible benefits to being in this study?</h4>
-                <p style="margin-bottom: 1rem;">There is no direct benefit to you by participating in this study.</p>
+                <h4 style="color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;">Are there any possible benefits to being in this study?</h4>
+                <p style="margin-bottom: 0.75rem;">There is no direct benefit to you by participating in this study.</p>
 
-                <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">How will your study information be protected?</h4>
-                <p style="margin-bottom: 1rem;">Your name will not be linked in any way to the information you provide. Neither IP addresses nor any other identifiable information will be collected. The registered email will be collected during the one-on-one training in order to contact the participants with the post survey.</p>
-                <p style="margin-bottom: 1rem;">Data will be collected using the Internet; no guarantees can be made regarding the interception of data sent via the Internet by any third party. Confidentiality will be maintained to the degree permitted by the technology used.</p>
-                <p style="margin-bottom: 1rem;">Your information will be viewed by the study team and other people within Monmouth University who help administer and oversee research. If information from this study is published or presented at scientific meetings, your name and other identifiable information will not be used.</p>
+                <h4 style="color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;">How will your study information be protected?</h4>
+                <p style="margin-bottom: 0.5rem;">Your name will not be linked in any way to the information you provide. Neither IP addresses nor any other identifiable information will be collected. The registered email will be collected during the one-on-one training in order to contact the participants with the post survey.</p>
+                <p style="margin-bottom: 0.5rem;">Data will be collected using the Internet; no guarantees can be made regarding the interception of data sent via the Internet by any third party. Confidentiality will be maintained to the degree permitted by the technology used.</p>
+                <p style="margin-bottom: 0.75rem;">Your information will be viewed by the study team and other people within Monmouth University who help administer and oversee research. If information from this study is published or presented at scientific meetings, your name and other identifiable information will not be used.</p>
 
-                <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">Important Contact Information</h4>
-                <p style="margin-bottom: 1rem;">Please contact Dr. Weihao Qu at 732-263-5396 or via e-mail at wqu@monmouth.edu if you have any questions about the study, or if you believe you have experienced harm or injury as a result of being in this study.</p>
-                <p style="margin-bottom: 1rem; font-size: 0.75rem;">If your participation in this research study has caused you to feel uncomfortable in any way, or if by participating in this research study it has prompted you to consider personal matters about which you are concerned, we encourage you to immediately stop participating in this research study and strongly encourage you to contact support services. If you are a Monmouth University student, you can contact Monmouth University's Counseling and Psychological Services (CPS) to schedule a confidential appointment to speak to a counselor at 732-571-7517. If you are a Monmouth University employee, you can contact Monmouth University's Employee Assistance Program (EAP) at their confidential intake number at 1-800-300-0628. If you are a member of the general public, you may contact your local community mental health center or the National Helpline of the Substance Abuse and Mental Health Services Administration (SAMHSA) at 1-800-662-HELP (4357) — a free, confidential, 24/7 resource for individuals seeking counseling or mental health support.</p>
-                <p style="margin-bottom: 1rem;">In addition, for any questions about your rights as a research participant, please contact the Monmouth University Institutional Review Board via e-mail at IRB@monmouth.edu.</p>
+                <h4 style="color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;">Important Contact Information</h4>
+                <p style="margin-bottom: 0.5rem;">Please contact Dr. Weihao Qu at 732-263-5396 or via e-mail at wqu@monmouth.edu if you have any questions about the study, or if you believe you have experienced harm or injury as a result of being in this study.</p>
+                <p style="margin-bottom: 0.5rem; font-size: 0.65rem; color: var(--text-secondary);">If your participation in this research study has caused you to feel uncomfortable in any way, or if by participating in this research study it has prompted you to consider personal matters about which you are concerned, we encourage you to immediately stop participating in this research study and strongly encourage you to contact support services. If you are a Monmouth University student, you can contact Monmouth University's Counseling and Psychological Services (CPS) to schedule a confidential appointment to speak to a counselor at 732-571-7517. If you are a Monmouth University employee, you can contact Monmouth University's Employee Assistance Program (EAP) at their confidential intake number at 1-800-300-0628. If you are a member of the general public, you may contact your local community mental health center or the National Helpline of the Substance Abuse and Mental Health Services Administration (SAMHSA) at 1-800-662-HELP (4357) — a free, confidential, 24/7 resource for individuals seeking counseling or mental health support.</p>
+                <p style="margin-bottom: 0.75rem;">In addition, for any questions about your rights as a research participant, please contact the Monmouth University Institutional Review Board via e-mail at IRB@monmouth.edu.</p>
 
-                <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0;">Your participation is voluntary!</h4>
-                <p style="margin-bottom: 1rem;">Your participation in this study is voluntary. You may decide not to participate at all or, if you start the study, you may withdraw at any time without any penalty. Withdrawal or refusing to participate will not affect your relationship with Monmouth University in any way.</p>
+                <h4 style="color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;">Your participation is voluntary!</h4>
+                <p style="margin-bottom: 0.75rem;">Your participation in this study is voluntary. You may decide not to participate at all or, if you start the study, you may withdraw at any time without any penalty. Withdrawal or refusing to participate will not affect your relationship with Monmouth University in any way.</p>
 
                 <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--primary); padding: 1rem; border-radius: 0.5rem; margin: 1.5rem 0;">
                     <p style="margin: 0; font-weight: 600;">If you click 'I ACCEPT' below, it means that you have (a) read this consent form, (b) you agree to be a participant in this study, and (c) you are over 18 years old.</p>
