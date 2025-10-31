@@ -2402,6 +2402,9 @@
         });
 
         // Load session overviews
+        // Store overviews globally so we can access them by index
+        let allOverviews = [];
+
         async function loadSessionOverviews() {
             try {
                 const response = await fetch('/api/session-overviews');
@@ -2412,11 +2415,13 @@
 
                 if (overviews.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><p>No session overviews yet</p></td></tr>';
+                    allOverviews = [];
                     return;
                 }
 
                 // Sort by created date, newest first
                 overviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                allOverviews = overviews;
 
                 overviews.forEach((overview, index) => {
                     const row = document.createElement('tr');
@@ -2445,7 +2450,7 @@
                         <td style="white-space: nowrap;">${formattedCreated}</td>
                         <td>
                             <div style="display: flex; gap: 0.5rem;">
-                                <button onclick='showOverviewModal(${JSON.stringify(overview).replace(/'/g, "\\'")} )' style="padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.85rem;">
+                                <button onclick='showOverviewModalByIndex(${index})' style="padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.85rem;">
                                     View Full
                                 </button>
                                 <button onclick='deleteOverview("${overview.booking_id}", "${userName}")' style="padding: 0.5rem 1rem; background: #EF4444; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.85rem;">
@@ -2460,6 +2465,13 @@
                 console.error('Error loading session overviews:', error);
                 const tbody = document.getElementById('overviewsTable');
                 tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><p>Error loading overviews</p></td></tr>';
+            }
+        }
+
+        // Show overview modal by index
+        function showOverviewModalByIndex(index) {
+            if (allOverviews[index]) {
+                showOverviewModal(allOverviews[index]);
             }
         }
 
@@ -2595,6 +2607,14 @@
                         <textarea id="manualNotes" placeholder="What did you cover? What tools did you teach? What prompting techniques? What should they practice?..." style="width: 100%; min-height: 200px; padding: 1rem; border: 2px solid var(--border); border-radius: 0.75rem; font-family: inherit; font-size: 0.95rem; resize: vertical; background: var(--bg); color: var(--text-primary);"></textarea>
                     </div>
 
+                    <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 0.75rem; padding: 1rem; margin-bottom: 1rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
+                            <input type="checkbox" id="manualSkipAI" style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="color: var(--text-primary); font-weight: 500;">Send without AI enhancement (use raw notes as-is)</span>
+                        </label>
+                        <small style="display: block; margin-top: 0.5rem; margin-left: 1.75rem; color: var(--text-tertiary);" id="manualAiEnhanceText">Notes will be enhanced with AI for better formatting</small>
+                    </div>
+
                     <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 0.75rem; padding: 1rem; margin-bottom: 1.5rem;">
                         <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
                             <input type="checkbox" id="manualSendEmail" style="width: 18px; height: 18px; cursor: pointer;">
@@ -2616,6 +2636,16 @@
 
             document.body.appendChild(modal);
             document.getElementById('manualUserName').focus();
+
+            // Add event listener for AI checkbox toggle
+            document.getElementById('manualSkipAI').addEventListener('change', function() {
+                const textElement = document.getElementById('manualAiEnhanceText');
+                if (this.checked) {
+                    textElement.textContent = 'Raw notes will be saved as-is (no AI formatting)';
+                } else {
+                    textElement.textContent = 'Notes will be enhanced with AI for better formatting';
+                }
+            });
         }
 
         async function submitManualOverview(modal) {
@@ -2624,6 +2654,7 @@
             const sessionDate = document.getElementById('manualSessionDate').value.trim();
             const notes = document.getElementById('manualNotes').value.trim();
             const sendEmail = document.getElementById('manualSendEmail').checked;
+            const skipAI = document.getElementById('manualSkipAI').checked;
             const submitBtn = document.getElementById('submitManualBtn');
 
             // Validation
@@ -2655,7 +2686,8 @@
                         user_email: userEmail,
                         session_date: sessionDate || 'Not specified',
                         notes: notes,
-                        send_email: sendEmail
+                        send_email: sendEmail,
+                        skip_ai: skipAI
                     })
                 });
 
