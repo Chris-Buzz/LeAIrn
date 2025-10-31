@@ -1041,6 +1041,7 @@ def create_manual_overview():
         session_date = data.get('session_date', '').strip()
         notes = data.get('notes', '').strip()
         send_email = data.get('send_email', False)
+        skip_ai = data.get('skip_ai', False)
 
         # Validation
         if not user_name or not user_email or not notes:
@@ -1050,10 +1051,22 @@ def create_manual_overview():
         import uuid
         booking_id = f"manual_{uuid.uuid4().hex[:12]}"
 
+        # Enhance notes with AI if requested
+        enhanced_notes = notes
+        if not skip_ai:
+            print(f"Enhancing manual session notes with AI...")
+            user_data = {
+                'full_name': user_name,
+                'role': 'N/A'
+            }
+            enhanced_notes = enhance_session_notes_with_ai(notes, user_data)
+        else:
+            print(f"Skipping AI enhancement for manual overview")
+
         # Store session overview
         overview_data = {
             'notes': notes,
-            'enhanced_notes': notes,  # For manual entries, enhanced = raw
+            'enhanced_notes': enhanced_notes,
             'user_name': user_name,
             'user_email': user_email,
             'session_date': session_date or 'Not specified',
@@ -1071,7 +1084,7 @@ def create_manual_overview():
                 'full_name': user_name,
                 'email': user_email
             }
-            email_sent = send_session_overview_email(user_data, notes)
+            email_sent = send_session_overview_email(user_data, enhanced_notes)
             if not email_sent:
                 print(f"WARNING: Failed to send overview email")
 
