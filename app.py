@@ -857,6 +857,9 @@ def submit_data():
         # Add timestamp
         data['submission_date'] = datetime.now().isoformat()
 
+        # Store research consent status (true = consented, false = declined, null = not asked)
+        data['research_consent'] = data.get('research_consent', None)
+
         # Get all slots from Firestore
         slots = db.get_all_slots()
 
