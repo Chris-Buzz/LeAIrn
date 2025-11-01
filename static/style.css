@@ -2035,3 +2035,326 @@ textarea:hover {
         grid-template-columns: 1fr;
     }
 }
+
+/* ========================================
+   CLEAN QUESTIONNAIRE STYLES (NO EMOJIS)
+   ======================================== */
+
+/* Clean Radio Options with Numbered Badges */
+.radio-group-clean {
+    display: grid;
+    gap: 1rem;
+}
+
+.radio-option-clean {
+    position: relative;
+    cursor: pointer;
+    display: block;
+}
+
+.radio-option-clean input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.option-content-clean {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.5rem 1.75rem;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 0.875rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.option-badge {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+}
+
+.option-text-clean {
+    flex: 1;
+}
+
+.option-title-clean {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.35rem;
+}
+
+.option-hint-clean {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.radio-option-clean:hover .option-content-clean {
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+}
+
+.radio-option-clean:hover .option-badge {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.05);
+    color: var(--primary);
+}
+
+.radio-option-clean input[type="radio"]:checked + .option-content-clean {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(129, 140, 248, 0.06));
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+}
+
+.radio-option-clean input[type="radio"]:checked + .option-content-clean .option-badge {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    transform: scale(1.05);
+}
+
+/* Clean Checkbox Cards Grid (3 columns) */
+.checkbox-grid-clean {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.checkbox-card-clean {
+    position: relative;
+    cursor: pointer;
+    display: block;
+}
+
+.checkbox-card-clean input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.card-content-clean {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.75rem 1.25rem;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 0.875rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 110px;
+    justify-content: center;
+}
+
+.card-title-clean {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.4rem;
+}
+
+.card-hint-clean {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.3;
+}
+
+.checkbox-card-clean:hover .card-content-clean {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.15);
+}
+
+.checkbox-card-clean input[type="checkbox"]:checked + .card-content-clean {
+    border-color: var(--primary);
+    border-width: 3px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(129, 140, 248, 0.08));
+    box-shadow: 0 6px 24px rgba(99, 102, 241, 0.25);
+}
+
+.checkbox-card-clean.none-option input[type="checkbox"]:checked + .card-content-clean {
+    background: linear-gradient(135deg, rgba(107, 114, 128, 0.08), rgba(156, 163, 175, 0.08));
+    border-color: var(--text-secondary);
+}
+
+/* Two-Column Checkbox Layout */
+.checkbox-group-two-col {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.checkbox-option-two-col {
+    position: relative;
+    cursor: pointer;
+    display: block;
+}
+
+.checkbox-option-two-col input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.option-content-two-col {
+    padding: 1.5rem 1.75rem;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 0.875rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.option-title-two-col {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.35rem;
+}
+
+.option-hint-two-col {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.checkbox-option-two-col:hover .option-content-two-col {
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+}
+
+.checkbox-option-two-col input[type="checkbox"]:checked + .option-content-two-col {
+    border-color: var(--primary);
+    border-width: 3px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(129, 140, 248, 0.06));
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+}
+
+/* Goals Grid (3 columns, compact) */
+.checkbox-grid-goals {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.875rem;
+}
+
+.checkbox-card-goals {
+    position: relative;
+    cursor: pointer;
+    display: block;
+}
+
+.checkbox-card-goals input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.card-content-goals {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1.25rem 1rem;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 0.75rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 80px;
+}
+
+.card-title-goals {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+
+.checkbox-card-goals:hover .card-content-goals {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+}
+
+.checkbox-card-goals input[type="checkbox"]:checked + .card-content-goals {
+    border-color: var(--primary);
+    border-width: 3px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(129, 140, 248, 0.08));
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+}
+
+/* Mobile Responsiveness for Clean Styles */
+@media (max-width: 768px) {
+    .checkbox-grid-clean {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.875rem;
+    }
+
+    .card-content-clean {
+        padding: 1.5rem 1rem;
+        min-height: 100px;
+    }
+
+    .card-title-clean {
+        font-size: 0.95rem;
+    }
+
+    .checkbox-group-two-col {
+        grid-template-columns: 1fr;
+    }
+
+    .option-content-two-col {
+        padding: 1.25rem 1.5rem;
+    }
+
+    .checkbox-grid-goals {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .card-content-goals {
+        padding: 1rem 0.875rem;
+        min-height: 70px;
+    }
+
+    .card-title-goals {
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .checkbox-grid-clean {
+        grid-template-columns: 1fr;
+    }
+
+    .option-badge {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .option-title-clean {
+        font-size: 1.05rem;
+    }
+
+    .option-hint-clean {
+        font-size: 0.85rem;
+    }
+
+    .checkbox-grid-goals {
+        grid-template-columns: 1fr;
+    }
+}
