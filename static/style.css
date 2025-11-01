@@ -101,9 +101,19 @@ body {
     font-weight: 500;
 }
 
-.ai-badge {
+.ai-badge-link {
+    text-decoration: none;
     display: inline-block;
     margin-top: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.ai-badge-link:hover {
+    transform: scale(1.05);
+}
+
+.ai-badge {
+    display: inline-block;
     padding: 0.5rem 1rem;
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
     color: white;
@@ -113,6 +123,127 @@ body {
     letter-spacing: 0.05em;
     border-radius: 2rem;
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    transition: box-shadow 0.3s ease;
+}
+
+.ai-badge-link:hover .ai-badge {
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
+}
+
+/* Hand-drawn annotation - positioned top left */
+.hand-drawn-annotation {
+    position: absolute;
+    top: -80px;
+    left: -180px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.hand-drawn-arrow {
+    width: 200px;
+    height: 150px;
+    color: var(--primary);
+    opacity: 0.85;
+    position: absolute;
+    top: 50px;
+    left: 60px;
+}
+
+.speech-bubble-handwritten {
+    position: relative;
+    background: var(--surface);
+    border: 2.5px solid var(--primary);
+    border-radius: 25px 20px 30px 18px;
+    padding: 0.75rem 1rem;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--primary);
+    line-height: 1.5;
+    text-align: left;
+    box-shadow: 0 3px 8px rgba(99, 102, 241, 0.15);
+    transform: rotate(-3deg);
+    animation: wobble 4s ease-in-out infinite;
+    max-width: 180px;
+}
+
+.speech-bubble-handwritten::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    right: 30px;
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 20px solid var(--surface);
+    transform: rotate(10deg);
+    filter: drop-shadow(1px 2px 1px rgba(99, 102, 241, 0.2));
+}
+
+.speech-bubble-handwritten::before {
+    content: '';
+    position: absolute;
+    bottom: -17px;
+    right: 28px;
+    width: 0;
+    height: 0;
+    border-left: 16px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 22px solid var(--primary);
+    transform: rotate(10deg);
+    z-index: -1;
+}
+
+@keyframes wobble {
+    0%, 100% {
+        transform: rotate(-3deg) translateY(0px);
+    }
+    25% {
+        transform: rotate(-2deg) translateY(-3px);
+    }
+    50% {
+        transform: rotate(-4deg) translateY(-5px);
+    }
+    75% {
+        transform: rotate(-2.5deg) translateY(-2px);
+    }
+}
+
+/* Responsive for annotation */
+@media (max-width: 1024px) {
+    .hand-drawn-annotation {
+        top: -60px;
+        left: -140px;
+    }
+
+    .hand-drawn-arrow {
+        width: 160px;
+        height: 120px;
+        top: 40px;
+        left: 50px;
+    }
+
+    .speech-bubble-handwritten {
+        font-size: 0.7rem;
+        padding: 0.65rem 0.85rem;
+        max-width: 150px;
+    }
+}
+
+@media (max-width: 768px) {
+    .hand-drawn-annotation {
+        display: none;
+    }
+}
+
+/* Header positioning */
+.header {
+    position: relative;
 }
 
 /* AI Welcome Message */
@@ -2060,47 +2191,50 @@ textarea:hover {
 .option-content-clean {
     display: flex;
     align-items: center;
-    gap: 1.25rem;
-    padding: 1.5rem 1.75rem;
+    gap: 1.5rem;
+    padding: 1.75rem 2rem;
     background: var(--surface);
     border: 2px solid var(--border);
-    border-radius: 0.875rem;
+    border-radius: 1rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .option-badge {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--bg);
     border: 2px solid var(--border);
-    border-radius: 0.75rem;
-    font-size: 1.1rem;
-    font-weight: 700;
+    border-radius: 0.875rem;
+    font-size: 1.15rem;
+    font-weight: 800;
     color: var(--text-secondary);
     transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .option-text-clean {
     flex: 1;
+    min-width: 0;
 }
 
 .option-title-clean {
     display: block;
-    font-size: 1.15rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.4rem;
+    line-height: 1.2;
 }
 
 .option-hint-clean {
     display: block;
-    font-size: 0.9rem;
+    font-size: 0.925rem;
     color: var(--text-secondary);
-    line-height: 1.4;
+    line-height: 1.5;
 }
 
 .radio-option-clean:hover .option-content-clean {
@@ -2131,7 +2265,7 @@ textarea:hover {
 .checkbox-grid-clean {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
+    gap: 1.125rem;
 }
 
 .checkbox-card-clean {
@@ -2150,28 +2284,29 @@ textarea:hover {
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 1.75rem 1.25rem;
+    padding: 2rem 1.5rem;
     background: var(--surface);
     border: 2px solid var(--border);
-    border-radius: 0.875rem;
+    border-radius: 1rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    min-height: 110px;
+    min-height: 120px;
     justify-content: center;
 }
 
 .card-title-clean {
     display: block;
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
 }
 
 .card-hint-clean {
     display: block;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
-    line-height: 1.3;
+    line-height: 1.4;
 }
 
 .checkbox-card-clean:hover .card-content-clean {
@@ -2196,7 +2331,7 @@ textarea:hover {
 .checkbox-group-two-col {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+    gap: 1.125rem;
 }
 
 .checkbox-option-two-col {
@@ -2211,26 +2346,31 @@ textarea:hover {
 }
 
 .option-content-two-col {
-    padding: 1.5rem 1.75rem;
+    padding: 1.75rem 2rem;
     background: var(--surface);
     border: 2px solid var(--border);
-    border-radius: 0.875rem;
+    border-radius: 1rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .option-title-two-col {
     display: block;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
 }
 
 .option-hint-two-col {
     display: block;
-    font-size: 0.875rem;
+    font-size: 0.9rem;
     color: var(--text-secondary);
-    line-height: 1.4;
+    line-height: 1.5;
 }
 
 .checkbox-option-two-col:hover .option-content-two-col {
@@ -2249,7 +2389,7 @@ textarea:hover {
 .checkbox-grid-goals {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.875rem;
+    gap: 1rem;
 }
 
 .checkbox-card-goals {
@@ -2268,19 +2408,19 @@ textarea:hover {
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 1.25rem 1rem;
+    padding: 1.5rem 1.25rem;
     background: var(--surface);
     border: 2px solid var(--border);
-    border-radius: 0.75rem;
+    border-radius: 1rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    min-height: 80px;
+    min-height: 90px;
 }
 
 .card-title-goals {
-    font-size: 0.95rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 700;
     color: var(--text-primary);
-    line-height: 1.3;
+    line-height: 1.4;
 }
 
 .checkbox-card-goals:hover .card-content-goals {
