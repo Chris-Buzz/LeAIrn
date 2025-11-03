@@ -115,6 +115,164 @@ body {
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
+.ai-badge-link {
+    text-decoration: none;
+}
+
+.ai-badge-link:hover .ai-badge {
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
+}
+
+/* Hand-drawn annotation pointing to badge */
+.annotation-wrapper {
+    position: absolute;
+    left: 50%;
+    bottom: 0px;
+    transform: translateX(-50%);
+    margin-left: -202px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.hand-drawn-text-block {
+    font-family: 'Segoe Print', 'Comic Sans MS', 'Bradley Hand', cursive;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary);
+    line-height: 1.3;
+    transform: rotate(-2deg);
+    animation: gentle-float 4s ease-in-out infinite 3.5s;
+    text-shadow: 1px 1px 2px rgba(99, 102, 241, 0.15);
+    filter: drop-shadow(0 1px 2px rgba(99, 102, 241, 0.2));
+}
+
+.typing-text {
+    display: inline-block;
+}
+
+.typing-cursor {
+    display: inline-block;
+    color: var(--primary);
+    animation: blink 0.7s step-end infinite;
+    margin-left: 2px;
+}
+
+@keyframes blink {
+    0%, 50% {
+        opacity: 1;
+    }
+    51%, 100% {
+        opacity: 0;
+    }
+}
+
+.sketchy-arrow-large {
+    width: 140px;
+    height: 50px;
+    color: var(--primary);
+    transform: rotate(0deg);
+    animation: arrow-pulse 2.5s ease-in-out infinite 2.8s;
+    filter: drop-shadow(0 1px 3px rgba(99, 102, 241, 0.2));
+}
+
+.arrow-line {
+    stroke-dasharray: 165;
+    stroke-dashoffset: 165;
+    animation: draw-arrow-line 1.8s ease-in-out 0.5s forwards, arrow-glow 2.5s ease-in-out infinite 2.8s;
+}
+
+.arrow-tip {
+    stroke-dasharray: 30;
+    stroke-dashoffset: 30;
+    animation: draw-arrow-tip 0.5s ease-in-out 2.3s forwards;
+}
+
+@keyframes draw-arrow-line {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes draw-arrow-tip {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes gentle-float {
+    0%, 100% {
+        transform: rotate(-2deg) translateY(0px);
+    }
+    50% {
+        transform: rotate(-1deg) translateY(-2px);
+    }
+}
+
+@keyframes arrow-pulse {
+    0%, 100% {
+        transform: rotate(0deg) scale(1);
+    }
+    50% {
+        transform: rotate(0deg) scale(1.03);
+    }
+}
+
+@keyframes arrow-glow {
+    0%, 100% {
+        opacity: 0.8;
+        filter: drop-shadow(0 0 2px rgba(99, 102, 241, 0.3));
+    }
+    50% {
+        opacity: 1;
+        filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.6));
+    }
+}
+
+/* Responsive annotation */
+@media (max-width: 1200px) {
+    .annotation-wrapper {
+        margin-left: -180px;
+    }
+
+    .hand-drawn-text-block {
+        font-size: 0.75rem;
+    }
+
+    .sketchy-arrow-large {
+        width: 120px;
+        height: 45px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .annotation-wrapper {
+        margin-left: -160px;
+    }
+
+    .hand-drawn-text-block {
+        font-size: 0.7rem;
+    }
+
+    .sketchy-arrow-large {
+        width: 110px;
+        height: 40px;
+    }
+}
+
+@media (max-width: 900px) {
+    .annotation-wrapper {
+        display: none;
+    }
+}
+
+/* Header positioning */
+.header {
+    position: relative;
+}
+
 /* AI Welcome Message */
 .ai-welcome-message {
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
@@ -2356,5 +2514,38 @@ textarea:hover {
 
     .checkbox-grid-goals {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ===== CURSOR TRACKER ===== */
+/* Very small cursor-sized light with app's purple color */
+.cursor-tracker {
+    position: fixed;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.6), rgba(99, 102, 241, 0.3) 40%, transparent 70%);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    mix-blend-mode: screen;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    filter: blur(4px);
+}
+
+[data-theme="dark"] .cursor-tracker {
+    background: radial-gradient(circle, rgba(129, 140, 248, 0.7), rgba(129, 140, 248, 0.4) 40%, transparent 70%);
+    filter: blur(3px);
+}
+
+body:hover .cursor-tracker {
+    opacity: 1;
+}
+
+/* Hide cursor tracker on mobile and tablets */
+@media (max-width: 1024px) {
+    .cursor-tracker {
+        display: none;
     }
 }

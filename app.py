@@ -837,6 +837,11 @@ def generate_time_slots(weeks_ahead=6):
 def index():
     return render_template('index.html')
 
+@app.route('/projects')
+def projects():
+    """AI Projects Gallery page"""
+    return render_template('projects.html')
+
 @app.route('/feedback')
 def feedback():
     """Feedback page for users to rate their session"""
