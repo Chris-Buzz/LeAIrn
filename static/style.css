@@ -2549,3 +2549,89 @@ body:hover .cursor-tracker {
         display: none;
     }
 }
+
+/* ===== VERIFICATION MODAL ===== */
+.verification-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.verification-modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.verification-modal-content {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: var(--shadow-lg);
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.verification-code-input input {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid var(--border);
+    border-radius: 0.5rem;
+    font-family: 'Inter', monospace;
+    background: var(--bg);
+    color: var(--text-primary);
+    transition: border-color 0.3s ease;
+}
+
+.verification-code-input input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.verification-error {
+    font-weight: 500;
+}
+
+.verification-attempts {
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .verification-modal-content {
+        padding: 1.5rem;
+        width: 95%;
+    }
+
+    .verification-actions {
+        flex-direction: column;
+    }
+
+    .verification-actions button {
+        width: 100%;
+    }
+}

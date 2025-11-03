@@ -825,6 +825,271 @@ def delete_session_overview(booking_id: str) -> bool:
         return False
 
 
+# ============================================================================
+# PENDING BOOKINGS & VERIFICATION (NEW)
+# ============================================================================
+
+def store_pending_booking(email: str, code: str, expires_at: str, booking_data: dict, slot_data: dict) -> bool:
+    """
+    Store pending booking with verification code.
+
+    Args:
+        email: User's email address (normalized to lowercase)
+        code: 6-digit verification code
+        expires_at: ISO format expiration timestamp
+        booking_data: Full booking data from form
+        slot_data: Selected slot details
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        # Normalize email
+        email = email.lower().strip()
+
+        pending_doc = {
+            'email': email,
+            'code': code,
+            'expires_at': expires_at,
+            'created_at': datetime.now().isoformat(),
+            'used': False,
+            'attempts': 0,
+            'booking_data': booking_data,
+            'slot_data': slot_data
+        }
+
+        # Use email as document ID (overwrite if exists)
+        db.collection('pending_bookings').document(email).set(pending_doc)
+
+        print(f"OK: Stored pending booking for {email}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to store pending booking: {e}")
+        return False
+
+
+def get_pending_booking(email: str) -> Optional[dict]:
+    """
+    Get pending booking with verification code.
+
+    Args:
+        email: User's email address
+
+    Returns:
+        dict: Pending booking data or None if not found/expired
+    """
+    try:
+        initialize_firestore()
+
+        # Normalize email
+        email = email.lower().strip()
+
+        doc_ref = db.collection('pending_bookings').document(email)
+        doc = doc_ref.get()
+
+        if not doc.exists:
+            return None
+
+        pending = doc.to_dict()
+
+        # Check if expired
+        expires_at = pending.get('expires_at', '')
+        now = datetime.now().isoformat()
+
+        if expires_at and expires_at < now:
+            # Delete expired document
+            doc_ref.delete()
+            print(f"INFO: Deleted expired pending booking for {email}")
+            return None
+
+        return pending
+
+    except Exception as e:
+        print(f"ERROR: Failed to get pending booking: {e}")
+        return None
+
+
+def delete_pending_booking(email: str) -> bool:
+    """
+    Delete pending booking.
+
+    Args:
+        email: User's email address
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        # Normalize email
+        email = email.lower().strip()
+
+        db.collection('pending_bookings').document(email).delete()
+        print(f"OK: Deleted pending booking for {email}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to delete pending booking: {e}")
+        return False
+
+
+def increment_verification_attempts(email: str) -> bool:
+    """
+    Increment verification attempt counter.
+
+    Args:
+        email: User's email address
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        # Normalize email
+        email = email.lower().strip()
+
+        doc_ref = db.collection('pending_bookings').document(email)
+        doc = doc_ref.get()
+
+        if doc.exists:
+            current_attempts = doc.to_dict().get('attempts', 0)
+            doc_ref.update({'attempts': current_attempts + 1})
+            print(f"OK: Incremented attempts for {email} to {current_attempts + 1}")
+            return True
+
+        return False
+
+    except Exception as e:
+        print(f"ERROR: Failed to increment attempts: {e}")
+        return False
+
+
+def mark_pending_booking_used(email: str) -> bool:
+    """
+    Mark pending booking as used.
+
+    Args:
+        email: User's email address
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        # Normalize email
+        email = email.lower().strip()
+
+        doc_ref = db.collection('pending_bookings').document(email)
+        doc_ref.update({'used': True})
+        print(f"OK: Marked pending booking as used for {email}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to mark pending booking as used: {e}")
+        return False
+
+
+def check_verification_rate_limit(email: str) -> dict:
+    """
+    Check if email has exceeded verification code request rate limit.
+    Limit: 3 requests per hour per email address.
+
+    Args:
+        email: User's email address
+
+    Returns:
+        dict: {'allowed': bool, 'wait_minutes': int}
+    """
+    try:
+        initialize_firestore()
+
+        # Normalize email
+        email = email.lower().strip()
+
+        # Get rate limit record
+        doc_ref = db.collection('rate_limits').document(email)
+        doc = doc_ref.get()
+
+        now = datetime.now()
+
+        if not doc.exists:
+            # First request, create record
+            doc_ref.set({
+                'email': email,
+                'requests': [{
+                    'timestamp': now.isoformat()
+                }],
+                'last_request': now.isoformat()
+            })
+            return {'allowed': True, 'wait_minutes': 0}
+
+        rate_limit = doc.to_dict()
+        requests = rate_limit.get('requests', [])
+
+        # Filter requests from last hour
+        one_hour_ago = (now - __import__('datetime').timedelta(hours=1)).isoformat()
+        recent_requests = [r for r in requests if r.get('timestamp', '') > one_hour_ago]
+
+        if len(recent_requests) >= 3:
+            # Rate limit exceeded
+            oldest_request = min([r.get('timestamp', '') for r in recent_requests])
+            oldest_dt = datetime.fromisoformat(oldest_request)
+            wait_until = oldest_dt + __import__('datetime').timedelta(hours=1)
+            wait_minutes = max(1, int((wait_until - now).total_seconds() / 60))
+
+            return {'allowed': False, 'wait_minutes': wait_minutes}
+
+        # Add new request
+        recent_requests.append({'timestamp': now.isoformat()})
+        doc_ref.set({
+            'email': email,
+            'requests': recent_requests,
+            'last_request': now.isoformat()
+        })
+
+        return {'allowed': True, 'wait_minutes': 0}
+
+    except Exception as e:
+        print(f"ERROR: Failed to check rate limit: {e}")
+        # On error, allow the request
+        return {'allowed': True, 'wait_minutes': 0}
+
+
+def unbook_slot(slot_id: str) -> bool:
+    """
+    Unbook a slot (rollback operation).
+
+    Args:
+        slot_id: Slot document ID
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        slot_ref = db.collection('slots').document(str(slot_id))
+        slot_ref.update({
+            'booked': False,
+            'booked_by': None,
+            'room': None,
+            'booked_at': None
+        })
+
+        print(f"OK: Unbooked slot {slot_id}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to unbook slot: {e}")
+        return False
+
+
 if __name__ == "__main__":
     # Test connection
     print("Testing Firestore connection...")

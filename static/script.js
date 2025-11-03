@@ -433,6 +433,12 @@ function validateCurrentStep() {
             return false;
         }
 
+        // Monmouth.edu email validation
+        if (!email.toLowerCase().endsWith('@monmouth.edu')) {
+            showNotification('Only @monmouth.edu email addresses are allowed. Please use your Monmouth University email.', 'error');
+            return false;
+        }
+
         // Email confirmation validation
         if (email !== emailConfirm) {
             showNotification('Email addresses do not match. Please check and try again.', 'error');
@@ -646,30 +652,13 @@ async function confirmBooking() {
         return;
     }
 
-    // Show instant feedback - optimistic UI
+    // Disable button and show loading
     confirmBtn.disabled = true;
-    btnText.textContent = 'Confirmed!';
+    btnText.textContent = 'Sending verification code...';
 
-    // Create temporary booking data for immediate display
-    const tempBookingData = {
-        name: formData.full_name,
-        room: fullLocation,
-        slot: bookingData.selectedSlot || {
-            day: 'Scheduled',
-            date: 'Processing...',
-            time: ''
-        }
-    };
-
-    // Show booking details immediately
-    displayBookingDetails(tempBookingData);
-
-    // Go to success step immediately for instant feedback
-    goToStep(8);
-
-    // Process booking in background
+    // Step 1: Request verification code
     try {
-        const response = await fetch('/api/submit', {
+        const response = await fetch('/api/booking/request-verification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
@@ -678,24 +667,35 @@ async function confirmBooking() {
         const result = await response.json();
 
         if (response.ok && result.success) {
-            // Update with actual booking data
-            bookingData = { ...formData, ...result.data };
-            displayBookingDetails(result.data);
+            // Store form data for later use
+            bookingData.pendingFormData = formData;
+            bookingData.userEmail = result.email;
 
-            // Show success message
-            console.log('Booking confirmed successfully');
+            // Show verification code input modal
+            showVerificationModal(result.email);
+
+            // Re-enable button
+            confirmBtn.disabled = false;
+            btnText.textContent = 'Confirm Booking';
         } else {
-            // If booking failed, show error but user already sees success page
-            // You may want to handle this differently based on your needs
-            console.error('Booking submission failed:', result.message);
-            showNotification('Booking saved locally. Please contact support if you need confirmation.', 'warning');
+            // Show error message
+            confirmBtn.disabled = false;
+            btnText.textContent = 'Confirm Booking';
+
+            if (response.status === 429) {
+                // Rate limited
+                showNotification(result.message || 'Too many requests. Please wait before trying again.', 'error');
+            } else {
+                // Other error
+                showNotification(result.message || 'Failed to send verification code. Please try again.', 'error');
+            }
         }
 
     } catch (error) {
-        console.error('Booking error:', error);
-        // User already sees success, so just log the error
-        // You could show a subtle notification that confirmation email may be delayed
-        showNotification('Your booking is saved. Confirmation email may be delayed.', 'info');
+        console.error('Verification request error:', error);
+        confirmBtn.disabled = false;
+        btnText.textContent = 'Confirm Booking';
+        showNotification('Connection error. Please check your internet and try again.', 'error');
     }
 }
 
@@ -1566,3 +1566,156 @@ async function saveUserBookingEdit(email, modal) {
     // Start animation
     animateTracker();
 })();
+
+// ============================================================================
+// EMAIL VERIFICATION MODAL FOR BOOKING
+// ============================================================================
+
+function showVerificationModal(email) {
+    // Create modal HTML
+    const modalHTML = `
+        <div id="verificationModal" class="verification-modal active">
+            <div class="verification-modal-content">
+                <h2 style="color: var(--primary); margin-bottom: 1rem;">Verify Your Email</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                    We've sent a 6-digit verification code to:<br>
+                    <strong style="color: var(--text-primary);">${email}</strong>
+                </p>
+
+                <div class="verification-code-input">
+                    <input type="text"
+                           id="verificationCode"
+                           maxlength="6"
+                           placeholder="000000"
+                           autocomplete="off"
+                           style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem; font-weight: 700;">
+                </div>
+
+                <p id="verificationError" class="verification-error" style="display: none; color: var(--error); margin-top: 0.5rem; font-size: 0.875rem;"></p>
+                <p id="verificationAttempts" class="verification-attempts" style="display: none; color: var(--text-tertiary); margin-top: 0.5rem; font-size: 0.875rem;"></p>
+
+                <div class="verification-actions" style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                    <button onclick="confirmVerificationCode()" class="btn btn-primary" id="verifyBtn" style="flex: 1;">
+                        Verify & Confirm Booking
+                    </button>
+                    <button onclick="closeVerificationModal()" class="btn btn-secondary" style="flex: 0 0 auto;">
+                        Cancel
+                    </button>
+                </div>
+
+                <p style="color: var(--text-tertiary); font-size: 0.875rem; margin-top: 1rem;">
+                    Code expires in 15 minutes. Didn't receive it? Check your spam folder.
+                </p>
+            </div>
+        </div>
+    `;
+
+    // Remove existing modal if any
+    const existingModal = document.getElementById('verificationModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Focus on input
+    setTimeout(() => {
+        const input = document.getElementById('verificationCode');
+        if (input) {
+            input.focus();
+            // Allow only numbers
+            input.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            });
+            // Submit on Enter
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && input.value.length === 6) {
+                    confirmVerificationCode();
+                }
+            });
+        }
+    }, 100);
+}
+
+function closeVerificationModal() {
+    const modal = document.getElementById('verificationModal');
+    if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+async function confirmVerificationCode() {
+    const codeInput = document.getElementById('verificationCode');
+    const verifyBtn = document.getElementById('verifyBtn');
+    const errorMsg = document.getElementById('verificationError');
+    const attemptsMsg = document.getElementById('verificationAttempts');
+
+    const code = codeInput.value.trim();
+
+    // Validate code format
+    if (code.length !== 6) {
+        errorMsg.textContent = 'Please enter the 6-digit code';
+        errorMsg.style.display = 'block';
+        return;
+    }
+
+    // Disable button and show loading
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = 'Verifying...';
+    errorMsg.style.display = 'none';
+    attemptsMsg.style.display = 'none';
+
+    try {
+        const response = await fetch('/api/booking/confirm-verification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: bookingData.userEmail,
+                code: code
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            // Success! Booking confirmed
+            closeVerificationModal();
+
+            // Store booking data
+            bookingData = { ...bookingData.pendingFormData, ...result.data };
+
+            // Show success page
+            displayBookingDetails(result.data);
+            goToStep(8);
+
+            showNotification('Booking confirmed! Check your email for details.', 'success');
+        } else {
+            // Error - show message
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = 'Verify & Confirm Booking';
+
+            errorMsg.textContent = result.message || 'Invalid verification code';
+            errorMsg.style.display = 'block';
+
+            // Show remaining attempts if in the error message
+            if (result.message && result.message.includes('attempts remaining')) {
+                attemptsMsg.textContent = result.message;
+                attemptsMsg.style.display = 'block';
+                errorMsg.style.display = 'none';
+            }
+
+            // Clear the code input
+            codeInput.value = '';
+            codeInput.focus();
+        }
+
+    } catch (error) {
+        console.error('Verification error:', error);
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verify & Confirm Booking';
+        errorMsg.textContent = 'Connection error. Please try again.';
+        errorMsg.style.display = 'block';
+    }
+}
