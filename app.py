@@ -2150,8 +2150,13 @@ def delete_booking_by_email():
         # Free up the time slot
         if slot_id:
             print(f"Freeing up slot: {slot_id}")
-            db.unbook_slot(slot_id)
-            print(f"Slot freed successfully")
+            slot_freed = db.unbook_slot(slot_id)
+            if slot_freed:
+                print(f"✅ Slot {slot_id} freed successfully")
+            else:
+                print(f"⚠️ WARNING: Failed to free slot {slot_id}")
+        else:
+            print(f"⚠️ WARNING: No slot_id found in booking")
 
         # Send deletion notification email to user
         print(f"Sending deletion notification email to {booking_to_delete['email']}...")
@@ -2234,16 +2239,24 @@ def update_booking_by_email():
 
         # If time slot changed, update slots
         if new_slot_id and new_slot_id != old_slot_id:
+            print(f"Time slot changing from {old_slot_id} to {new_slot_id}")
+            
+            # Book new slot first (to check availability)
+            book_success = db.book_slot(new_slot_id, email, new_room)
+            if not book_success:
+                print(f"❌ Failed to book new slot {new_slot_id} - already taken or doesn't exist")
+                return jsonify({'success': False, 'message': 'New time slot already booked or unavailable'}), 400
+            
+            print(f"✅ New slot {new_slot_id} booked successfully")
+            
             # Free old slot
-            db.unbook_slot(old_slot_id)
-
-            # Book new slot
-            success = db.book_slot(new_slot_id, email, new_room)
-            if not success:
-                # Re-book the old slot since new one failed
-                db.book_slot(old_slot_id, email, old_room)
-                return jsonify({'success': False, 'message': 'New time slot already booked'}), 400
-
+            if old_slot_id:
+                unbook_success = db.unbook_slot(old_slot_id)
+                if unbook_success:
+                    print(f"✅ Old slot {old_slot_id} freed successfully")
+                else:
+                    print(f"⚠️ WARNING: Failed to free old slot {old_slot_id}")
+            
             update_data['selected_slot'] = new_slot_id
             slot_changed = True
 
