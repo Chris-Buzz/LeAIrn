@@ -27,12 +27,29 @@ print("Initializing Firestore...")
 db.initialize_firestore()
 
 # Admin credentials - Multiple accounts supported
-ADMIN_ACCOUNTS = {
-    # Your account
-    os.getenv('ADMIN1_USERNAME', 'christopher'): os.getenv('ADMIN1_PASSWORD', 'ChangeThisPassword123!'),
-    # Professor account
-    os.getenv('ADMIN2_USERNAME', 'professor'): os.getenv('ADMIN2_PASSWORD', 'ProfessorPassword123!'),
-}
+# IMPORTANT: Set ADMIN1_USERNAME, ADMIN1_PASSWORD, ADMIN2_USERNAME, ADMIN2_PASSWORD in environment variables
+ADMIN_ACCOUNTS = {}
+
+# Load admin accounts from environment variables only (no defaults for security)
+admin1_user = os.getenv('ADMIN1_USERNAME')
+admin1_pass = os.getenv('ADMIN1_PASSWORD')
+admin2_user = os.getenv('ADMIN2_USERNAME')
+admin2_pass = os.getenv('ADMIN2_PASSWORD')
+
+if admin1_user and admin1_pass:
+    ADMIN_ACCOUNTS[admin1_user] = admin1_pass
+    print(f"OK: Admin account 1 loaded ({admin1_user})")
+else:
+    print("WARNING: ADMIN1_USERNAME or ADMIN1_PASSWORD not set")
+
+if admin2_user and admin2_pass:
+    ADMIN_ACCOUNTS[admin2_user] = admin2_pass
+    print(f"OK: Admin account 2 loaded ({admin2_user})")
+else:
+    print("WARNING: ADMIN2_USERNAME or ADMIN2_PASSWORD not set")
+
+if not ADMIN_ACCOUNTS:
+    print("ERROR: No admin accounts configured! Set environment variables for admin access.")
 
 # Email configuration from environment variables
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
@@ -422,6 +439,63 @@ def send_verification_email(email: str, code: str) -> bool:
         return True
     except Exception as e:
         print(f"Error sending verification email: {e}")
+        return False
+
+def send_booking_verification_email(email: str, code: str, name: str, slot_data: dict) -> bool:
+    """Send verification code email for new booking confirmation"""
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'Verify Your Booking - LeAIrn'
+        msg['From'] = EMAIL_FROM
+        msg['To'] = email
+
+        # Create HTML email
+        html = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h1 style="color: #6366F1;">Verify Your Booking</h1>
+                    <p>Hi {name},</p>
+                    <p>You're almost done! To confirm your AI learning session booking, please enter the verification code below on the booking page:</p>
+
+                    <div style="background: #f0f9ff; border: 2px solid #6366F1; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+                        <h2 style="margin: 0; color: #6366F1; font-size: 32px; letter-spacing: 8px; font-weight: 700;">{code}</h2>
+                    </div>
+
+                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 15px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #111827;">Your Session Details</h3>
+                        <p style="margin: 5px 0;"><strong>Date & Time:</strong> {slot_data.get('day', '')}, {slot_data.get('date', '')} at {slot_data.get('time', '')}</p>
+                        <p style="margin: 5px 0;"><strong>Duration:</strong> 30 minutes</p>
+                    </div>
+
+                    <p style="color: #6B7280; font-size: 14px;"><strong>Important:</strong> This code will expire in 15 minutes.</p>
+                    <p style="color: #6B7280; font-size: 14px;">After verification, you'll receive a confirmation email with your session details and location.</p>
+                    <p style="color: #6B7280; font-size: 14px;">If you didn't request this booking, you can safely ignore this email.</p>
+
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="color: #6B7280; font-size: 14px; margin: 0;">
+                            - Christopher Buzaid<br>
+                            LeAIrn<br>
+                            <a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a>
+                        </p>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html, 'html'))
+
+        # Send email
+        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_USER, EMAIL_PASSWORD)
+            server.send_message(msg)
+
+        print(f"OK: Booking verification email sent to {email}")
+        return True
+    except Exception as e:
+        print(f"Error sending booking verification email: {e}")
         return False
 
 def enhance_session_notes_with_ai(notes: str, user_data: dict) -> str:
@@ -849,6 +923,15 @@ def feedback():
 
 @app.route('/api/submit', methods=['POST'])
 def submit_data():
+    """DEPRECATED - Use /api/booking/request-verification instead"""
+    return jsonify({
+        'success': False,
+        'message': 'This endpoint is deprecated. Use /api/booking/request-verification instead'
+    }), 400
+
+@app.route('/api/booking/request-verification', methods=['POST'])
+def request_booking_verification():
+    """Step 1: Validate booking details and send verification code to @monmouth.edu email"""
     try:
         data = request.json
 
@@ -859,78 +942,208 @@ def submit_data():
             if field not in data or data[field] is None or (isinstance(data[field], str) and not data[field].strip()):
                 return jsonify({'success': False, 'message': f'Missing required field: {field}'}), 400
 
-        # Add timestamp
-        data['submission_date'] = datetime.now().isoformat()
+        email = data['email'].strip().lower()
 
-        # Store research consent status (true = consented, false = declined, null = not asked)
-        data['research_consent'] = data.get('research_consent', None)
+        # Validate @monmouth.edu email
+        if not email.endswith('@monmouth.edu'):
+            return jsonify({
+                'success': False,
+                'message': 'Only @monmouth.edu email addresses are allowed. Please use your Monmouth University email.'
+            }), 400
 
-        # Get all slots from Firestore
+        # Check rate limiting - prevent spam (max 3 requests per hour per email)
+        rate_limit_check = db.check_verification_rate_limit(email)
+        if not rate_limit_check['allowed']:
+            return jsonify({
+                'success': False,
+                'message': f'Too many verification requests. Please wait {rate_limit_check["wait_minutes"]} minutes before trying again.'
+            }), 429
+
+        # Validate the slot exists and is available
         slots = db.get_all_slots()
+        requested_slot = (data.get('selected_slot') or '').strip()
 
         slot_found = False
         selected_slot_data = None
 
-        requested_slot = (data.get('selected_slot') or '').strip()
-        print(f"Debug: Requested selected_slot='{requested_slot}'")
-
         for slot in slots:
-            # slots from DB may store primary id under 'id' or use Firestore 'doc_id'
             slot_ids = [str(slot.get('id') or ''), str(slot.get('doc_id') or '')]
             if requested_slot in slot_ids:
                 if slot.get('booked'):
-                    return jsonify({'success': False, 'message': 'This slot has already been booked', 'requested_slot': requested_slot}), 400
-
-                # Book in Firestore (db.book_slot will actually update DB)
-                success = db.book_slot(slot.get('id') or slot.get('doc_id'), data['email'], data['selected_room'])
-                if not success:
-                    return jsonify({'success': False, 'message': 'Failed to book slot', 'requested_slot': requested_slot}), 500
-
-                # Build local copy of slot for response
+                    return jsonify({
+                        'success': False,
+                        'message': 'This slot has already been booked'
+                    }), 400
                 selected_slot_data = slot.copy()
-                selected_slot_data['booked'] = True
-                selected_slot_data['booked_by'] = data['email']
-                selected_slot_data['room'] = data['selected_room']
                 slot_found = True
                 break
 
         if not slot_found:
-            return jsonify({'success': False, 'message': 'Invalid time slot', 'requested_slot': requested_slot}), 400
+            return jsonify({
+                'success': False,
+                'message': 'Invalid time slot'
+            }), 400
 
-        # AI insights will be generated on-demand in admin dashboard
-        data['ai_insights'] = None
+        # Generate 6-digit verification code
+        import random
+        code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
 
-        # Add slot info to user data
-        data['slot_details'] = selected_slot_data
+        # Set expiration (15 minutes from now)
+        expires_at = (datetime.now() + timedelta(minutes=15)).isoformat()
 
-        # Add booking to Firestore
-        booking_id = db.add_booking(data)
+        # Store pending booking data with verification code
+        success = db.store_pending_booking(email, code, expires_at, data, selected_slot_data)
+        if not success:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to process booking request'
+            }), 500
 
-        if not booking_id:
-            return jsonify({'success': False, 'message': 'Failed to save booking'}), 500
-
-        # Send confirmation email to user
-        print(f"Sending confirmation email to {data['email']}...")
-        email_sent = send_confirmation_email(data, selected_slot_data)
-
-        # Send notification email to admin
-        print(f"Sending admin notification email...")
-        admin_email_sent = send_admin_notification_email(data, selected_slot_data)
+        # Send verification email
+        email_sent = send_booking_verification_email(email, code, data['full_name'], selected_slot_data)
+        if not email_sent:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to send verification email'
+            }), 500
 
         return jsonify({
             'success': True,
-            'message': 'Booking confirmed!',
+            'message': 'Verification code sent to your email. Please check your inbox.',
+            'email': email
+        })
+
+    except Exception as e:
+        print(f"Error in request_booking_verification: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/booking/confirm-verification', methods=['POST'])
+def confirm_booking_verification():
+    """Step 2: Verify code and complete the booking"""
+    try:
+        data = request.json
+        email = data.get('email', '').strip().lower()
+        code = data.get('code', '').strip()
+
+        if not email or not code:
+            return jsonify({
+                'success': False,
+                'message': 'Email and verification code required'
+            }), 400
+
+        # Get pending booking with verification code
+        pending_booking = db.get_pending_booking(email)
+
+        if not pending_booking:
+            return jsonify({
+                'success': False,
+                'message': 'No pending booking found or verification code expired'
+            }), 400
+
+        # Check if code was already used
+        if pending_booking.get('used'):
+            return jsonify({
+                'success': False,
+                'message': 'This verification code has already been used'
+            }), 400
+
+        # Check attempt count (max 5 attempts)
+        attempts = pending_booking.get('attempts', 0)
+        if attempts >= 5:
+            db.delete_pending_booking(email)
+            return jsonify({
+                'success': False,
+                'message': 'Maximum verification attempts exceeded. Please request a new code.'
+            }), 400
+
+        # Verify code matches
+        if pending_booking.get('code') != code:
+            # Increment attempt counter
+            db.increment_verification_attempts(email)
+            remaining = 5 - (attempts + 1)
+            return jsonify({
+                'success': False,
+                'message': f'Invalid verification code. {remaining} attempts remaining.'
+            }), 400
+
+        # Get booking data from pending booking
+        booking_data = pending_booking.get('booking_data', {})
+        selected_slot_data = pending_booking.get('slot_data', {})
+
+        # Double-check the slot is still available
+        slot_id = booking_data.get('selected_slot')
+        slots = db.get_all_slots()
+
+        slot_still_available = False
+        for slot in slots:
+            slot_ids = [str(slot.get('id') or ''), str(slot.get('doc_id') or '')]
+            if slot_id in slot_ids and not slot.get('booked'):
+                slot_still_available = True
+                selected_slot_data = slot.copy()
+                break
+
+        if not slot_still_available:
+            db.delete_pending_booking(email)
+            return jsonify({
+                'success': False,
+                'message': 'This time slot is no longer available. Please select a different slot.'
+            }), 400
+
+        # Book the slot in Firestore
+        success = db.book_slot(slot_id, email, booking_data['selected_room'])
+        if not success:
+            return jsonify({
+                'success': False, 'message': 'Failed to book slot'
+            }), 500
+
+        # Update local slot data
+        selected_slot_data['booked'] = True
+        selected_slot_data['booked_by'] = email
+        selected_slot_data['room'] = booking_data['selected_room']
+
+        # Add timestamp
+        booking_data['submission_date'] = datetime.now().isoformat()
+
+        # AI insights will be generated on-demand in admin dashboard
+        booking_data['ai_insights'] = None
+
+        # Add slot info to booking data
+        booking_data['slot_details'] = selected_slot_data
+
+        # Add booking to Firestore
+        booking_id = db.add_booking(booking_data)
+
+        if not booking_id:
+            # Rollback: unbook the slot
+            db.unbook_slot(slot_id)
+            return jsonify({'success': False, 'message': 'Failed to save booking'}), 500
+
+        # Mark verification code as used and delete pending booking
+        db.mark_pending_booking_used(email)
+        db.delete_pending_booking(email)
+
+        # Send confirmation email to user
+        print(f"Sending confirmation email to {email}...")
+        email_sent = send_confirmation_email(booking_data, selected_slot_data)
+
+        # Send notification email to admin
+        print(f"Sending admin notification email...")
+        admin_email_sent = send_admin_notification_email(booking_data, selected_slot_data)
+
+        return jsonify({
+            'success': True,
+            'message': 'Booking confirmed! Check your email for details.',
             'data': {
-                'name': data['full_name'],
+                'name': booking_data['full_name'],
                 'slot': selected_slot_data,
-                'room': data['selected_room'],
+                'room': booking_data['selected_room'],
                 'email_sent': email_sent,
                 'admin_notified': admin_email_sent
             }
         })
 
     except Exception as e:
-        print(f"Error in submit_data: {e}")
+        print(f"Error in confirm_booking_verification: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/slots', methods=['GET'])
@@ -950,10 +1163,8 @@ def admin_login():
         username = data.get('username')
         password = data.get('password')
 
-        # Debug logging
+        # Security: Only log username, never log passwords
         print(f"Login attempt - Username: '{username}'")
-        print(f"Available accounts: {list(ADMIN_ACCOUNTS.keys())}")
-        print(f"Password received: '{password}'")
 
         # Check if username exists and password matches
         if username in ADMIN_ACCOUNTS and ADMIN_ACCOUNTS[username] == password:
@@ -1758,13 +1969,21 @@ def generate_insights_for_booking(booking_id):
 
 @app.route('/api/booking/lookup', methods=['POST'])
 def lookup_booking():
-    """Send verification code to email for booking lookup"""
+    """Send verification code to email for booking lookup (with rate limiting)"""
     try:
         data = request.json
-        email = data.get('email', '').strip()
+        email = data.get('email', '').strip().lower()
 
         if not email:
             return jsonify({'success': False, 'message': 'Email address required'}), 400
+
+        # Check rate limiting - max 3 lookup requests per hour
+        rate_limit_check = db.check_verification_rate_limit(f"lookup_{email}")
+        if not rate_limit_check['allowed']:
+            return jsonify({
+                'success': False,
+                'message': f'Too many lookup requests. Please wait {rate_limit_check["wait_minutes"]} minutes before trying again.'
+            }), 429
 
         # Get all bookings from Firestore
         bookings = db.get_all_bookings()
@@ -1794,7 +2013,7 @@ def lookup_booking():
         # Set expiration (10 minutes from now)
         expires_at = (datetime.now() + timedelta(minutes=10)).isoformat()
 
-        # Store verification code
+        # Store verification code (reusing existing function)
         success = db.store_verification_code(email, code, expires_at)
         if not success:
             return jsonify({'success': False, 'message': 'Failed to generate verification code'}), 500
@@ -1873,17 +2092,22 @@ def delete_booking_by_email():
     """Delete a booking by email address - for user self-deletion"""
     try:
         data = request.json
+        print(f"Delete booking request received for: {data}")
         email = data.get('email', '').strip()
         confirmed = data.get('confirmed', False)
 
         if not email:
+            print(f"ERROR: No email provided")
             return jsonify({'success': False, 'message': 'Email address required'}), 400
 
         if not confirmed:
+            print(f"ERROR: Deletion not confirmed")
             return jsonify({'success': False, 'message': 'Deletion not confirmed'}), 400
 
         # Get all bookings from Firestore
+        print(f"Fetching bookings for email: {email}")
         bookings = db.get_all_bookings()
+        print(f"Found {len(bookings)} total bookings")
 
         # Get current time
         now = datetime.now().isoformat()
@@ -1895,28 +2119,39 @@ def delete_booking_by_email():
                 # Check if this booking is in the future
                 slot_details = booking.get('slot_details', {})
                 slot_datetime = slot_details.get('datetime', '')
+                print(f"Found booking for {email}: datetime={slot_datetime}, now={now}")
 
                 # Only delete if the booking is in the future
                 if slot_datetime and slot_datetime > now:
                     booking_to_delete = booking
+                    print(f"Booking is in future, will delete: {booking.get('id')}")
                     break
+                else:
+                    print(f"Booking is in past or invalid datetime, skipping")
 
         if not booking_to_delete:
+            print(f"ERROR: No upcoming booking found for {email}")
             return jsonify({'success': False, 'message': 'No upcoming booking found to delete'}), 404
 
         # Get the booking ID and slot ID
         booking_id = booking_to_delete.get('id')
         slot_id = booking_to_delete.get('selected_slot')
         slot_details = booking_to_delete.get('slot_details', {})
+        print(f"Deleting booking ID: {booking_id}, slot ID: {slot_id}")
 
         # Delete from Firestore
         success = db.delete_booking(booking_id)
         if not success:
+            print(f"ERROR: Failed to delete booking from Firestore")
             return jsonify({'success': False, 'message': 'Failed to delete booking'}), 500
+
+        print(f"Booking deleted successfully from Firestore")
 
         # Free up the time slot
         if slot_id:
+            print(f"Freeing up slot: {slot_id}")
             db.unbook_slot(slot_id)
+            print(f"Slot freed successfully")
 
         # Send deletion notification email to user
         print(f"Sending deletion notification email to {booking_to_delete['email']}...")
@@ -1940,16 +2175,20 @@ def update_booking_by_email():
     """Update a booking by email address - for user self-edit"""
     try:
         data = request.json
+        print(f"Update booking request received: {data}")
         email = data.get('email', '').strip()
         new_slot_id = data.get('selected_slot')
         new_building = data.get('selected_building')
         new_room_number = data.get('room_number', '').strip()
 
         if not email:
+            print(f"ERROR: No email provided")
             return jsonify({'success': False, 'message': 'Email address required'}), 400
 
         # Get all bookings from Firestore
+        print(f"Fetching bookings for email: {email}")
         bookings = db.get_all_bookings()
+        print(f"Found {len(bookings)} total bookings")
 
         # Get current time
         now = datetime.now().isoformat()
@@ -1961,13 +2200,18 @@ def update_booking_by_email():
                 # Check if this booking is in the future
                 slot_details = booking.get('slot_details', {})
                 slot_datetime = slot_details.get('datetime', '')
+                print(f"Found booking for {email}: datetime={slot_datetime}, now={now}")
 
                 # Only update if the booking is in the future
                 if slot_datetime and slot_datetime > now:
                     booking_to_update = booking
+                    print(f"Booking is in future, will update: {booking.get('id')}")
                     break
+                else:
+                    print(f"Booking is in past or invalid datetime, skipping")
 
         if not booking_to_update:
+            print(f"ERROR: No upcoming booking found for {email}")
             return jsonify({'success': False, 'message': 'No upcoming booking found to update'}), 404
 
         booking_id = booking_to_update.get('id')
