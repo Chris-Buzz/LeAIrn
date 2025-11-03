@@ -3,9 +3,44 @@
 let currentStep = 1;
 let bookingData = {};
 
+// Typewriter effect for annotation
+function typeWriterEffect() {
+    const text = "Click here to see\nmore AI projects!";
+    const typingElement = document.getElementById('typing-text');
+
+    if (!typingElement) return;
+
+    let index = 0;
+    let currentHTML = '';
+
+    function type() {
+        if (index < text.length) {
+            const char = text.charAt(index);
+            if (char === '\n') {
+                currentHTML += '<br>';
+            } else {
+                currentHTML += char;
+            }
+            // Add cursor while typing
+            typingElement.innerHTML = currentHTML + '<span class="typing-cursor">|</span>';
+            index++;
+            setTimeout(type, 100); // 100ms between each character for slower effect
+        } else {
+            // Keep cursor blinking at the end
+            typingElement.innerHTML = currentHTML + '<span class="typing-cursor">|</span>';
+        }
+    }
+
+    // Start typing after 500ms delay
+    setTimeout(type, 500);
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     console.log('LeAIrn initialized');
+
+    // Start typewriter effect
+    typeWriterEffect();
 
     // Load theme - default to dark mode
     const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -452,23 +487,8 @@ function validateCurrentStep() {
         return true;
     }
 
-    // Question 5: Confidence Level (radio - required)
+    // Step 6: Time selection (no validation here - button is disabled until time is selected)
     if (currentStep === 6) {
-        const confidence = document.querySelector('input[name="confidence_level"]:checked');
-        if (!confidence) {
-            showNotification('Please select an option', 'error');
-            return false;
-        }
-        return true;
-    }
-
-    // Question 6: Personal Comments (optional)
-    if (currentStep === 7) {
-        return true; // Comments are optional
-    }
-
-    // Step 8: Time selection
-    if (currentStep === 8) {
         if (!document.getElementById('selected_slot').value) {
             showNotification('Please select a time slot', 'error');
             return false;
@@ -476,8 +496,8 @@ function validateCurrentStep() {
         return true;
     }
 
-    // Step 9: Location
-    if (currentStep === 9) {
+    // Step 7: Location
+    if (currentStep === 7) {
         const building = document.getElementById('selected_building').value;
         const roomNumber = document.getElementById('room_number').value.trim();
 
@@ -573,7 +593,7 @@ function selectTimeSlot(slot, element) {
 
 // Confirm Booking
 async function confirmBooking() {
-    const confirmBtn = document.querySelector('#step9 .btn-primary');
+    const confirmBtn = document.querySelector('#step7 .btn-primary');
     const btnText = confirmBtn.querySelector('.btn-text');
     const btnSpinner = confirmBtn.querySelector('.btn-spinner');
 
@@ -645,7 +665,7 @@ async function confirmBooking() {
     displayBookingDetails(tempBookingData);
 
     // Go to success step immediately for instant feedback
-    goToStep(10);
+    goToStep(8);
 
     // Process booking in background
     try {
@@ -1513,3 +1533,36 @@ async function saveUserBookingEdit(email, modal) {
         saveBtn.innerHTML = originalBtnText;
     }
 }
+
+// ===== CURSOR TRACKER =====
+// Subtle cursor tracker with smooth following
+(function initCursorTracker() {
+    const cursorTracker = document.querySelector('.cursor-tracker');
+    if (!cursorTracker) return;
+
+    let mouseX = 0;
+    let mouseY = 0;
+    let trackerX = 0;
+    let trackerY = 0;
+
+    // Update mouse position
+    document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    });
+
+    // Smooth follow animation with easing
+    function animateTracker() {
+        // Smooth easing - more subtle than projects page
+        trackerX += (mouseX - trackerX) * 0.12;
+        trackerY += (mouseY - trackerY) * 0.12;
+
+        cursorTracker.style.left = trackerX + 'px';
+        cursorTracker.style.top = trackerY + 'px';
+
+        requestAnimationFrame(animateTracker);
+    }
+
+    // Start animation
+    animateTracker();
+})();

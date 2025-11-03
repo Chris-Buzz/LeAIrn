@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Projects Gallery - Chris Buzaid</title>
+    <link rel="stylesheet" href="/static/projects.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Back button - fixed position -->
+    <a href="/" class="back-button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        <span class="back-text">Back</span>
+    </a>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="gallery-header">
+            <h1 class="gallery-title" id="gallery-title"></h1>
+            <p class="gallery-subtitle">Innovative applications built with cutting-edge AI technology</p>
+            <div class="ai-badge-header">Built with AI</div>
+        </header>
+
+        <!-- Cursor follower -->
+        <div class="cursor-glow"></div>
+
+        <!-- Projects Gallery - 2 per row -->
+        <div class="projects-grid">
+            <!-- MoodFlix Card -->
+            <div class="project-card" data-project="moodflix">
+                <div class="project-status-badge status-in-progress">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    In Progress
+                </div>
+                <div class="project-image-container" onclick="openLightbox('moodflix')">
+                    <img src="/static/images/moodflix-preview.png"
+                         alt="MoodFlix App Preview"
+                         class="project-image-static"
+                         loading="lazy"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                    <div class="project-image-placeholder" style="display: none;">
+                        <div class="placeholder-icon">🎬</div>
+                    </div>
+                    <div class="image-overlay">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                        </svg>
+                        View Full Size
+                    </div>
+                </div>
+                <div class="project-content">
+                    <div class="project-header">
+                        <h3 class="project-title">MoodFlix</h3>
+                        <span class="project-tag">Entertainment AI</span>
+                    </div>
+                    <p class="project-description">
+                        Discover movies and TV shows perfectly matched to your current mood.
+                        AI-powered recommendation engine that understands emotions and suggests the perfect content.
+                    </p>
+                    <div class="project-tech">
+                        <span class="tech-badge">AI Recommendations</span>
+                        <span class="tech-badge">Mood Analysis</span>
+                        <span class="tech-badge">Streaming</span>
+                    </div>
+                    <div class="project-footer">
+                        <a href="#" class="project-link">
+                            View Project
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Planno Card -->
+            <div class="project-card" data-project="planno">
+                <div class="project-status-badge status-live">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    Live
+                </div>
+                <div class="project-image-container" onclick="openLightbox('planno')">
+                    <img src="/static/images/planno-preview.png"
+                         alt="Planno App Preview"
+                         class="project-image-static"
+                         loading="lazy"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                    <div class="project-image-placeholder" style="display: none;">
+                        <div class="placeholder-icon">📅</div>
+                    </div>
+                    <div class="image-overlay">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                        </svg>
+                        View Full Size
+                    </div>
+                </div>
+                <div class="project-content">
+                    <div class="project-header">
+                        <h3 class="project-title">Planno</h3>
+                        <span class="project-tag">Productivity AI</span>
+                    </div>
+                    <p class="project-description">
+                        Intelligent planning assistant that helps you organize your day, week, and month.
+                        Smart scheduling with AI-driven task prioritization and time optimization.
+                    </p>
+                    <div class="project-tech">
+                        <span class="tech-badge">Task Management</span>
+                        <span class="tech-badge">Smart Planning</span>
+                        <span class="tech-badge">Automation</span>
+                    </div>
+                    <div class="project-footer">
+                        <a href="https://planno-eta.vercel.app/" target="_blank" class="project-link">
+                            View Project
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LeAIrn Card -->
+            <div class="project-card" data-project="leairn">
+                <div class="project-status-badge status-in-progress-live">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    In Progress / Live
+                </div>
+                <div class="project-image-container" onclick="openLightbox('leairn')">
+                    <img src="/static/images/leairn-preview.png"
+                         alt="LeAIrn App Preview"
+                         class="project-image-static"
+                         loading="lazy"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                    <div class="project-image-placeholder" style="display: none;">
+                        <div class="placeholder-icon">🎓</div>
+                    </div>
+                    <div class="image-overlay">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                        </svg>
+                        View Full Size
+                    </div>
+                </div>
+                <div class="project-content">
+                    <div class="project-header">
+                        <h3 class="project-title">LeAIrn</h3>
+                        <span class="project-tag">Education AI</span>
+                    </div>
+                    <p class="project-description">
+                        Personalized AI training and mentorship platform. Book sessions to learn about AI tools,
+                        implementations, and best practices tailored to your experience level.
+                    </p>
+                    <div class="project-tech">
+                        <span class="tech-badge">Personalized Learning</span>
+                        <span class="tech-badge">Mentorship</span>
+                        <span class="tech-badge">AI Training</span>
+                    </div>
+                    <div class="project-footer">
+                        <a href="/" class="project-link">
+                            View Project
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Card -->
+            <div class="project-card" data-project="portfolio">
+                <div class="project-status-badge status-completed">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    Completed
+                </div>
+                <div class="project-image-container" onclick="openLightbox('portfolio')">
+                    <img src="/static/images/portfolio-preview.png"
+                         alt="Chris Buzaid Portfolio Preview"
+                         class="project-image-static"
+                         loading="lazy"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                    <div class="project-image-placeholder" style="display: none;">
+                        <div class="placeholder-icon">💼</div>
+                    </div>
+                    <div class="image-overlay">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                        </svg>
+                        View Full Size
+                    </div>
+                </div>
+                <div class="project-content">
+                    <div class="project-header">
+                        <h3 class="project-title">Chris Buzaid Portfolio</h3>
+                        <span class="project-tag">Personal Brand</span>
+                    </div>
+                    <p class="project-description">
+                        Professional portfolio showcasing AI-enhanced development projects,
+                        technical skills, and innovative solutions in software engineering.
+                    </p>
+                    <div class="project-tech">
+                        <span class="tech-badge">Web Development</span>
+                        <span class="tech-badge">AI Integration</span>
+                        <span class="tech-badge">Full Stack</span>
+                    </div>
+                    <div class="project-footer">
+                        <a href="https://chrisbuzaid.dev" target="_blank" class="project-link">
+                            View Project
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lightbox Modal -->
+        <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+            <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close lightbox">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <img id="lightbox-image" src="" alt="Project preview" onclick="event.stopPropagation()">
+        </div>
+
+        <!-- Footer -->
+        <footer class="gallery-footer">
+            <p>Crafted with AI by Chris Buzaid</p>
+            <div class="footer-links">
+                <a href="https://github.com/Chris-Buzz" target="_blank">GitHub</a>
+                <span>•</span>
+                <a href="https://chrisbuzaid.dev" target="_blank">Portfolio</a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Typewriter effect for title
+        const titleText = "AI-Powered Projects";
+        const titleElement = document.getElementById('gallery-title');
+        let titleIndex = 0;
+
+        function typeTitle() {
+            if (titleIndex < titleText.length) {
+                titleElement.textContent += titleText.charAt(titleIndex);
+                titleIndex++;
+                setTimeout(typeTitle, 80);
+            } else {
+                // Add blinking cursor after typing
+                titleElement.innerHTML += '<span class="title-cursor">|</span>';
+            }
+        }
+
+        // Start typing after page load
+        setTimeout(typeTitle, 300);
+
+        // Cursor follower glow effect
+        const cursorGlow = document.querySelector('.cursor-glow');
+        let mouseX = 0;
+        let mouseY = 0;
+        let glowX = 0;
+        let glowY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        function animateGlow() {
+            // Smooth follow with easing
+            glowX += (mouseX - glowX) * 0.15;
+            glowY += (mouseY - glowY) * 0.15;
+
+            cursorGlow.style.left = glowX + 'px';
+            cursorGlow.style.top = glowY + 'px';
+
+            requestAnimationFrame(animateGlow);
+        }
+
+        animateGlow();
+
+        // Interactive hover effects for title
+        const galleryTitle = document.getElementById('gallery-title');
+
+        galleryTitle.addEventListener('mouseenter', () => {
+            galleryTitle.style.transform = 'scale(1.05)';
+        });
+
+        galleryTitle.addEventListener('mouseleave', () => {
+            galleryTitle.style.transform = 'scale(1)';
+        });
+
+        // Lightbox functionality
+        function openLightbox(projectName) {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImage = document.getElementById('lightbox-image');
+            const imagePath = `/static/images/${projectName}-preview.png`;
+
+            lightboxImage.src = imagePath;
+            lightbox.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Close lightbox with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeLightbox();
+            }
+        });
+    </script>
+</body>
+</html>
