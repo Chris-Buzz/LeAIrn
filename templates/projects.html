@@ -40,12 +40,13 @@
                     </svg>
                     In Progress
                 </div>
-                <div class="project-image-container" onclick="openLightbox('moodflix')">
-                    <img src="/static/images/moodflix-preview.png"
+                <div class="project-image-container" onclick="openLightbox('moodflix')"
+                     data-gif="/media/Moodflix2.gif"
+                     data-static="/media/moodflix.jpeg">
+                    <img src="/media/moodflix.jpeg"
                          alt="MoodFlix App Preview"
                          class="project-image-static"
-                         loading="lazy"
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                         loading="lazy">
                     <div class="project-image-placeholder" style="display: none;">
                         <div class="placeholder-icon">🎬</div>
                     </div>
@@ -71,11 +72,13 @@
                         <span class="tech-badge">Streaming</span>
                     </div>
                     <div class="project-footer">
-                        <a href="#" class="project-link">
-                            View Project
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                        <a href="#" class="project-link" onclick="showComingSoon(event)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                <polyline points="15 3 21 3 21 9"/>
+                                <line x1="10" y1="14" x2="21" y2="3"/>
                             </svg>
+                            Try it Out
                         </a>
                     </div>
                 </div>
@@ -90,12 +93,13 @@
                     </svg>
                     Live
                 </div>
-                <div class="project-image-container" onclick="openLightbox('planno')">
-                    <img src="/static/images/planno-preview.png"
+                <div class="project-image-container" onclick="openLightbox('planno')"
+                     data-gif="/media/Planno.gif"
+                     data-static="/media/planno1.jpeg">
+                    <img src="/media/planno1.jpeg"
                          alt="Planno App Preview"
                          class="project-image-static"
-                         loading="lazy"
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                         loading="lazy">
                     <div class="project-image-placeholder" style="display: none;">
                         <div class="placeholder-icon">📅</div>
                     </div>
@@ -122,10 +126,12 @@
                     </div>
                     <div class="project-footer">
                         <a href="https://planno-eta.vercel.app/" target="_blank" class="project-link">
-                            View Project
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                <polyline points="15 3 21 3 21 9"/>
+                                <line x1="10" y1="14" x2="21" y2="3"/>
                             </svg>
+                            Try it Out
                         </a>
                     </div>
                 </div>
@@ -141,12 +147,13 @@
                     </svg>
                     In Progress / Live
                 </div>
-                <div class="project-image-container" onclick="openLightbox('leairn')">
-                    <img src="/static/images/leairn-preview.png"
+                <div class="project-image-container" onclick="openLightbox('leairn')"
+                     data-gif="/media/Meeting.gif"
+                     data-static="/media/leairn.png">
+                    <img src="/media/leairn.png"
                          alt="LeAIrn App Preview"
                          class="project-image-static"
-                         loading="lazy"
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                         loading="lazy">
                     <div class="project-image-placeholder" style="display: none;">
                         <div class="placeholder-icon">🎓</div>
                     </div>
@@ -173,10 +180,12 @@
                     </div>
                     <div class="project-footer">
                         <a href="/" class="project-link">
-                            View Project
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                <polyline points="15 3 21 3 21 9"/>
+                                <line x1="10" y1="14" x2="21" y2="3"/>
                             </svg>
+                            Try it Out
                         </a>
                     </div>
                 </div>
@@ -191,12 +200,13 @@
                     </svg>
                     Completed
                 </div>
-                <div class="project-image-container" onclick="openLightbox('portfolio')">
-                    <img src="/static/images/portfolio-preview.png"
+                <div class="project-image-container" onclick="openLightbox('portfolio')"
+                     data-gif="/media/Portfolio.gif"
+                     data-static="/media/portfolio.png">
+                    <img src="/media/portfolio.png"
                          alt="Chris Buzaid Portfolio Preview"
                          class="project-image-static"
-                         loading="lazy"
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                         loading="lazy">
                     <div class="project-image-placeholder" style="display: none;">
                         <div class="placeholder-icon">💼</div>
                     </div>
@@ -223,13 +233,36 @@
                     </div>
                     <div class="project-footer">
                         <a href="https://chrisbuzaid.dev" target="_blank" class="project-link">
-                            View Project
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                <polyline points="15 3 21 3 21 9"/>
+                                <line x1="10" y1="14" x2="21" y2="3"/>
                             </svg>
+                            Try it Out
                         </a>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Coming Soon Modal -->
+        <div id="coming-soon-modal" class="coming-soon-modal" onclick="closeComingSoon()">
+            <div class="coming-soon-content" onclick="event.stopPropagation()">
+                <button class="modal-close" onclick="closeComingSoon()" aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="coming-soon-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                </div>
+                <h2 class="coming-soon-title">Coming Soon</h2>
+                <p class="coming-soon-text">MoodFlix is currently under development. Stay tuned for the launch!</p>
+                <button class="coming-soon-btn" onclick="closeComingSoon()">Got it</button>
             </div>
         </div>
 
@@ -241,7 +274,22 @@
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
             </button>
-            <img id="lightbox-image" src="" alt="Project preview" onclick="event.stopPropagation()">
+            <a id="lightbox-top-cta" href="#" target="_blank" class="lightbox-top-cta-button" style="display: none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/>
+                    <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                Try it Out
+            </a>
+            <div class="lightbox-content" onclick="event.stopPropagation()">
+                <div class="lightbox-header">
+                    <h3 id="lightbox-project-title" class="lightbox-title"></h3>
+                </div>
+                <div class="lightbox-gallery" id="lightbox-gallery">
+                    <!-- Images will be dynamically inserted here -->
+                </div>
+            </div>
         </div>
 
         <!-- Footer -->
@@ -274,6 +322,35 @@
 
         // Start typing after page load
         setTimeout(typeTitle, 300);
+
+        // Performance optimization: Load GIFs on hover
+        const projectContainers = document.querySelectorAll('.project-image-container');
+        projectContainers.forEach(container => {
+            const img = container.querySelector('.project-image-static');
+            const gifUrl = container.dataset.gif;
+            const staticUrl = container.dataset.static;
+            let gifLoaded = false;
+
+            container.addEventListener('mouseenter', () => {
+                if (gifUrl && !gifLoaded) {
+                    // Preload the GIF
+                    const gifImg = new Image();
+                    gifImg.src = gifUrl;
+                    gifImg.onload = () => {
+                        img.src = gifUrl;
+                        gifLoaded = true;
+                    };
+                } else if (gifLoaded) {
+                    img.src = gifUrl;
+                }
+            });
+
+            container.addEventListener('mouseleave', () => {
+                if (gifLoaded && staticUrl) {
+                    img.src = staticUrl;
+                }
+            });
+        });
 
         // Cursor follower glow effect
         const cursorGlow = document.querySelector('.cursor-glow');
@@ -314,10 +391,57 @@
         // Lightbox functionality
         function openLightbox(projectName) {
             const lightbox = document.getElementById('lightbox');
-            const lightboxImage = document.getElementById('lightbox-image');
-            const imagePath = `/static/images/${projectName}-preview.png`;
+            const lightboxGallery = document.getElementById('lightbox-gallery');
+            const lightboxTitle = document.getElementById('lightbox-project-title');
+            const lightboxTopCta = document.getElementById('lightbox-top-cta');
 
-            lightboxImage.src = imagePath;
+            // Project data mapping - only showing GIFs for performance
+            const projectData = {
+                'moodflix': {
+                    title: 'MoodFlix',
+                    image: '/media/Moodflix2.gif',
+                    link: null
+                },
+                'planno': {
+                    title: 'Planno',
+                    image: '/media/Planno.gif',
+                    link: 'https://planno-eta.vercel.app/'
+                },
+                'leairn': {
+                    title: 'LeAIrn',
+                    image: '/media/Meeting.gif',
+                    link: '/'
+                },
+                'portfolio': {
+                    title: 'Chris Buzaid Portfolio',
+                    image: '/media/Portfolio.gif',
+                    link: 'https://chrisbuzaid.dev'
+                }
+            };
+
+            const project = projectData[projectName];
+
+            // Set title
+            lightboxTitle.textContent = project.title;
+
+            // Clear previous images
+            lightboxGallery.innerHTML = '';
+
+            // Add only the main GIF for better performance
+            const imgElement = document.createElement('img');
+            imgElement.src = project.image;
+            imgElement.alt = `${project.title} preview`;
+            imgElement.className = 'lightbox-gallery-image';
+            lightboxGallery.appendChild(imgElement);
+
+            // Show/hide and set link for top CTA button only
+            if (project.link && project.link !== '#') {
+                lightboxTopCta.href = project.link;
+                lightboxTopCta.style.display = 'inline-flex';
+            } else {
+                lightboxTopCta.style.display = 'none';
+            }
+
             lightbox.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
@@ -332,8 +456,23 @@
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeLightbox();
+                closeComingSoon();
             }
         });
+
+        // Coming Soon Modal Functions
+        function showComingSoon(event) {
+            event.preventDefault();
+            const modal = document.getElementById('coming-soon-modal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeComingSoon() {
+            const modal = document.getElementById('coming-soon-modal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
     </script>
 </body>
 </html>

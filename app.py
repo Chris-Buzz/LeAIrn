@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, send_file, send_from_directory, session, redirect, url_for
 from datetime import datetime, timedelta
 from functools import wraps
 import json
@@ -70,12 +70,31 @@ else:
 # Track last auto-cleanup time
 last_auto_cleanup = None
 
+# Cron API key for security (set this in Vercel environment variables)
+CRON_API_KEY = os.getenv('CRON_API_KEY', '')
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'logged_in' not in session:
             return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
+    return decorated_function
+
+def cron_auth_required(f):
+    """Decorator to verify cron requests are legitimate"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Get the API key from request headers or query params
+        api_key = request.headers.get('X-Cron-API-Key') or request.args.get('api_key')
+        
+        # Verify it matches our secret
+        if not api_key or api_key != CRON_API_KEY:
+            print(f"ERROR: Unauthorized cron attempt from {request.remote_addr}")
+            return jsonify({'success': False, 'message': 'Unauthorized - Invalid cron API key'}), 401
+        
+        return f(*args, **kwargs)
+    
     return decorated_function
 
 @app.before_request
@@ -97,6 +116,9 @@ def send_confirmation_email(user_data, slot_data):
         msg['Subject'] = 'Your AI Learning Session is Confirmed - LeAIrn'
         msg['From'] = EMAIL_FROM
         msg['To'] = user_data['email']
+        msg['Reply-To'] = 'cjpbuzaid@gmail.com'  # Add Reply-To header
+        msg['X-Priority'] = '3'  # Normal priority
+        msg['X-Mailer'] = 'LeAIrn Booking System'
 
         # Create HTML email
         html = f"""
@@ -144,9 +166,14 @@ def send_confirmation_email(user_data, slot_data):
             server.login(EMAIL_USER, EMAIL_PASSWORD)
             server.send_message(msg)
 
+        print(f"✅ Confirmation email sent to {user_data['email']}")
+        print(f"   From: {EMAIL_FROM}")
+        print(f"   Subject: Your AI Learning Session is Confirmed - LeAIrn")
         return True
     except Exception as e:
-        print(f"Error sending email: {e}")
+        print(f"❌ ERROR: Failed to send confirmation email to {user_data.get('email', 'unknown')}: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def send_admin_notification_email(user_data, slot_data):
@@ -157,6 +184,8 @@ def send_admin_notification_email(user_data, slot_data):
         msg['From'] = EMAIL_FROM
         msg['To'] = EMAIL_RECIPIENT
         msg['Reply-To'] = user_data['email']
+        msg['X-Priority'] = '2'  # High priority for admin
+        msg['X-Mailer'] = 'LeAIrn Booking System'
 
         # Create HTML email
         html = f"""
@@ -210,7 +239,9 @@ def send_admin_notification_email(user_data, slot_data):
         print(f"OK: Admin notification email sent for booking by {user_data['full_name']}")
         return True
     except Exception as e:
-        print(f"Error sending admin notification email: {e}")
+        print(f"ERROR: Error sending admin notification email: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def send_booking_update_email(user_data, old_slot_data=None, new_slot_data=None, old_room=None, new_room=None):
@@ -329,6 +360,83 @@ def send_booking_deletion_email(user_data, slot_data):
         return True
     except Exception as e:
         print(f"Error sending booking deletion email: {e}")
+        return False
+
+def send_booking_reminder_email(booking_data):
+    """Send reminder email to user on the day of their booking at 8:30 AM"""
+    try:
+        user_email = booking_data.get('email', '')
+        user_name = booking_data.get('full_name', 'Student')
+        slot_details = booking_data.get('slot_details', {})
+        
+        if not user_email:
+            print(f"ERROR: No email found for booking {booking_data.get('id')}")
+            return False
+
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = f"Reminder: Your AI Learning Session with Christopher Today! - LeAIrn"
+        msg['From'] = EMAIL_FROM
+        msg['To'] = user_email
+
+        # Get session time
+        session_time = slot_details.get('time', 'N/A')
+        session_date = f"{slot_details.get('day', '')}, {slot_details.get('date', '')}"
+        session_location = booking_data.get('selected_room', 'TBD')
+
+        # Create HTML email
+        html = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h1 style="color: #6366F1;">Your AI Learning Session is Today! 🎉</h1>
+                    <p>Hi {user_name},</p>
+                    <p>Just a friendly reminder that your AI learning session with Christopher Buzaid is happening today!</p>
+
+                    <div style="background: #f0f9ff; border: 2px solid #6366F1; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0; color: #6366F1; text-align: center;">Session Details</h2>
+                        <p style="margin: 10px 0;"><strong>📅 Date:</strong> {session_date}</p>
+                        <p style="margin: 10px 0;"><strong>⏰ Time:</strong> {session_time}</p>
+                        <p style="margin: 10px 0;"><strong>📍 Location:</strong> {session_location}</p>
+                        <p style="margin: 10px 0;"><strong>⏱️ Duration:</strong> 30 minutes</p>
+                    </div>
+
+                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 20px 0; border-radius: 4px;">
+                        <h3 style="margin-top: 0; color: #92400e;">📌 Tips Before You Come:</h3>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>Arrive 5 minutes early</li>
+                            <li>Bring any questions or projects you're working on</li>
+                            <li>Have your laptop ready if we're doing hands-on work</li>
+                            <li>Let me know if you need to reschedule</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: #f0fdf4; border-left: 4px solid #10B981; padding: 20px; margin: 20px 0; border-radius: 4px;">
+                        <h3 style="margin-top: 0; color: #166534;">Can't Make It?</h3>
+                        <p>If something came up and you need to reschedule, please let me know as soon as possible so I can open up this time slot for other students.</p>
+                        <p style="margin-top: 15px;">
+                            <a href="mailto:cjpbuzaid@gmail.com?subject=Need%20to%20reschedule%20my%20session" style="color: #6366F1; text-decoration: underline;">Email me to reschedule</a>
+                        </p>
+                    </div>
+
+                    <p style="margin-top: 30px; color: #6B7280;">Looking forward to meeting with you!</p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com">cjpbuzaid@gmail.com</a></p>
+                </div>
+            </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html, 'html'))
+
+        # Send email
+        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_USER, EMAIL_PASSWORD)
+            server.send_message(msg)
+
+        print(f"OK: Booking reminder email sent to {user_email}")
+        return True
+    except Exception as e:
+        print(f"Error sending booking reminder email: {e}")
         return False
 
 def send_feedback_request_email(user_data):
@@ -916,6 +1024,11 @@ def projects():
     """AI Projects Gallery page"""
     return render_template('projects.html')
 
+@app.route('/media/<path:filename>')
+def serve_media(filename):
+    """Serve files from the media folder"""
+    return send_from_directory('media', filename)
+
 @app.route('/feedback')
 def feedback():
     """Feedback page for users to rate their session"""
@@ -951,12 +1064,15 @@ def request_booking_verification():
                 'message': 'Only @monmouth.edu email addresses are allowed. Please use your Monmouth University email.'
             }), 400
 
-        # Check rate limiting - prevent spam (max 3 requests per hour per email)
-        rate_limit_check = db.check_verification_rate_limit(email)
+        # Check rate limiting - prevent spam (max 3 new booking requests per hour per email)
+        rate_limit_check = db.check_verification_rate_limit(email, request_type='booking')
         if not rate_limit_check['allowed']:
+            wait_minutes = rate_limit_check['wait_minutes']
             return jsonify({
                 'success': False,
-                'message': f'Too many verification requests. Please wait {rate_limit_check["wait_minutes"]} minutes before trying again.'
+                'message': f'You\'ve reached the limit for booking requests. You can make a new booking again in {wait_minutes} minute{"s" if wait_minutes != 1 else ""}. This is a safety measure to prevent duplicate bookings.',
+                'rate_limited': True,
+                'wait_minutes': wait_minutes
             }), 429
 
         # Validate the slot exists and is available
@@ -1125,10 +1241,18 @@ def confirm_booking_verification():
         # Send confirmation email to user
         print(f"Sending confirmation email to {email}...")
         email_sent = send_confirmation_email(booking_data, selected_slot_data)
+        if not email_sent:
+            print(f"⚠️ WARNING: Confirmation email failed to send to {email}")
+        else:
+            print(f"✅ Confirmation email sent successfully to {email}")
 
         # Send notification email to admin
         print(f"Sending admin notification email...")
         admin_email_sent = send_admin_notification_email(booking_data, selected_slot_data)
+        if not admin_email_sent:
+            print(f"⚠️ WARNING: Admin notification email failed to send")
+        else:
+            print(f"✅ Admin notification email sent successfully")
 
         return jsonify({
             'success': True,
@@ -1163,11 +1287,26 @@ def admin_login():
         username = data.get('username')
         password = data.get('password')
 
+        # Get client IP for rate limiting
+        client_ip = request.remote_addr
+
         # Security: Only log username, never log passwords
-        print(f"Login attempt - Username: '{username}'")
+        print(f"Login attempt - Username: '{username}' - IP: {client_ip}")
+
+        # Check rate limit on failed attempts (5 per hour)
+        rate_limit_check = db.check_admin_login_rate_limit(client_ip)
+        if not rate_limit_check['allowed']:
+            print(f"✗ Login attempt blocked - IP {client_ip} exceeded rate limit")
+            return jsonify({
+                'success': False,
+                'message': f'Too many failed login attempts. Please wait {rate_limit_check["wait_minutes"]} minutes before trying again.'
+            }), 429
 
         # Check if username exists and password matches
         if username in ADMIN_ACCOUNTS and ADMIN_ACCOUNTS[username] == password:
+            # Reset rate limit counter on successful login
+            db.reset_admin_login_attempts(client_ip)
+            
             session['logged_in'] = True
             session['admin_username'] = username  # Store which admin logged in
             print(f"✓ Login successful for: {username}")
@@ -1248,6 +1387,57 @@ def manual_send_reminders():
     except Exception as e:
         print(f"Error sending reminders: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/cron/send-reminders', methods=['GET', 'POST'])
+def cron_send_reminders():
+    """
+    Cron endpoint to send morning reminders
+    
+    VERCEL CRONS:
+    - Automatically called at 8:30 AM (schedule: "30 8 * * *" in vercel.json)
+    - No authentication needed - Vercel manages security internally
+    - Only available on Vercel Pro plan or higher
+    
+    EXTERNAL CRON (EasyCron, etc.):
+    - Requires CRON_API_KEY authentication (X-Cron-API-Key header or api_key query param)
+    
+    SECURITY:
+    - Only sends reminders to verified booking emails
+    - Prevents unauthorized access via API key validation for external services
+    - Each reminder goes ONLY to the person who made the booking
+    """
+    try:
+        # Check if this is an external cron request (has api_key)
+        api_key = request.headers.get('X-Cron-API-Key') or request.args.get('api_key')
+        
+        # If API key is provided, validate it (for external cron services)
+        if api_key is not None:
+            if not api_key or api_key != CRON_API_KEY:
+                print(f"ERROR: Unauthorized external cron attempt from {request.remote_addr}")
+                return jsonify({'success': False, 'message': 'Unauthorized - Invalid cron API key'}), 401
+        # If no API key, allow it (assuming it's from Vercel's cron service)
+        
+        print("=== CRON: Processing reminder requests ===")
+        
+        # Send reminders to all bookings with today's date
+        reminders_sent = check_and_send_meeting_reminders()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Processed cron job. Sent {reminders_sent} reminder(s).',
+            'reminders_sent': reminders_sent,
+            'timestamp': datetime.now().isoformat(),
+            'security_notes': 'Reminders sent only to verified booking email addresses'
+        }), 200
+        
+    except Exception as e:
+        print(f"ERROR in cron endpoint: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e),
+            'error': 'Failed to process cron job'
+        }), 500
+
 
 @app.route('/api/session-overviews/manual', methods=['POST'])
 @login_required
@@ -1385,9 +1575,8 @@ def export_csv():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/booking/<booking_id>', methods=['DELETE'])
-@login_required
 def delete_booking(booking_id):
-    """Delete a booking and free up the time slot"""
+    """Delete a booking and free up the time slot - users can delete their own bookings"""
     try:
         # Get all bookings
         users = db.get_all_bookings()
@@ -1412,7 +1601,13 @@ def delete_booking(booking_id):
 
         # Free up the time slot
         if slot_id:
-            db.unbook_slot(slot_id)
+            unbooked = db.unbook_slot(slot_id)
+            if unbooked:
+                print(f"✅ Time slot {slot_id} marked as available again (booking deleted)")
+            else:
+                print(f"⚠️ WARNING: Failed to unbook time slot {slot_id}")
+        else:
+            print(f"⚠️ WARNING: No slot_id found in booking")
 
         # Send deletion notification email to user
         print(f"Sending deletion notification email to {deleted_user['email']}...")
@@ -1511,9 +1706,15 @@ def mark_booking_complete(booking_id):
         if not success:
             return jsonify({'success': False, 'message': 'Failed to delete booking'}), 500
 
-        # Free up the time slot
+        # DELETE the time slot (since session is completed, slot is no longer needed)
         if slot_id:
-            db.unbook_slot(slot_id)
+            slot_deleted = db.delete_slot(slot_id)
+            if slot_deleted:
+                print(f"✅ Time slot {slot_id} deleted (session completed)")
+            else:
+                print(f"⚠️ WARNING: Failed to delete time slot {slot_id}")
+        else:
+            print(f"⚠️ WARNING: No slot_id found in booking")
 
         return jsonify({'success': True, 'message': 'Session marked complete and feedback email sent'})
 
@@ -1833,6 +2034,51 @@ def delete_time_slot(slot_id):
         print(f"Error deleting time slot: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@app.route('/api/slots/<slot_id>/unbook', methods=['POST'])
+@login_required
+def unbook_slot_admin(slot_id):
+    """Unbook a booked time slot to make it available again (admin only)"""
+    try:
+        # Get all slots
+        slots = db.get_all_slots()
+
+        # Find the slot
+        slot_to_unbook = None
+        for slot in slots:
+            if slot['id'] == slot_id:
+                slot_to_unbook = slot
+                break
+
+        if slot_to_unbook is None:
+            return jsonify({'success': False, 'message': 'Time slot not found'}), 404
+
+        if not slot_to_unbook.get('booked'):
+            return jsonify({'success': False, 'message': 'This slot is not currently booked'}), 400
+
+        # Unbook the slot
+        success = db.unbook_slot(slot_id)
+        if not success:
+            return jsonify({'success': False, 'message': 'Failed to unbook slot'}), 500
+
+        booked_by = slot_to_unbook.get('booked_by', 'Unknown')
+        print(f"✅ Slot {slot_id} (booked by {booked_by}) has been made available again")
+
+        return jsonify({
+            'success': True,
+            'message': f'Time slot has been made available again (was booked by {booked_by})',
+            'slot': {
+                'id': slot_id,
+                'day': slot_to_unbook.get('day'),
+                'date': slot_to_unbook.get('date'),
+                'time': slot_to_unbook.get('time'),
+                'booked': False
+            }
+        })
+
+    except Exception as e:
+        print(f"Error unbooking time slot: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/api/slots/bulk-delete', methods=['POST'])
 @login_required
 def bulk_delete_slots():
@@ -1977,12 +2223,15 @@ def lookup_booking():
         if not email:
             return jsonify({'success': False, 'message': 'Email address required'}), 400
 
-        # Check rate limiting - max 3 lookup requests per hour
-        rate_limit_check = db.check_verification_rate_limit(f"lookup_{email}")
+        # Check rate limiting - max 5 lookup requests per hour
+        rate_limit_check = db.check_verification_rate_limit(email, request_type='lookup')
         if not rate_limit_check['allowed']:
+            wait_minutes = rate_limit_check['wait_minutes']
             return jsonify({
                 'success': False,
-                'message': f'Too many lookup requests. Please wait {rate_limit_check["wait_minutes"]} minutes before trying again.'
+                'message': f'Too many lookup requests. You can look up your booking again in {wait_minutes} minute{"s" if wait_minutes != 1 else ""}. This is a safety measure to protect your account from unauthorized access attempts.',
+                'rate_limited': True,
+                'wait_minutes': wait_minutes
             }), 429
 
         # Get all bookings from Firestore
@@ -2364,6 +2613,31 @@ def contact_form():
     except Exception as e:
         print(f"ERROR: Contact form error: {e}")
         return jsonify({'success': False, 'message': 'Failed to send message. Please try again.'}), 500
+
+@app.route('/api/send-daily-reminders', methods=['POST', 'GET'])
+@login_required
+def send_daily_reminders():
+    """
+    Manually trigger the daily reminder emails.
+    Admin only - checks for bookings today and sends reminders.
+    Can be called via cron job or manually for testing.
+    """
+    try:
+        print("=== Manual Daily Reminders Triggered ===")
+        reminders_sent = check_and_send_meeting_reminders()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Reminder check completed',
+            'reminders_sent': reminders_sent
+        }), 200
+    except Exception as e:
+        print(f"ERROR: Failed to send daily reminders: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to trigger reminders',
+            'error': str(e)
+        }), 500
 
 # Initialize time slots on startup
 init_time_slots()

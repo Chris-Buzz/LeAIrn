@@ -435,11 +435,23 @@ def unbook_slot(slot_id: str) -> bool:
     Returns:
         True if successful, False otherwise
     """
-    return update_slot(slot_id, {
-        'booked': False,
-        'booked_by': None,
-        'room': None
-    })
+    db = get_firestore_client()
+    if db is None:
+        return False
+
+    try:
+        doc_ref = db.collection('time_slots').document(slot_id)
+        doc_ref.update({
+            'booked': False,
+            'booked_by': None,
+            'room': None
+        })
+        print(f"OK: Slot unboked: {slot_id}")
+        return True
+
+    except Exception as e:
+        print(f"Error unbooking slot: {e}")
+        return False
 
 
 # ============================================================================
@@ -995,13 +1007,16 @@ def mark_pending_booking_used(email: str) -> bool:
         return False
 
 
-def check_verification_rate_limit(email: str) -> dict:
+def check_verification_rate_limit(email: str, request_type: str = 'booking') -> dict:
     """
     Check if email has exceeded verification code request rate limit.
-    Limit: 3 requests per hour per email address.
+    Limits:
+    - 3 requests per hour for new bookings
+    - 5 requests per hour for looking up existing bookings
 
     Args:
         email: User's email address
+        request_type: 'booking' (3/hour) or 'lookup' (5/hour)
 
     Returns:
         dict: {'allowed': bool, 'wait_minutes': int}
@@ -1009,11 +1024,15 @@ def check_verification_rate_limit(email: str) -> dict:
     try:
         initialize_firestore()
 
-        # Normalize email
+        # Normalize email and add request type to key
         email = email.lower().strip()
+        doc_key = f"{email}_{request_type}"
+
+        # Set limit based on request type
+        limit = 5 if request_type == 'lookup' else 3
 
         # Get rate limit record
-        doc_ref = db.collection('rate_limits').document(email)
+        doc_ref = db.collection('rate_limits').document(doc_key)
         doc = doc_ref.get()
 
         now = datetime.now()
@@ -1022,6 +1041,7 @@ def check_verification_rate_limit(email: str) -> dict:
             # First request, create record
             doc_ref.set({
                 'email': email,
+                'request_type': request_type,
                 'requests': [{
                     'timestamp': now.isoformat()
                 }],
@@ -1036,7 +1056,7 @@ def check_verification_rate_limit(email: str) -> dict:
         one_hour_ago = (now - __import__('datetime').timedelta(hours=1)).isoformat()
         recent_requests = [r for r in requests if r.get('timestamp', '') > one_hour_ago]
 
-        if len(recent_requests) >= 3:
+        if len(recent_requests) >= limit:
             # Rate limit exceeded
             oldest_request = min([r.get('timestamp', '') for r in recent_requests])
             oldest_dt = datetime.fromisoformat(oldest_request)
@@ -1049,6 +1069,7 @@ def check_verification_rate_limit(email: str) -> dict:
         recent_requests.append({'timestamp': now.isoformat()})
         doc_ref.set({
             'email': email,
+            'request_type': request_type,
             'requests': recent_requests,
             'last_request': now.isoformat()
         })
@@ -1056,17 +1077,83 @@ def check_verification_rate_limit(email: str) -> dict:
         return {'allowed': True, 'wait_minutes': 0}
 
     except Exception as e:
-        print(f"ERROR: Failed to check rate limit: {e}")
+        print(f"ERROR: Failed to check verification rate limit: {e}")
         # On error, allow the request
         return {'allowed': True, 'wait_minutes': 0}
 
 
-def unbook_slot(slot_id: str) -> bool:
+def check_admin_login_rate_limit(ip_address: str) -> dict:
     """
-    Unbook a slot (rollback operation).
+    Check if IP address has exceeded admin login attempt rate limit.
+    Limit: 5 failed attempts per hour per IP address.
 
     Args:
-        slot_id: Slot document ID
+        ip_address: Client IP address
+
+    Returns:
+        dict: {'allowed': bool, 'wait_minutes': int, 'attempts': int}
+    """
+    try:
+        initialize_firestore()
+
+        # Normalize IP
+        ip_address = str(ip_address).strip()
+
+        # Get rate limit record
+        doc_ref = db.collection('admin_login_attempts').document(ip_address)
+        doc = doc_ref.get()
+
+        now = datetime.now()
+
+        if not doc.exists:
+            # First failed attempt, create record
+            doc_ref.set({
+                'ip_address': ip_address,
+                'attempts': [{
+                    'timestamp': now.isoformat()
+                }],
+                'last_attempt': now.isoformat()
+            })
+            return {'allowed': True, 'wait_minutes': 0, 'attempts': 1}
+
+        rate_limit = doc.to_dict()
+        attempts = rate_limit.get('attempts', [])
+
+        # Filter attempts from last hour
+        one_hour_ago = (now - __import__('datetime').timedelta(hours=1)).isoformat()
+        recent_attempts = [a for a in attempts if a.get('timestamp', '') > one_hour_ago]
+
+        if len(recent_attempts) >= 5:
+            # Rate limit exceeded
+            oldest_attempt = min([a.get('timestamp', '') for a in recent_attempts])
+            oldest_dt = datetime.fromisoformat(oldest_attempt)
+            wait_until = oldest_dt + __import__('datetime').timedelta(hours=1)
+            wait_minutes = max(1, int((wait_until - now).total_seconds() / 60))
+
+            return {'allowed': False, 'wait_minutes': wait_minutes, 'attempts': len(recent_attempts)}
+
+        # Add new attempt
+        recent_attempts.append({'timestamp': now.isoformat()})
+        doc_ref.set({
+            'ip_address': ip_address,
+            'attempts': recent_attempts,
+            'last_attempt': now.isoformat()
+        })
+
+        return {'allowed': True, 'wait_minutes': 0, 'attempts': len(recent_attempts)}
+
+    except Exception as e:
+        print(f"ERROR: Failed to check admin login rate limit: {e}")
+        # On error, allow the attempt
+        return {'allowed': True, 'wait_minutes': 0, 'attempts': 0}
+
+
+def reset_admin_login_attempts(ip_address: str) -> bool:
+    """
+    Reset failed login attempts for an IP (on successful login).
+
+    Args:
+        ip_address: Client IP address
 
     Returns:
         bool: True if successful, False otherwise
@@ -1074,19 +1161,13 @@ def unbook_slot(slot_id: str) -> bool:
     try:
         initialize_firestore()
 
-        slot_ref = db.collection('slots').document(str(slot_id))
-        slot_ref.update({
-            'booked': False,
-            'booked_by': None,
-            'room': None,
-            'booked_at': None
-        })
-
-        print(f"OK: Unbooked slot {slot_id}")
+        ip_address = str(ip_address).strip()
+        db.collection('admin_login_attempts').document(ip_address).delete()
+        print(f"OK: Reset login attempts for IP {ip_address}")
         return True
 
     except Exception as e:
-        print(f"ERROR: Failed to unbook slot: {e}")
+        print(f"ERROR: Failed to reset login attempts: {e}")
         return False
 
 
