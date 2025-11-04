@@ -14,5 +14,11 @@
   ],
   "env": {
     "FLASK_ENV": "production"
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/send-reminders",
+      "schedule": "30 8 * * *"
+    }
+  ]
 }

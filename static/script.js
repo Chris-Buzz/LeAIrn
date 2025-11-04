@@ -942,18 +942,34 @@ async function lookupBooking() {
                 document.getElementById('verification_code').focus();
             }, 100);
         } else {
-            resultDiv.innerHTML = `
-                <div style="background: var(--bg); border: 2px solid var(--border); border-radius: 1rem; padding: 1.5rem; text-align: center;">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-tertiary); margin-bottom: 1rem;">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                    </svg>
-                    <h3 style="margin-bottom: 0.5rem;">No Upcoming Booking Found</h3>
-                    <p style="color: var(--text-secondary);">We couldn't find an upcoming booking with this email address.</p>
-                    <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">Past bookings are not shown. Please book a new session if needed.</p>
-                </div>
-            `;
+            // Check if this is a rate limit error
+            if (result.rate_limited) {
+                resultDiv.innerHTML = `
+                    <div style="background: var(--bg); border: 2px solid var(--error); border-radius: 1rem; padding: 1.5rem; text-align: center;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--error); margin-bottom: 1rem;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <h3 style="margin-bottom: 0.5rem; color: var(--error);">Too Many Lookup Requests</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 1rem;">${result.message}</p>
+                        <p style="color: var(--text-tertiary); font-size: 0.9rem;">This limit protects your account from unauthorized access attempts.</p>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <div style="background: var(--bg); border: 2px solid var(--border); border-radius: 1rem; padding: 1.5rem; text-align: center;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-tertiary); margin-bottom: 1rem;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <h3 style="margin-bottom: 0.5rem;">No Upcoming Booking Found</h3>
+                        <p style="color: var(--text-secondary);">We couldn't find an upcoming booking with this email address.</p>
+                        <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">Past bookings are not shown. Please book a new session if needed.</p>
+                    </div>
+                `;
+            }
         }
     } catch (error) {
         console.error('Error looking up booking:', error);
@@ -1000,6 +1016,8 @@ async function verifyCode() {
             // Display all bookings
             const bookingsHTML = bookings.map((booking, index) => {
                 const slotDetails = booking.slot_details || {};
+                // Escape booking data for safe passing to function
+                const escapedBooking = JSON.stringify(booking).replace(/'/g, "\\'").replace(/"/g, '&quot;');
                 return `
                     <div style="background: var(--bg); border: 2px solid var(--primary); border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem;">
                         <h3 style="margin-bottom: 1rem; color: var(--primary);">Booking ${bookings.length > 1 ? `#${index + 1}` : ''}</h3>
@@ -1031,7 +1049,7 @@ async function verifyCode() {
                         </div>
 
                         <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 0.75rem;">
-                            <button onclick="showEditBookingForm('${verificationEmail}', '${booking.id}')" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                            <button onclick="showEditBookingForm('${verificationEmail}', '${escapedBooking}')" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
                                 Edit Booking
                             </button>
                             <button onclick="confirmDeleteSpecificBooking('${booking.id}', '${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}')" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
@@ -1083,6 +1101,8 @@ async function resendVerificationCode() {
             showNotification('New verification code sent!', 'success');
             document.getElementById('verification_code').value = '';
             document.getElementById('verification_code').focus();
+        } else if (result.rate_limited) {
+            showNotification(result.message, 'error');
         } else {
             showNotification(result.message || 'Failed to resend code', 'error');
         }
@@ -1352,7 +1372,7 @@ function confirmDeleteSpecificBooking(bookingId, bookingDetails) {
     deleteBtn.onclick = async () => {
         const originalBtnText = deleteBtn.innerHTML;
         deleteBtn.disabled = true;
-        deleteBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem;"><span class="spinner" style="border-width: 2px; width: 16px; height: 16px;"></span>Deleting...</span>';
+        deleteBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem; vertical-align: middle;"><span class="spinner" style="border-width: 2px; width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></span>Deleting...</span>';
 
         try {
             const response = await fetch(`/api/booking/${bookingId}`, {
@@ -1366,7 +1386,10 @@ function confirmDeleteSpecificBooking(bookingId, bookingDetails) {
                 showNotification('Booking deleted successfully', 'success');
 
                 // Reload the bookings to show updated list
-                verifyBookingCode();
+                setTimeout(() => {
+                    document.getElementById('verification_code').value = '';
+                    verifyCode();
+                }, 500);
             } else {
                 showNotification('Error: ' + (result.message || 'Failed to delete booking'), 'error');
                 deleteBtn.disabled = false;
@@ -1382,13 +1405,24 @@ function confirmDeleteSpecificBooking(bookingId, bookingDetails) {
 }
 
 // Show edit booking form
-async function showEditBookingForm(email, bookingData) {
-    const booking = typeof bookingData === 'string' ? JSON.parse(bookingData) : bookingData;
+async function showEditBookingForm(email, bookingDataStr) {
+    // Parse the escaped booking JSON
+    let booking;
+    try {
+        // Unescape and parse
+        const unescaped = bookingDataStr.replace(/&quot;/g, '"').replace(/\\'/g, "'");
+        booking = JSON.parse(unescaped);
+    } catch (e) {
+        console.error('Error parsing booking data:', e);
+        showNotification('Error loading booking data. Please try again.', 'error');
+        return;
+    }
 
     // Parse the room to get building and room number
     const roomParts = (booking.selected_room || '').split(' - ');
     const currentBuilding = booking.selected_building || roomParts[0] || '';
     const currentRoomNumber = booking.room_number || roomParts[1] || '';
+    const slotDetails = booking.slot_details || {};
 
     // Create modal overlay
     const modal = document.createElement('div');
@@ -1413,6 +1447,13 @@ async function showEditBookingForm(email, bookingData) {
             <div style="text-align: center; margin-bottom: 1.5rem;">
                 <h2 style="color: var(--text-primary); margin-bottom: 0.5rem;">Edit Your Booking</h2>
                 <p style="color: var(--text-secondary); font-size: 0.95rem;">Update your time slot or location</p>
+            </div>
+
+            <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; margin-bottom: 1.5rem; border-left: 4px solid var(--primary);">
+                <div style="font-size: 0.9rem; color: var(--text-secondary);">
+                    <div><strong>Current Time:</strong> ${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}</div>
+                    <div style="margin-top: 0.25rem;"><strong>Current Location:</strong> ${booking.selected_room || 'Not specified'}</div>
+                </div>
             </div>
 
             <div style="margin-bottom: 1.5rem;">
@@ -1447,7 +1488,7 @@ async function showEditBookingForm(email, bookingData) {
                 <button onclick="this.parentElement.parentElement.parentElement.remove()" style="flex: 1; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;">
                     Cancel
                 </button>
-                <button onclick="saveUserBookingEdit('${email}', this.parentElement.parentElement.parentElement)" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                <button onclick="saveUserBookingEdit('${email}', '${booking.id}', this.parentElement.parentElement.parentElement)" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;">
                     Save Changes
                 </button>
             </div>
@@ -1482,7 +1523,7 @@ async function showEditBookingForm(email, bookingData) {
     }
 }
 
-async function saveUserBookingEdit(email, modal) {
+async function saveUserBookingEdit(email, bookingId, modal) {
     const newSlotId = document.getElementById('edit_user_slot').value;
     const newBuilding = document.getElementById('edit_user_building').value;
     const newRoomNumber = document.getElementById('edit_user_room_number').value.trim();
@@ -1495,7 +1536,7 @@ async function saveUserBookingEdit(email, modal) {
     const saveBtn = modal.querySelector('button[onclick*="saveUserBookingEdit"]');
     const originalBtnText = saveBtn.innerHTML;
     saveBtn.disabled = true;
-    saveBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem;"><span style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>Saving...</span>';
+    saveBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem; vertical-align: middle;"><span style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle;"></span>Saving...</span>';
 
     try {
         const response = await fetch('/api/booking/update-by-email', {
@@ -1514,15 +1555,74 @@ async function saveUserBookingEdit(email, modal) {
         const result = await response.json();
 
         if (response.ok && result.success) {
-            modal.remove();
             showNotification('Your booking has been updated successfully!', 'success');
+            modal.remove();
 
-            // Refresh the booking display
+            // Directly show the updated booking data immediately
             setTimeout(() => {
-                lookupBooking();
-            }, 500);
+                const resultDiv = document.getElementById('booking-lookup-result');
+                if (resultDiv && result.booking) {
+                    // Display the updated booking directly without re-verification
+                    const booking = result.booking;
+                    const slotDetails = booking.slot_details || {};
+                    const escapedBooking = JSON.stringify(booking).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                    const bookingHTML = `
+                        <div style="background: var(--bg); border: 2px solid var(--primary); border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem;">
+                            <h3 style="margin-bottom: 1rem; color: var(--primary);">Your Updated Booking</h3>
+
+                            <div style="display: grid; gap: 0.75rem;">
+                                <div>
+                                    <strong style="color: var(--text-secondary);">Name:</strong>
+                                    <div>${booking.full_name}</div>
+                                </div>
+
+                                <div>
+                                    <strong style="color: var(--text-secondary);">Date & Time:</strong>
+                                    <div>${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}</div>
+                                </div>
+
+                                <div>
+                                    <strong style="color: var(--text-secondary);">Location:</strong>
+                                    <div>${booking.selected_room || 'Not specified'}</div>
+                                </div>
+
+                                <div>
+                                    <strong style="color: var(--text-secondary);">Status:</strong>
+                                    <div style="color: var(--success); font-weight: 600;">✓ Confirmed</div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 0.9rem;">
+                                <p>A confirmation email was sent to <strong>${booking.email}</strong></p>
+                            </div>
+
+                            <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 0.75rem;">
+                                <button onclick="showEditBookingForm('${email}', '${escapedBooking}')" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                    Edit Booking
+                                </button>
+                                <button onclick="confirmDeleteSpecificBooking('${booking.id}', '${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}')" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                    Delete Booking
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    resultDiv.innerHTML = `
+                        <div style="margin-bottom: 1rem;">
+                            <h3 style="color: var(--text-primary);">Booking Updated</h3>
+                        </div>
+                        ${bookingHTML}
+                    `;
+                    resultDiv.style.display = 'block';
+                    resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    // Handle error - show message instead of silent failure
+                    showNotification('Unable to display updated booking details.', 'error');
+                }
+            }, 100);
         } else {
-            showNotification('Error: ' + result.message, 'error');
+            showNotification('Error: ' + (result.message || 'Failed to update booking'), 'error');
             saveBtn.disabled = false;
             saveBtn.innerHTML = originalBtnText;
         }
