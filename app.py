@@ -12,12 +12,41 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 import threading
 import time
+import pytz
 
 # Import Firestore database functions
 import firestore_db as db
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Eastern timezone
+EASTERN = pytz.timezone('America/New_York')
+
+def get_eastern_now():
+    """Get current time in Eastern timezone"""
+    return datetime.now(EASTERN)
+
+def get_eastern_datetime(dt_str):
+    """Convert ISO datetime string to Eastern timezone"""
+    if not dt_str:
+        return None
+    try:
+        # Parse the datetime string
+        if 'Z' in dt_str:
+            dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+        elif '+' in dt_str or dt_str.count('-') > 2:
+            dt = datetime.fromisoformat(dt_str)
+        else:
+            # Assume naive datetime is already in Eastern
+            dt = datetime.fromisoformat(dt_str)
+            dt = EASTERN.localize(dt)
+            return dt
+        # Convert to Eastern
+        return dt.astimezone(EASTERN)
+    except Exception as e:
+        print(f"Error parsing datetime '{dt_str}': {e}")
+        return None
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-CHANGE-IN-PRODUCTION')
@@ -63,7 +92,7 @@ EMAIL_RECIPIENT = os.getenv('EMAIL_RECIPIENT', 'cjpbuzaid@gmail.com')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    print(f"OK: Gemini AI configured successfully (Key: ...{GEMINI_API_KEY[-8:]})")
+    print(f"OK: Gemini AI configured successfully")
 else:
     print("WARNING: GEMINI_API_KEY not set. AI insights will not work.")
 
@@ -99,13 +128,13 @@ def cron_auth_required(f):
 
 @app.before_request
 def periodic_maintenance():
-    """Run automatic cleanup and slot generation periodically"""
+    """Run automatic cleanup and slot generation periodically (Eastern time)"""
     global last_auto_cleanup
 
     # Only run cleanup once per hour
-    now = datetime.now()
+    now = get_eastern_now()
     if last_auto_cleanup is None or (now - last_auto_cleanup) > timedelta(hours=1):
-        print("Running periodic maintenance...")
+        print(f"Running periodic maintenance at {now.strftime('%Y-%m-%d %I:%M %p %Z')}...")
         auto_cleanup_and_generate_slots()
         last_auto_cleanup = now
 
@@ -773,15 +802,15 @@ def send_meeting_reminder_email(user_data: dict) -> bool:
         return False
 
 def check_and_send_meeting_reminders():
-    """Check for bookings today and send reminder emails"""
+    """Check for bookings today (Eastern time) and send reminder emails"""
     try:
         print("Checking for meetings today to send reminders...")
 
         # Get all bookings
         bookings = db.get_all_bookings()
 
-        # Get today's date
-        today = datetime.now().date()
+        # Get today's date in Eastern time
+        today = get_eastern_now().date()
 
         reminders_sent = 0
         for booking in bookings:
@@ -791,15 +820,18 @@ def check_and_send_meeting_reminders():
             if not slot_datetime_str:
                 continue
 
-            # Parse the slot datetime
+            # Parse the slot datetime and convert to Eastern
             try:
-                slot_datetime = datetime.fromisoformat(slot_datetime_str)
-                slot_date = slot_datetime.date()
+                slot_datetime_eastern = get_eastern_datetime(slot_datetime_str)
+                if not slot_datetime_eastern:
+                    continue
+                    
+                slot_date = slot_datetime_eastern.date()
 
-                # Check if booking is today
+                # Check if booking is today (Eastern time)
                 if slot_date == today:
                     # Send reminder email
-                    print(f"Sending reminder to {booking['full_name']} for session at {slot_details.get('time')}")
+                    print(f"Sending reminder to {booking['full_name']} for session at {slot_details.get('time')} Eastern")
                     success = send_meeting_reminder_email(booking)
                     if success:
                         reminders_sent += 1
@@ -818,17 +850,18 @@ def check_and_send_meeting_reminders():
         return 0
 
 def morning_reminder_scheduler():
-    """Background thread that sends reminders at 8:30 AM every day"""
+    """Background thread that sends reminders at 8:30 AM Eastern every day"""
     while True:
         try:
-            now = datetime.now()
+            # Get Eastern time
+            now = get_eastern_now()
 
-            # Check if it's 8:30 AM (or between 8:30-8:31 to allow for execution time)
+            # Check if it's 8:30 AM Eastern (or between 8:30-8:31)
             if now.hour == 8 and now.minute == 30:
-                print("=== Running morning reminder scheduler at 8:30 AM ===")
+                print(f"=== Running morning reminder scheduler at 8:30 AM Eastern (actual time: {now}) ===")
                 check_and_send_meeting_reminders()
 
-                # Sleep for 60 seconds to avoid sending multiple times in the same minute
+                # Sleep for 60 seconds to avoid sending multiple times
                 time.sleep(60)
 
             # Check every 30 seconds
@@ -928,16 +961,30 @@ def init_time_slots():
 def auto_cleanup_and_generate_slots():
     """
     Automatic maintenance: Clean up past slots and ensure future slots exist.
-    This runs periodically to keep the database clean and slots up to date.
+    Uses Eastern time to determine what's "past".
     """
     try:
         all_slots = db.get_all_slots()
-        now = datetime.now()
-        now_iso = now.isoformat()
+        now_eastern = get_eastern_now()
+        now_iso = now_eastern.isoformat()
 
-        # Count past and future slots
-        past_slots = [s for s in all_slots if s.get('datetime', '') < now_iso]
-        future_slots = [s for s in all_slots if s.get('datetime', '') >= now_iso]
+        # Count past and future slots (based on Eastern time)
+        past_slots = []
+        future_slots = []
+        
+        for slot in all_slots:
+            slot_datetime_str = slot.get('datetime', '')
+            try:
+                # Convert slot time to Eastern
+                slot_datetime_eastern = get_eastern_datetime(slot_datetime_str)
+                
+                if slot_datetime_eastern and slot_datetime_eastern < now_eastern:
+                    past_slots.append(slot)
+                else:
+                    future_slots.append(slot)
+            except:
+                # If parsing fails, treat as past (safe deletion)
+                past_slots.append(slot)
 
         # Delete all past slots (both booked and unbooked)
         deleted_count = 0
@@ -947,11 +994,10 @@ def auto_cleanup_and_generate_slots():
                 deleted_count += 1
 
         if deleted_count > 0:
-            print(f"AUTO-CLEANUP: Deleted {deleted_count} past time slots")
+            print(f"AUTO-CLEANUP: Deleted {deleted_count} past time slots (Eastern time)")
 
         # Check if we need to generate more slots
-        # Generate if we have less than 2 weeks of future slots
-        if len(future_slots) < 20:  # Roughly 2 weeks worth of slots
+        if len(future_slots) < 20:  # Roughly 2 weeks worth
             print("AUTO-GENERATE: Low on future slots, generating more...")
             generated_slots = generate_time_slots(weeks_ahead=6)
 
@@ -971,16 +1017,18 @@ def auto_cleanup_and_generate_slots():
         return False
 
 def generate_time_slots(weeks_ahead=6):
-    """Generate ONLY the specific weekly time slots you requested"""
+    """Generate ONLY the specific weekly time slots in Eastern time"""
     slots = []
-    start_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Start from today in Eastern time
+    start_date = get_eastern_now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     # ONLY your specific requested times
     weekly_schedule = {
-        1: [(11, 0), (12, 0), (13, 0)],  # Tuesday: 11:00, 12:00, 13:00
-        2: [(14, 0), (15, 0)],            # Wednesday: 14:00, 15:00
-        3: [(12, 0), (13, 0)],            # Thursday: 12:00, 13:00
-        4: [(11, 0), (12, 0), (13, 0)]   # Friday: same as Tuesday
+        1: [(11, 0), (12, 0), (13, 0)],  # Tuesday
+        2: [(14, 0), (15, 0)],            # Wednesday
+        3: [(12, 0), (13, 0)],            # Thursday
+        4: [(11, 0), (12, 0), (13, 0)]   # Friday
     }
 
     # Generate slots for specified number of weeks ahead
@@ -1000,8 +1048,8 @@ def generate_time_slots(weeks_ahead=6):
 
                     slot_time = current_date.replace(hour=h, minute=m, second=0, microsecond=0)
 
-                    # Only add future slots
-                    if slot_time > datetime.now():
+                    # Only add future slots (compare in Eastern time)
+                    if slot_time > get_eastern_now():
                         slots.append({
                             'id': slot_time.strftime('%Y%m%d%H%M'),
                             'datetime': slot_time.isoformat(),
@@ -1897,7 +1945,7 @@ def cleanup_old_slots():
     """Delete ALL old time slots from the database (including past booked slots)"""
     try:
         all_slots = db.get_all_slots()
-        now = datetime.now().isoformat()
+        now = get_eastern_now().isoformat()
 
         deleted_count = 0
         for slot in all_slots:
@@ -1907,7 +1955,7 @@ def cleanup_old_slots():
                 if success:
                     deleted_count += 1
 
-        print(f"OK: Cleaned up {deleted_count} old time slots")
+        print(f"OK: Cleaned up {deleted_count} old time slots (Eastern time)")
         return jsonify({
             'success': True,
             'message': f'Deleted {deleted_count} old time slots',
@@ -1924,7 +1972,7 @@ def trigger_auto_maintenance():
     """Manually trigger automatic cleanup and slot generation"""
     try:
         all_slots_before = db.get_all_slots()
-        now = datetime.now().isoformat()
+        now = get_eastern_now().isoformat()
 
         past_count = len([s for s in all_slots_before if s.get('datetime', '') < now])
         future_count = len([s for s in all_slots_before if s.get('datetime', '') >= now])
@@ -1937,7 +1985,7 @@ def trigger_auto_maintenance():
 
         return jsonify({
             'success': True,
-            'message': f'Maintenance completed: Removed {past_count} past slots, now have {new_future_count} future slots',
+            'message': f'Maintenance completed: Removed {past_count} past slots, now have {new_future_count} future slots (Eastern time)',
             'past_deleted': past_count,
             'future_before': future_count,
             'future_after': new_future_count
@@ -1960,7 +2008,7 @@ def generate_slots_bulk():
         deleted_count = 0
         if cleanup_old:
             all_slots = db.get_all_slots()
-            now = datetime.now().isoformat()
+            now = get_eastern_now().isoformat()
 
             for slot in all_slots:
                 # Delete ONLY past slots (keep all future slots even if we're regenerating)
@@ -1969,7 +2017,7 @@ def generate_slots_bulk():
                     if success:
                         deleted_count += 1
 
-            print(f"OK: Cleaned up {deleted_count} past time slots before generating new ones")
+            print(f"OK: Cleaned up {deleted_count} past time slots before generating new ones (Eastern time)")
 
         # Generate the slots
         generated_slots = generate_time_slots(weeks_ahead)
