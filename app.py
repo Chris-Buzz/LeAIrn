@@ -1074,7 +1074,23 @@ def projects():
 
 @app.route('/media/<path:filename>')
 def serve_media(filename):
-    """Serve files from the media folder"""
+    """
+    Serve media files from GitHub in production, local folder in development.
+    This allows GIFs to be served from GitHub to avoid Vercel's size limits.
+    """
+    # Check if running in production (Vercel)
+    is_production = os.getenv('FLASK_ENV') == 'production' or os.getenv('VERCEL')
+
+    # Check if file exists locally
+    media_path = os.path.join('media', filename)
+    file_exists_locally = os.path.exists(media_path)
+
+    # In production or if file doesn't exist locally, serve from GitHub
+    if is_production or not file_exists_locally:
+        github_url = f"https://raw.githubusercontent.com/Chris-Buzz/LeAIrn/main/media/{filename}"
+        return redirect(github_url)
+
+    # In development with local files, serve from media folder
     return send_from_directory('media', filename)
 
 @app.route('/feedback')

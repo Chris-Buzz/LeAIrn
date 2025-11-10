@@ -700,5 +700,138 @@
             banner.classList.add('hidden');
         }
     </script>
+
+    <!-- Educational Popup for Coding Sessions -->
+    <div id="codingEducationModal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeCodingEducationModal()"></div>
+
+        <!-- STOP Sign Initial Screen -->
+        <div class="modal-content stop-sign-modal" id="stopSignScreen">
+            <div class="stop-sign-content">
+                <div class="stop-sign">STOP</div>
+                <h2>Quick Preparation Notice</h2>
+                <p>Before we proceed, let's make sure you're set up for success with coding projects.</p>
+                <button class="btn-primary" onclick="showFullEducationModal()">
+                    Show Me What I Need
+                </button>
+                <button class="btn-secondary" onclick="closeCodingEducationModal('skip')">
+                    I Don't Have Time Right Now
+                </button>
+            </div>
+        </div>
+
+        <!-- Full Educational Content -->
+        <div class="modal-content coding-education-modal hidden" id="fullEducationContent">
+            <button class="close-modal-btn" onclick="closeCodingEducationModal('close')">&times;</button>
+
+            <div class="coding-education-header">
+                <h2>Recommended Setup for Coding Projects</h2>
+                <p class="education-subtitle">Maximize your session time by preparing in advance</p>
+            </div>
+
+            <div class="coding-education-body">
+                <!-- What is Code Section -->
+                <div class="education-section what-is-code">
+                    <h3>What is Code?</h3>
+                    <p><strong>Code</strong> is a set of instructions that tells a computer what to do. Think of it like a recipe, but for software. It gives you complete control to build exactly what you imagine.</p>
+                </div>
+
+                <!-- Time Savings Message -->
+                <div class="education-section time-savings-note">
+                    <h3>Why Set Up Before Your Meeting?</h3>
+                    <p>Having these tools installed beforehand means we can <strong>focus entirely on building your project</strong> during your session, rather than spending valuable meeting time on software installation.</p>
+                    <p class="tagline"><strong>More creation. Less configuration.</strong></p>
+                </div>
+
+                <!-- Tools Section -->
+                <div class="education-section">
+                    <h3>Required Development Tools</h3>
+                    <p>All tools are free and commonly used in professional development:</p>
+                    <div class="already-have-note">
+                        <strong>Already have these?</strong> That's awesome! You can close this and continue booking your session.
+                    </div>
+
+                    <div class="tools-checklist">
+                        <!-- GitHub -->
+                        <div class="tool-card">
+                            <div class="tool-header">
+                                <h4>GitHub</h4>
+                            </div>
+                            <p>A platform to store, share, and collaborate on code projects.</p>
+                            <details class="setup-guide">
+                                <summary>Setup Instructions</summary>
+                                <ol>
+                                    <li>Go to <a href="https://github.com" target="_blank">github.com</a></li>
+                                    <li>Click "Sign up" and create a free account</li>
+                                    <li>Verify your email address</li>
+                                </ol>
+                            </details>
+                        </div>
+
+                        <!-- VSCode -->
+                        <div class="tool-card">
+                            <div class="tool-header">
+                                <h4>VS Code</h4>
+                            </div>
+                            <p>A free code editor where you write your code. Think of it as Word for programming.</p>
+                            <details class="setup-guide">
+                                <summary>Setup Instructions</summary>
+                                <ol>
+                                    <li>Go to <a href="https://code.visualstudio.com" target="_blank">code.visualstudio.com</a></li>
+                                    <li>Click "Download" and run the installer</li>
+                                    <li>Follow the installation prompts</li>
+                                </ol>
+                            </details>
+                        </div>
+
+                        <!-- GitHub Copilot -->
+                        <div class="tool-card">
+                            <div class="tool-header">
+                                <h4>GitHub Copilot</h4>
+                            </div>
+                            <p>An AI assistant that helps you write code (Free for students).</p>
+                            <details class="setup-guide">
+                                <summary>Setup Instructions</summary>
+                                <ol>
+                                    <li>Apply at <a href="https://education.github.com/pack" target="_blank">GitHub Student Developer Pack</a></li>
+                                    <li>Verify your student status with your school email</li>
+                                    <li>In VS Code, open Extensions and search "GitHub Copilot"</li>
+                                    <li>Install and sign in with your GitHub account</li>
+                                </ol>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Important Notes -->
+                <div class="education-section important-notes">
+                    <div class="note-card recommended">
+                        <h4>This Setup is Recommended, Not Required</h4>
+                        <p>If you don't have time to set these up beforehand, we can help you during your session. However, having them ready means more time for actual project development.</p>
+                    </div>
+
+                    <div class="note-card alternative">
+                        <h4>Alternative Tools</h4>
+                        <p>Other tools exist for building projects:</p>
+                        <ul style="margin-bottom: 12px;">
+                            <li><strong>AI Code Generators:</strong> v0, Lovable, Bolt, Cursor</li>
+                            <li><strong>No-Code Platforms:</strong> Webflow, Bubble, Wix, Framer</li>
+                        </ul>
+                        <p>We focus on GitHub, VS Code, and Copilot because they provide full customization, complete control, and transferable professional skills.</p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="education-actions">
+                    <button class="btn-primary" onclick="acknowledgeAndContinue('ready')">
+                        Continue to Time Selection
+                    </button>
+                    <button class="btn-secondary" onclick="closeCodingEducationModal('no_time')">
+                        I Don't Have Time for This Right Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

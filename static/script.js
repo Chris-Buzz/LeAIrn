@@ -335,6 +335,12 @@ function goToStep(stepNumber, skipValidation = false) {
         return;
     }
 
+    // Show educational modal when moving from step 5 to 6 (before time selection) if coding interest detected
+    if (currentStep === 5 && stepNumber === 6 && !educationModalShown && checkForCodingInterest()) {
+        showCodingEducationModal(stepNumber);
+        return;
+    }
+
     // Hide current step
     document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
 
@@ -1819,3 +1825,187 @@ async function confirmVerificationCode() {
         errorMsg.style.display = 'block';
     }
 }
+
+// ==========================================
+// CODING EDUCATION MODAL
+// ==========================================
+
+// Track if educational modal has been shown this session
+let educationModalShown = false;
+
+/**
+ * Check if user's selection or comments indicate coding/building interest
+ */
+function checkForCodingInterest() {
+    // Don't show if already shown this session
+    if (educationModalShown) {
+        console.log('Modal already shown this session');
+        return false;
+    }
+
+    // Check Step 4: Primary Use - look for "coding" selection
+    const primaryUseCheckboxes = document.querySelectorAll('input[name="primary_use"]:checked');
+    if (primaryUseCheckboxes.length > 0) {
+        for (let checkbox of primaryUseCheckboxes) {
+            const selectedValue = checkbox.value.toLowerCase();
+            console.log('Checking primary use value:', selectedValue);
+
+            if (selectedValue === 'coding' || selectedValue.includes('cod')) {
+                console.log('✓ Coding interest detected from primary use:', selectedValue);
+                return true;
+            }
+        }
+    }
+
+    // Check Step 5: Learning Goals - look for "build" selection
+    const learningGoalCheckboxes = document.querySelectorAll('input[name="learning_goal"]:checked');
+    if (learningGoalCheckboxes.length > 0) {
+        for (let checkbox of learningGoalCheckboxes) {
+            const selectedValue = checkbox.value.toLowerCase();
+            console.log('Checking learning goal value:', selectedValue);
+
+            if (selectedValue === 'build' || selectedValue.includes('build')) {
+                console.log('✓ Coding interest detected from learning goal:', selectedValue);
+                return true;
+            }
+        }
+    }
+
+    // Check Step 7: Personal Comments - look for coding keywords
+    const commentsField = document.getElementById('personal_comments');
+    if (commentsField && commentsField.value.trim()) {
+        const comments = commentsField.value.toLowerCase();
+        console.log('Checking comments:', comments);
+        const codingKeywords = [
+            'build', 'create', 'code', 'develop', 'program',
+            'website', 'app', 'application', 'project'
+        ];
+
+        for (let keyword of codingKeywords) {
+            if (comments.includes(keyword)) {
+                console.log('✓ Coding interest detected from comments with keyword:', keyword);
+                return true;
+            }
+        }
+    }
+
+    console.log('✗ No coding interest detected');
+    return false;
+}
+
+// Store the target step for after modal closes
+let pendingStepAfterEducationModal = null;
+let educationModalResponse = null;
+
+/**
+ * Show the coding education modal (starts with STOP sign)
+ */
+function showCodingEducationModal(nextStep) {
+    console.log('showCodingEducationModal() called, nextStep:', nextStep);
+    pendingStepAfterEducationModal = nextStep;
+
+    const modal = document.getElementById('codingEducationModal');
+    const stopSignScreen = document.getElementById('stopSignScreen');
+    const fullContent = document.getElementById('fullEducationContent');
+
+    console.log('Modal element found:', modal);
+
+    if (modal && stopSignScreen && fullContent) {
+        // Show modal with STOP sign
+        modal.classList.remove('hidden');
+        stopSignScreen.classList.remove('hidden');
+        fullContent.classList.add('hidden');
+
+        educationModalShown = true;
+
+        // Prevent body scroll when modal is open
+        document.body.style.overflow = 'hidden';
+        console.log('STOP sign modal should now be visible!');
+    } else {
+        console.error('❌ Modal element not found in DOM!');
+    }
+}
+
+/**
+ * Transition from STOP sign to full educational content
+ */
+function showFullEducationModal() {
+    const stopSignScreen = document.getElementById('stopSignScreen');
+    const fullContent = document.getElementById('fullEducationContent');
+
+    if (stopSignScreen && fullContent) {
+        // Fade out stop sign
+        stopSignScreen.style.animation = 'slideDownContent 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+
+        setTimeout(() => {
+            stopSignScreen.classList.add('hidden');
+            fullContent.classList.remove('hidden');
+            fullContent.style.animation = 'slideUpContent 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+
+            // Track that user viewed full content
+            educationModalResponse = 'viewed_full';
+        }, 400);
+    }
+}
+
+/**
+ * Close the coding education modal
+ */
+function closeCodingEducationModal(response) {
+    // Track response
+    if (response) {
+        educationModalResponse = response;
+    } else if (!educationModalResponse) {
+        educationModalResponse = 'dismissed';
+    }
+
+    // Store response in hidden field for form submission
+    let responseField = document.getElementById('coding_setup_response');
+    if (!responseField) {
+        responseField = document.createElement('input');
+        responseField.type = 'hidden';
+        responseField.id = 'coding_setup_response';
+        responseField.name = 'coding_setup_response';
+        document.querySelector('form').appendChild(responseField);
+    }
+    responseField.value = educationModalResponse;
+
+    console.log('Education modal response:', educationModalResponse);
+
+    const modal = document.getElementById('codingEducationModal');
+    if (modal) {
+        // Add closing animation
+        modal.style.animation = 'modalSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+        const modalContent = modal.querySelector('.modal-content:not(.hidden)');
+        if (modalContent) {
+            modalContent.style.animation = 'slideDownContent 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+        }
+
+        // Wait for animation to complete before hiding
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            // Reset animations
+            modal.style.animation = '';
+            if (modalContent) {
+                modalContent.style.animation = '';
+            }
+
+            // Restore body scroll
+            document.body.style.overflow = '';
+
+            // Continue to the pending step if there is one
+            if (pendingStepAfterEducationModal !== null) {
+                goToStep(pendingStepAfterEducationModal);
+                pendingStepAfterEducationModal = null;
+            }
+        }, 300);
+    }
+}
+
+/**
+ * User acknowledged and wants to continue
+ */
+function acknowledgeAndContinue(response) {
+    closeCodingEducationModal(response || 'ready');
+}
+
