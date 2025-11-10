@@ -11,6 +11,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime
 from typing import List, Dict, Optional
+from timezone_utils import get_eastern_now
 
 # Global Firestore client
 db = None
@@ -134,9 +135,9 @@ def add_booking(booking_data: Dict) -> Optional[str]:
         return None
 
     try:
-        # Add timestamp if not present
+        # Add timestamp if not present (Eastern Time)
         if 'submission_date' not in booking_data:
-            booking_data['submission_date'] = datetime.now().isoformat()
+            booking_data['submission_date'] = get_eastern_now().isoformat()
 
         # Add to Firestore
         result = db.collection('bookings').add(booking_data)
@@ -276,7 +277,7 @@ def get_available_slots() -> List[Dict]:
     try:
         # Get all slots and filter in Python (avoids complex Firestore index)
         all_slots = get_all_slots()
-        now = datetime.now().isoformat()
+        now = get_eastern_now().isoformat()
 
         # Filter for available slots in the future
         available_slots = [
@@ -520,9 +521,9 @@ def add_feedback(feedback_data: dict) -> Optional[str]:
     try:
         initialize_firestore()
 
-        # Add timestamp if not present
+        # Add timestamp if not present (Eastern Time)
         if 'timestamp' not in feedback_data:
-            feedback_data['timestamp'] = datetime.now().isoformat()
+            feedback_data['timestamp'] = get_eastern_now().isoformat()
 
         # Add to Firestore
         doc_ref = db.collection('feedback').add(feedback_data)
@@ -602,7 +603,7 @@ def store_feedback_metadata(booking_id: str, user_data: dict) -> bool:
         metadata = {
             'user_name': user_data.get('user_name', 'Unknown'),
             'user_email': user_data.get('user_email', 'Unknown'),
-            'stored_at': datetime.now().isoformat()
+            'stored_at': get_eastern_now().isoformat()
         }
 
         # Store in feedback_metadata collection with booking_id as document ID
@@ -657,7 +658,7 @@ def store_verification_code(email: str, code: str, expires_at: str) -> bool:
         verification_data = {
             'email': email.lower(),
             'code': code,
-            'created_at': datetime.now().isoformat(),
+            'created_at': get_eastern_now().isoformat(),
             'expires_at': expires_at,
             'used': False
         }
@@ -689,8 +690,8 @@ def get_verification_code(email: str) -> Optional[dict]:
 
         if doc.exists:
             data = doc.to_dict()
-            # Check if code has expired
-            if data.get('expires_at', '') > datetime.now().isoformat():
+            # Check if code has expired (Eastern Time)
+            if data.get('expires_at', '') > get_eastern_now().isoformat():
                 return data
 
         return None
@@ -764,7 +765,7 @@ def store_session_overview(booking_id: str, overview_data: dict) -> bool:
             'user_name': overview_data.get('user_name', ''),
             'user_email': overview_data.get('user_email', ''),
             'session_date': overview_data.get('session_date', ''),
-            'created_at': datetime.now().isoformat(),
+            'created_at': get_eastern_now().isoformat(),
             'created_by': overview_data.get('created_by', 'admin')
         }
 
@@ -865,7 +866,7 @@ def store_pending_booking(email: str, code: str, expires_at: str, booking_data: 
             'email': email,
             'code': code,
             'expires_at': expires_at,
-            'created_at': datetime.now().isoformat(),
+            'created_at': get_eastern_now().isoformat(),
             'used': False,
             'attempts': 0,
             'booking_data': booking_data,
@@ -907,9 +908,9 @@ def get_pending_booking(email: str) -> Optional[dict]:
 
         pending = doc.to_dict()
 
-        # Check if expired
+        # Check if expired (Eastern Time)
         expires_at = pending.get('expires_at', '')
-        now = datetime.now().isoformat()
+        now = get_eastern_now().isoformat()
 
         if expires_at and expires_at < now:
             # Delete expired document
@@ -1035,7 +1036,7 @@ def check_verification_rate_limit(email: str, request_type: str = 'booking') -> 
         doc_ref = db.collection('rate_limits').document(doc_key)
         doc = doc_ref.get()
 
-        now = datetime.now()
+        now = get_eastern_now()
 
         if not doc.exists:
             # First request, create record
@@ -1103,7 +1104,7 @@ def check_admin_login_rate_limit(ip_address: str) -> dict:
         doc_ref = db.collection('admin_login_attempts').document(ip_address)
         doc = doc_ref.get()
 
-        now = datetime.now()
+        now = get_eastern_now()
 
         if not doc.exists:
             # First failed attempt, create record
