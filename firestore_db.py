@@ -1355,6 +1355,409 @@ def record_ip_booking(ip_address: str, email: str) -> bool:
         return False
 
 
+# ============================================================================
+# INVITE CODE SYSTEM - Security measure to prevent unauthorized access
+# ============================================================================
+
+def generate_invite_codes(count: int = 10, max_uses: int = 5) -> List[Dict]:
+    """
+    Generate cryptographically secure invite codes.
+
+    Args:
+        count: Number of invite codes to generate (default: 10)
+        max_uses: Maximum uses per code (default: 5)
+
+    Returns:
+        List of dicts with 'code' (plaintext) and 'hashed_code' (for storage)
+    """
+    import secrets
+    import hashlib
+
+    codes = []
+
+    for _ in range(count):
+        # Generate 16-character alphanumeric code (uppercase only for easier sharing)
+        # Format: XXXX-XXXX-XXXX-XXXX for readability
+        code = '-'.join([
+            ''.join(secrets.choice('ABCDEFGHJKLMNPQRSTUVWXYZ23456789') for _ in range(4))
+            for _ in range(4)
+        ])
+
+        # Hash the code for secure storage (SHA-256)
+        hashed_code = hashlib.sha256(code.encode()).hexdigest()
+
+        codes.append({
+            'code': code,  # Plaintext (only shown once)
+            'hashed_code': hashed_code,  # For storage
+            'max_uses': max_uses
+        })
+
+    return codes
+
+
+def store_invite_codes(codes: List[Dict]) -> bool:
+    """
+    Store invite codes in Firestore (hashed for security).
+
+    Args:
+        codes: List of dicts with 'hashed_code' and 'max_uses'
+
+    Returns:
+        bool: Success status
+    """
+    try:
+        initialize_firestore()
+
+        for code_data in codes:
+            # Store hashed code with usage tracking
+            doc_ref = db.collection('invite_codes').document(code_data['hashed_code'])
+            doc_ref.set({
+                'hashed_code': code_data['hashed_code'],
+                'max_uses': code_data.get('max_uses', 5),
+                'current_uses': 0,
+                'created_at': get_eastern_now().isoformat(),
+                'is_active': True,
+                'used_by': []  # Track which emails used this code
+            })
+
+        print(f"OK: Stored {len(codes)} invite codes securely")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to store invite codes: {e}")
+        return False
+
+
+def verify_invite_code(code: str) -> Dict:
+    """
+    Verify an invite code and check if it's still valid.
+
+    Args:
+        code: The plaintext invite code entered by user
+
+    Returns:
+        dict: {'valid': bool, 'message': str, 'hashed_code': str or None}
+    """
+    try:
+        initialize_firestore()
+
+        import hashlib
+
+        # Hash the provided code to look it up
+        hashed_code = hashlib.sha256(code.strip().upper().encode()).hexdigest()
+
+        # Look up the code
+        doc_ref = db.collection('invite_codes').document(hashed_code)
+        doc = doc_ref.get()
+
+        if not doc.exists:
+            return {
+                'valid': False,
+                'message': 'Invalid invite code',
+                'hashed_code': None
+            }
+
+        code_data = doc.to_dict()
+
+        # Check if code is active
+        if not code_data.get('is_active', False):
+            return {
+                'valid': False,
+                'message': 'This invite code has been deactivated',
+                'hashed_code': None
+            }
+
+        # Check if code has remaining uses
+        current_uses = code_data.get('current_uses', 0)
+        max_uses = code_data.get('max_uses', 5)
+
+        if current_uses >= max_uses:
+            return {
+                'valid': False,
+                'message': 'This invite code has reached its maximum uses',
+                'hashed_code': None
+            }
+
+        # Code is valid
+        return {
+            'valid': True,
+            'message': 'Valid invite code',
+            'hashed_code': hashed_code,
+            'remaining_uses': max_uses - current_uses
+        }
+
+    except Exception as e:
+        print(f"ERROR: Failed to verify invite code: {e}")
+        return {
+            'valid': False,
+            'message': 'Error verifying code',
+            'hashed_code': None
+        }
+
+
+def use_invite_code(hashed_code: str, email: str) -> bool:
+    """
+    Mark an invite code as used by incrementing usage count.
+
+    Args:
+        hashed_code: The hashed invite code
+        email: Email of user who used the code
+
+    Returns:
+        bool: Success status
+    """
+    try:
+        initialize_firestore()
+
+        doc_ref = db.collection('invite_codes').document(hashed_code)
+        doc = doc_ref.get()
+
+        if not doc.exists:
+            return False
+
+        code_data = doc.to_dict()
+        current_uses = code_data.get('current_uses', 0)
+        used_by = code_data.get('used_by', [])
+
+        # Increment usage
+        doc_ref.update({
+            'current_uses': current_uses + 1,
+            'used_by': used_by + [{
+                'email': email,
+                'timestamp': get_eastern_now().isoformat()
+            }],
+            'last_used_at': get_eastern_now().isoformat()
+        })
+
+        print(f"OK: Invite code used by {email} ({current_uses + 1} total uses)")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to mark invite code as used: {e}")
+        return False
+
+
+def check_invite_code_access_attempts(ip_address: str) -> Dict:
+    """
+    Track failed invite code attempts per IP.
+    Limit: 2 failed attempts per 24 hours per IP address.
+
+    Args:
+        ip_address: Client IP address
+
+    Returns:
+        dict: {'allowed': bool, 'attempts': int, 'blocked': bool, 'wait_hours': int}
+    """
+    try:
+        initialize_firestore()
+
+        # Normalize IP
+        ip_address = str(ip_address).strip()
+
+        # Get attempt record
+        doc_ref = db.collection('invite_code_attempts').document(ip_address)
+        doc = doc_ref.get()
+
+        now = get_eastern_now()
+
+        if not doc.exists:
+            # First attempt from this IP
+            return {
+                'allowed': True,
+                'attempts': 0,
+                'blocked': False,
+                'wait_hours': 0
+            }
+
+        attempt_data = doc.to_dict()
+        attempt_history = attempt_data.get('attempt_history', [])
+
+        # Filter failed attempts from last 24 hours
+        time_window_ago = (now - __import__('datetime').timedelta(hours=24)).isoformat()
+        recent_failed_attempts = [
+            a for a in attempt_history
+            if a.get('result') == 'failed' and a.get('timestamp', '') > time_window_ago
+        ]
+
+        # Check if blocked (2 failed attempts in last 24 hours)
+        if len(recent_failed_attempts) >= 2:
+            # Calculate wait time
+            oldest_failed = min([a.get('timestamp', '') for a in recent_failed_attempts])
+            oldest_dt = datetime.fromisoformat(oldest_failed)
+            wait_until = oldest_dt + __import__('datetime').timedelta(hours=24)
+            wait_seconds = (wait_until - now).total_seconds()
+            wait_hours = max(1, int(wait_seconds / 3600))
+
+            return {
+                'allowed': False,
+                'attempts': len(recent_failed_attempts),
+                'blocked': True,
+                'wait_hours': wait_hours
+            }
+
+        # Still have attempts remaining
+        return {
+            'allowed': True,
+            'attempts': len(recent_failed_attempts),
+            'blocked': False,
+            'wait_hours': 0
+        }
+
+    except Exception as e:
+        print(f"ERROR: Failed to check invite code attempts: {e}")
+        # On error, allow the attempt
+        return {
+            'allowed': True,
+            'attempts': 0,
+            'blocked': False
+        }
+
+
+def record_failed_invite_attempt(ip_address: str) -> Dict:
+    """
+    Record a failed invite code attempt.
+    Blocking is time-based (24 hours) and handled by check_invite_code_access_attempts.
+
+    Args:
+        ip_address: Client IP address
+
+    Returns:
+        dict: {'attempts': int, 'blocked': bool, 'wait_hours': int}
+    """
+    try:
+        initialize_firestore()
+
+        # Normalize IP
+        ip_address = str(ip_address).strip()
+
+        # Get or create attempt record
+        doc_ref = db.collection('invite_code_attempts').document(ip_address)
+        doc = doc_ref.get()
+
+        now = get_eastern_now()
+
+        if not doc.exists:
+            # First failed attempt
+            doc_ref.set({
+                'ip_address': ip_address,
+                'first_attempt': now.isoformat(),
+                'last_attempt': now.isoformat(),
+                'attempt_history': [{
+                    'timestamp': now.isoformat(),
+                    'result': 'failed'
+                }]
+            })
+            return {
+                'attempts': 1,
+                'blocked': False,
+                'wait_hours': 0
+            }
+
+        # Add new failed attempt to history
+        attempt_data = doc.to_dict()
+        attempt_history = attempt_data.get('attempt_history', [])
+
+        doc_ref.update({
+            'last_attempt': now.isoformat(),
+            'attempt_history': attempt_history + [{
+                'timestamp': now.isoformat(),
+                'result': 'failed'
+            }]
+        })
+
+        # Check if now blocked (2 failed attempts in last 24 hours)
+        time_window_ago = (now - __import__('datetime').timedelta(hours=24)).isoformat()
+        recent_failed_attempts = [
+            a for a in (attempt_history + [{'timestamp': now.isoformat(), 'result': 'failed'}])
+            if a.get('result') == 'failed' and a.get('timestamp', '') > time_window_ago
+        ]
+
+        is_blocked = len(recent_failed_attempts) >= 2
+        wait_hours = 0
+
+        if is_blocked:
+            # Calculate wait time
+            oldest_failed = min([a.get('timestamp', '') for a in recent_failed_attempts])
+            oldest_dt = datetime.fromisoformat(oldest_failed)
+            wait_until = oldest_dt + __import__('datetime').timedelta(hours=24)
+            wait_seconds = (wait_until - now).total_seconds()
+            wait_hours = max(1, int(wait_seconds / 3600))
+
+            print(f"NOTICE: IP {ip_address} temporarily blocked for {wait_hours} hours after 2 failed invite code attempts")
+
+        return {
+            'attempts': len(recent_failed_attempts),
+            'blocked': is_blocked,
+            'wait_hours': wait_hours
+        }
+
+    except Exception as e:
+        print(f"ERROR: Failed to record invite attempt: {e}")
+        return {
+            'attempts': 0,
+            'blocked': False,
+            'wait_hours': 0
+        }
+
+
+def record_successful_invite_attempt(ip_address: str) -> bool:
+    """
+    Record a successful invite code verification.
+
+    Args:
+        ip_address: Client IP address
+
+    Returns:
+        bool: Success status
+    """
+    try:
+        initialize_firestore()
+
+        # Normalize IP
+        ip_address = str(ip_address).strip()
+
+        # Get or create attempt record
+        doc_ref = db.collection('invite_code_attempts').document(ip_address)
+        doc = doc_ref.get()
+
+        now = get_eastern_now()
+
+        if not doc.exists:
+            # First attempt and it succeeded
+            doc_ref.set({
+                'ip_address': ip_address,
+                'failed_attempts': 0,
+                'blocked': False,
+                'verified': True,
+                'verified_at': now.isoformat(),
+                'attempt_history': [{
+                    'timestamp': now.isoformat(),
+                    'result': 'success'
+                }]
+            })
+        else:
+            # Update with successful verification
+            attempt_data = doc.to_dict()
+            attempt_history = attempt_data.get('attempt_history', [])
+
+            doc_ref.update({
+                'verified': True,
+                'verified_at': now.isoformat(),
+                'last_attempt': now.isoformat(),
+                'attempt_history': attempt_history + [{
+                    'timestamp': now.isoformat(),
+                    'result': 'success'
+                }]
+            })
+
+        print(f"OK: IP {ip_address} successfully verified invite code")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to record successful invite attempt: {e}")
+        return False
+
+
 if __name__ == "__main__":
     # Test connection
     print("Testing Firestore connection...")

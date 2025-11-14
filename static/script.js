@@ -2,6 +2,7 @@
 
 let currentStep = 1;
 let bookingData = {};
+let inviteCodeVerified = false;
 
 // Device Fingerprinting - Generate unique device ID to prevent abuse
 async function generateDeviceId() {
@@ -2133,4 +2134,144 @@ function closeCodingEducationModal(response) {
 function acknowledgeAndContinue(response) {
     closeCodingEducationModal(response || 'ready');
 }
+
+// ============================================================================
+// INVITE CODE SYSTEM - Required for access
+// ============================================================================
+
+/**
+ * Check if user has verified invite code access on page load
+ */
+async function checkInviteCodeAccess() {
+    try {
+        const response = await fetch('/api/check-invite-access', {
+            method: 'GET',
+            credentials: 'same-origin'
+        });
+
+        const result = await response.json();
+
+        if (result.has_access) {
+            // User has access - show main app
+            inviteCodeVerified = true;
+            showMainApp();
+        } else {
+            // User needs to enter invite code
+            showInviteCodeGate();
+        }
+    } catch (error) {
+        console.error('Error checking invite access:', error);
+        // On error, show invite code gate to be safe
+        showInviteCodeGate();
+    }
+}
+
+/**
+ * Show the invite code gate (blocks access to main app)
+ */
+function showInviteCodeGate() {
+    const gate = document.getElementById('inviteCodeGate');
+    const mainContent = document.getElementById('mainContent');
+
+    if (gate) {
+        gate.style.display = 'flex';
+    }
+    if (mainContent) {
+        mainContent.style.display = 'none';
+    }
+}
+
+/**
+ * Show the main app (after successful invite code verification)
+ */
+function showMainApp() {
+    const gate = document.getElementById('inviteCodeGate');
+    const mainContent = document.getElementById('mainContent');
+
+    if (gate) {
+        gate.style.display = 'none';
+    }
+    if (mainContent) {
+        mainContent.style.display = 'block';
+    }
+}
+
+/**
+ * Submit invite code for verification
+ */
+async function submitInviteCode() {
+    const input = document.getElementById('inviteCodeInput');
+    const submitBtn = document.getElementById('inviteCodeSubmitBtn');
+    const errorMsg = document.getElementById('inviteCodeError');
+
+    const inviteCode = input.value.trim();
+
+    if (!inviteCode) {
+        errorMsg.textContent = 'Please enter an invite code';
+        errorMsg.style.display = 'block';
+        return;
+    }
+
+    // Disable button during submission
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Verifying...';
+    errorMsg.style.display = 'none';
+
+    try {
+        const response = await fetch('/api/verify-invite-code', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ invite_code: inviteCode })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            // Success - show main app
+            inviteCodeVerified = true;
+            showNotification(result.message || 'Access granted!', 'success');
+            showMainApp();
+        } else if (result.blocked) {
+            // Blocked
+            errorMsg.textContent = result.message || 'Access denied. Too many failed attempts.';
+            errorMsg.style.display = 'block';
+            errorMsg.style.color = '#EF4444';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Blocked';
+            input.disabled = true;
+        } else {
+            // Invalid code
+            errorMsg.textContent = result.message || 'Invalid invite code';
+            errorMsg.style.display = 'block';
+            input.value = '';
+            input.focus();
+        }
+    } catch (error) {
+        console.error('Error verifying invite code:', error);
+        errorMsg.textContent = 'Connection error. Please try again.';
+        errorMsg.style.display = 'block';
+    } finally {
+        if (!inviteCodeVerified) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Verify Code';
+        }
+    }
+}
+
+/**
+ * Handle Enter key on invite code input
+ */
+function handleInviteCodeKeypress(event) {
+    if (event.key === 'Enter') {
+        submitInviteCode();
+    }
+}
+
+// Run invite code check on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkInviteCodeAccess();
+});
 
