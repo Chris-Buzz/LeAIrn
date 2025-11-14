@@ -2170,30 +2170,68 @@ async function checkInviteCodeAccess() {
  * Show the invite code gate (blocks access to main app)
  */
 function showInviteCodeGate() {
+    const loadingScreen = document.getElementById('loadingScreen');
     const gate = document.getElementById('inviteCodeGate');
     const mainContent = document.getElementById('mainContent');
 
+    // Hide loading screen
+    if (loadingScreen) {
+        loadingScreen.style.opacity = '0';
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+        }, 300);
+    }
+
+    // Show invite gate with fade in
     if (gate) {
         gate.style.display = 'flex';
+        setTimeout(() => {
+            gate.style.opacity = '1';
+        }, 50);
     }
+
     if (mainContent) {
         mainContent.style.display = 'none';
     }
+
+    // Ensure body can scroll
+    document.body.style.overflow = 'auto';
 }
 
 /**
  * Show the main app (after successful invite code verification)
  */
 function showMainApp() {
+    const loadingScreen = document.getElementById('loadingScreen');
     const gate = document.getElementById('inviteCodeGate');
     const mainContent = document.getElementById('mainContent');
 
-    if (gate) {
-        gate.style.display = 'none';
+    // Hide loading screen
+    if (loadingScreen) {
+        loadingScreen.style.opacity = '0';
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+        }, 300);
     }
+
+    // Hide invite gate with fade out
+    if (gate) {
+        gate.style.opacity = '0';
+        setTimeout(() => {
+            gate.style.display = 'none';
+        }, 300);
+    }
+
+    // Show main content with fade in
     if (mainContent) {
         mainContent.style.display = 'block';
+        setTimeout(() => {
+            mainContent.style.opacity = '1';
+        }, 50);
     }
+
+    // Ensure body can scroll
+    document.body.style.overflow = 'auto';
 }
 
 /**
