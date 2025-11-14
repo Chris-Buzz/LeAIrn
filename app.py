@@ -142,7 +142,13 @@ def verify_recaptcha(token, action='booking'):
         return {'success': True, 'score': 1.0, 'action': action, 'error': str(e)}
 
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY')
+app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-CHANGE-IN-PRODUCTION-' + os.urandom(24).hex())
+
+# Session configuration for invite code tracking
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
 
 # Initialize Firestore
 print("Initializing Firestore...")
@@ -1225,6 +1231,120 @@ def submit_data():
         'message': 'This endpoint is deprecated. Use /api/booking/request-verification instead'
     }), 400
 
+# ============================================================================
+# INVITE CODE SYSTEM - Required for access
+# ============================================================================
+
+@app.route('/api/verify-invite-code', methods=['POST'])
+def verify_invite_code_endpoint():
+    """
+    Verify an invite code for access to the booking system.
+
+    Security:
+    - Max 2 failed attempts per IP (then permanently blocked)
+    - Codes are hashed with SHA-256 for secure storage
+    - Each code has limited uses (5 by default)
+    """
+    try:
+        data = request.json
+        invite_code = data.get('invite_code', '').strip().upper()
+
+        if not invite_code:
+            return jsonify({
+                'success': False,
+                'message': 'Please enter an invite code'
+            }), 400
+
+        # Get client IP
+        client_ip = get_client_ip()
+
+        # Check if IP is already blocked from too many failed attempts
+        attempt_check = db.check_invite_code_access_attempts(client_ip)
+
+        if attempt_check['blocked']:
+            wait_hours = attempt_check.get('wait_hours', 24)
+            print(f"NOTICE: Blocked IP {client_ip} attempted to verify invite code ({wait_hours}h remaining)")
+            return jsonify({
+                'success': False,
+                'message': f'Too many failed attempts. Please try again in {wait_hours} hour{"s" if wait_hours != 1 else ""}.',
+                'blocked': True,
+                'wait_hours': wait_hours
+            }), 403
+
+        # Verify the invite code
+        verification_result = db.verify_invite_code(invite_code)
+
+        if not verification_result['valid']:
+            # Record failed attempt
+            failed_result = db.record_failed_invite_attempt(client_ip)
+
+            remaining_attempts = 2 - failed_result['attempts']
+
+            if failed_result['blocked']:
+                wait_hours = failed_result.get('wait_hours', 24)
+                return jsonify({
+                    'success': False,
+                    'message': f'Invalid invite code. Too many failed attempts. Please try again in {wait_hours} hour{"s" if wait_hours != 1 else ""}.',
+                    'blocked': True,
+                    'wait_hours': wait_hours
+                }), 403
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': f'Invalid invite code. {remaining_attempts} attempt{"s" if remaining_attempts != 1 else ""} remaining.',
+                    'remaining_attempts': remaining_attempts
+                }), 400
+
+        # Code is valid - record successful attempt
+        db.record_successful_invite_attempt(client_ip)
+
+        # Store verification in session (server-side)
+        session['invite_code_verified'] = True
+        session['invite_code_hash'] = verification_result['hashed_code']
+        session['verified_ip'] = client_ip
+        session.permanent = True  # Session persists
+
+        print(f"OK: IP {client_ip} successfully verified invite code")
+        print(f"DEBUG: Session stored - hash: {verification_result['hashed_code'][:16]}..., verified: True")
+
+        return jsonify({
+            'success': True,
+            'message': 'Access granted! Welcome to LeAIrn.',
+            'remaining_uses': verification_result.get('remaining_uses', 0)
+        }), 200
+
+    except Exception as e:
+        print(f"ERROR in verify_invite_code_endpoint: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred. Please try again.'
+        }), 500
+
+@app.route('/api/check-invite-access', methods=['GET'])
+def check_invite_access():
+    """Check if the current session has verified invite code access"""
+    try:
+        # Check session
+        has_access = session.get('invite_code_verified', False)
+
+        if has_access:
+            return jsonify({
+                'has_access': True,
+                'message': 'Access verified'
+            }), 200
+        else:
+            return jsonify({
+                'has_access': False,
+                'message': 'No access'
+            }), 200
+
+    except Exception as e:
+        print(f"ERROR in check_invite_access: {e}")
+        return jsonify({
+            'has_access': False,
+            'message': 'Error checking access'
+        }), 500
+
 @app.route('/api/booking/request-verification', methods=['POST'])
 def request_booking_verification():
     """Step 1: Validate booking details and send verification code to @monmouth.edu email"""
@@ -1490,6 +1610,19 @@ def confirm_booking_verification():
             # Rollback: unbook the slot
             db.unbook_slot(slot_id)
             return jsonify({'success': False, 'message': 'Failed to save booking'}), 500
+
+        # Mark invite code as used (track usage)
+        invite_code_hash = session.get('invite_code_hash')
+        print(f"DEBUG: Session data: invite_code_verified={session.get('invite_code_verified')}, has_hash={invite_code_hash is not None}")
+
+        if invite_code_hash:
+            success = db.use_invite_code(invite_code_hash, email)
+            if success:
+                print(f"OK: Invite code usage incremented for {email}")
+            else:
+                print(f"WARNING: Failed to increment invite code usage for {email}")
+        else:
+            print(f"WARNING: No invite code hash in session for {email} - usage not tracked!")
 
         # Mark verification code as used and delete pending booking
         db.mark_pending_booking_used(email)
