@@ -662,6 +662,18 @@ async function confirmBooking() {
     confirmBtn.disabled = true;
     btnText.textContent = 'Sending verification code...';
 
+    // Get reCAPTCHA token if available
+    let recaptchaToken = null;
+    if (window.RECAPTCHA_SITE_KEY && typeof grecaptcha !== 'undefined') {
+        try {
+            recaptchaToken = await grecaptcha.execute(window.RECAPTCHA_SITE_KEY, { action: 'booking' });
+            formData.recaptcha_token = recaptchaToken;
+        } catch (error) {
+            console.warn('reCAPTCHA token generation failed:', error);
+            // Continue without reCAPTCHA if it fails (graceful degradation)
+        }
+    }
+
     // Step 1: Request verification code
     try {
         const response = await fetch('/api/booking/request-verification', {
@@ -1087,18 +1099,36 @@ async function verifyCode() {
 }
 
 async function resendVerificationCode() {
-    if (!verificationEmail) {
-        showNotification('Please enter your email first', 'error');
+    // Check if we have pending booking form data
+    if (!bookingData.pendingFormData || !bookingData.userEmail) {
+        showNotification('Please start a new booking request', 'error');
         return;
     }
 
     try {
-        const response = await fetch('/api/booking/lookup', {
+        // Get fresh reCAPTCHA token if available
+        let recaptchaToken = null;
+        if (window.RECAPTCHA_SITE_KEY && typeof grecaptcha !== 'undefined') {
+            try {
+                recaptchaToken = await grecaptcha.execute(window.RECAPTCHA_SITE_KEY, { action: 'booking' });
+            } catch (error) {
+                console.warn('reCAPTCHA token generation failed:', error);
+            }
+        }
+
+        // Prepare form data with fresh reCAPTCHA token
+        const formData = { ...bookingData.pendingFormData };
+        if (recaptchaToken) {
+            formData.recaptcha_token = recaptchaToken;
+        }
+
+        // Call the same verification request endpoint (it will detect it's a resend)
+        const response = await fetch('/api/booking/request-verification', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ email: verificationEmail })
+            body: JSON.stringify(formData)
         });
 
         const result = await response.json();
@@ -1107,8 +1137,9 @@ async function resendVerificationCode() {
             showNotification('New verification code sent!', 'success');
             document.getElementById('verification_code').value = '';
             document.getElementById('verification_code').focus();
-        } else if (result.rate_limited) {
-            showNotification(result.message, 'error');
+        } else if (response.status === 429 || result.rate_limited) {
+            // Rate limited
+            showNotification(result.message || 'Too many resend requests. Please wait before trying again.', 'error');
         } else {
             showNotification(result.message || 'Failed to resend code', 'error');
         }

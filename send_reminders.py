@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import firestore_db as db
 from app import send_booking_reminder_email, initialize_email_config
+from timezone_utils import get_eastern_now
 
 
 def send_daily_reminders():
@@ -16,17 +17,21 @@ def send_daily_reminders():
     """
     try:
         initialize_email_config()
+
+        # Use Eastern Time for all date/time operations
+        now_eastern = get_eastern_now()
+
         print(f"\n{'='*60}")
-        print(f"Daily Reminder Email Job - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Daily Reminder Email Job - {now_eastern.strftime('%Y-%m-%d %H:%M:%S')} ET")
         print(f"{'='*60}\n")
 
         # Get all bookings
         bookings = db.get_all_bookings()
         print(f"Found {len(bookings)} total bookings")
 
-        # Get today's date for comparison
-        today = datetime.now().strftime('%Y-%m-%d')
-        print(f"Looking for bookings scheduled for: {today}\n")
+        # Get today's date for comparison (in Eastern Time)
+        today = now_eastern.strftime('%Y-%m-%d')
+        print(f"Looking for bookings scheduled for: {today} (Eastern Time)\n")
 
         # Track reminders sent
         reminders_sent = 0
