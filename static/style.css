@@ -3271,9 +3271,9 @@ body:hover .cursor-tracker {
     position: fixed;
     inset: 0;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 2rem;
+    padding: 1rem;
     overflow-y: auto;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -3313,12 +3313,13 @@ body:hover .cursor-tracker {
     width: 100%;
     background: var(--surface);
     border-radius: 1.5rem;
-    padding: 3rem 2.5rem;
+    padding: 2rem 2rem;
     box-shadow: var(--shadow-lg);
     border: 1px solid var(--border);
     position: relative;
     overflow: hidden;
     animation: slideUpFadeIn 0.6s ease;
+    margin: 1rem auto;
 }
 
 [data-theme="dark"] .invite-gate-container {
@@ -3343,7 +3344,7 @@ body:hover .cursor-tracker {
 /* Header section */
 .invite-gate-header {
     text-align: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 1.5rem;
 }
 
 .invite-logo-pulse {
@@ -3356,9 +3357,9 @@ body:hover .cursor-tracker {
 }
 
 .invite-logo {
-    font-size: 3rem;
+    font-size: 2.5rem;
     font-weight: 800;
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 0.25rem 0;
     color: var(--text-primary);
 }
 
@@ -3389,9 +3390,9 @@ body:hover .cursor-tracker {
 /* Lock icon with glow effect */
 .invite-lock-container {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.25rem;
     position: relative;
-    height: 80px;
+    height: 70px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3418,8 +3419,8 @@ body:hover .cursor-tracker {
 }
 
 .lock-icon {
-    width: 64px;
-    height: 64px;
+    width: 56px;
+    height: 56px;
     stroke: var(--primary);
     stroke-width: 2;
     position: relative;
@@ -3436,14 +3437,14 @@ body:hover .cursor-tracker {
 /* Title section */
 .invite-title-section {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .invite-title {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin: 0 0 0.75rem 0;
+    margin: 0 0 0.5rem 0;
 }
 
 .invite-description {
@@ -3455,7 +3456,7 @@ body:hover .cursor-tracker {
 
 /* Input group */
 .invite-input-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .invite-label {
@@ -3609,8 +3610,8 @@ body:hover .cursor-tracker {
 
 /* Security notice */
 .invite-security-notice {
-    margin-top: 2rem;
-    padding: 1.25rem;
+    margin-top: 1.5rem;
+    padding: 1rem;
     background: var(--bg);
     border-left: 4px solid var(--primary);
     border-radius: 0.5rem;
@@ -3651,26 +3652,78 @@ body:hover .cursor-tracker {
 }
 
 /* Responsive design */
-@media (max-width: 640px) {
+/* For smaller laptops and tablets (portrait) */
+@media (max-height: 800px) {
     .invite-gate-wrapper {
-        padding: 1rem;
+        padding: 0.5rem;
     }
 
     .invite-gate-container {
-        padding: 2rem 1.5rem;
+        padding: 1.5rem 1.75rem;
+        margin: 0.5rem auto;
+    }
+
+    .invite-gate-header {
+        margin-bottom: 1rem;
     }
 
     .invite-logo {
-        font-size: 2.5rem;
+        font-size: 2rem;
+        margin: 0 0 0.25rem 0;
     }
 
-    .invite-title {
-        font-size: 1.5rem;
+    .invite-lock-container {
+        height: 60px;
+        margin-bottom: 1rem;
     }
 
     .lock-icon {
-        width: 56px;
-        height: 56px;
+        width: 48px;
+        height: 48px;
+    }
+
+    .invite-title-section {
+        margin-bottom: 1rem;
+    }
+
+    .invite-title {
+        font-size: 1.35rem;
+        margin: 0 0 0.4rem 0;
+    }
+
+    .invite-input-group {
+        margin-bottom: 0.875rem;
+    }
+
+    .invite-security-notice {
+        margin-top: 1rem;
+        padding: 0.875rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* For mobile phones */
+@media (max-width: 640px) {
+    .invite-gate-wrapper {
+        padding: 0.5rem;
+    }
+
+    .invite-gate-container {
+        padding: 1.5rem 1.25rem;
+        margin: 0.5rem auto;
+    }
+
+    .invite-logo {
+        font-size: 2rem;
+    }
+
+    .invite-title {
+        font-size: 1.25rem;
+    }
+
+    .lock-icon {
+        width: 48px;
+        height: 48px;
     }
 
     .invite-input {
@@ -3684,7 +3737,7 @@ body:hover .cursor-tracker {
     }
 
     .invite-security-notice {
-        padding: 1rem;
+        padding: 0.875rem;
         font-size: 0.85rem;
     }
 }
