@@ -48,8 +48,93 @@ def get_eastern_datetime(dt_str):
         print(f"Error parsing datetime '{dt_str}': {e}")
         return None
 
+def get_client_ip():
+    """Get client IP address, handling proxies (like Vercel)"""
+    # Check X-Forwarded-For header first (for proxies)
+    if request.headers.get('X-Forwarded-For'):
+        # X-Forwarded-For can be a comma-separated list, get the first (original client)
+        ip = request.headers.get('X-Forwarded-For').split(',')[0].strip()
+        return ip
+    # Fall back to remote_addr
+    return request.remote_addr or 'unknown'
+
+def format_wait_time(wait_minutes):
+    """Format wait time in minutes to a human-readable string."""
+    if wait_minutes >= 60:
+        hours = wait_minutes // 60
+        remaining_minutes = wait_minutes % 60
+        if remaining_minutes == 0:
+            return f"{hours} hour{'s' if hours != 1 else ''}"
+        else:
+            return f"{hours} hour{'s' if hours != 1 else ''} and {remaining_minutes} minute{'s' if remaining_minutes != 1 else ''}"
+    else:
+        return f"{wait_minutes} minute{'s' if wait_minutes != 1 else ''}"
+
+def verify_recaptcha(token, action='booking'):
+    """
+    Verify reCAPTCHA v3 token with Google's API.
+
+    Args:
+        token: The reCAPTCHA token from the frontend
+        action: The expected action (default: 'booking')
+
+    Returns:
+        dict: {'success': bool, 'score': float, 'action': str, 'error': str}
+    """
+    secret_key = os.getenv('RECAPTCHA_SECRET_KEY')
+
+    # If reCAPTCHA is not configured, return success (graceful degradation)
+    if not secret_key or not token:
+        return {'success': True, 'score': 1.0, 'action': action, 'error': None}
+
+    try:
+        import requests
+
+        verify_url = 'https://www.google.com/recaptcha/api/siteverify'
+        data = {
+            'secret': secret_key,
+            'response': token
+        }
+
+        response = requests.post(verify_url, data=data, timeout=5)
+        result = response.json()
+
+        if not result.get('success'):
+            return {
+                'success': False,
+                'score': 0.0,
+                'action': result.get('action'),
+                'error': 'reCAPTCHA verification failed'
+            }
+
+        # Check action matches (optional but recommended for v3)
+        if result.get('action') != action:
+            return {
+                'success': False,
+                'score': result.get('score', 0.0),
+                'action': result.get('action'),
+                'error': 'Action mismatch'
+            }
+
+        # reCAPTCHA v3 returns a score (0.0 - 1.0)
+        # 0.0 is very likely a bot, 1.0 is very likely a human
+        # Typical threshold is 0.5, but we'll use 0.3 to be less strict
+        score = result.get('score', 0.0)
+
+        return {
+            'success': score >= 0.3,
+            'score': score,
+            'action': result.get('action'),
+            'error': None if score >= 0.3 else 'Low reCAPTCHA score (likely bot)'
+        }
+
+    except Exception as e:
+        print(f"ERROR: reCAPTCHA verification exception: {e}")
+        # On error, allow the request (graceful degradation)
+        return {'success': True, 'score': 1.0, 'action': action, 'error': str(e)}
+
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-CHANGE-IN-PRODUCTION')
+app.secret_key = os.getenv('SECRET_KEY')
 
 # Initialize Firestore
 print("Initializing Firestore...")
@@ -82,11 +167,11 @@ if not ADMIN_ACCOUNTS:
 
 # Email configuration from environment variables
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
-EMAIL_USER = os.getenv('EMAIL_USER', 'your-email@gmail.com')
-EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD', 'your-app-password')
-EMAIL_FROM = os.getenv('EMAIL_FROM', 'AI Mentor Hub <your-email@gmail.com>')
-EMAIL_RECIPIENT = os.getenv('EMAIL_RECIPIENT', 'cjpbuzaid@gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT'))
+EMAIL_USER = os.getenv('EMAIL_USER')
+EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
+EMAIL_FROM = os.getenv('EMAIL_FROM')
+EMAIL_RECIPIENT = os.getenv('EMAIL_RECIPIENT')
 
 # Gemini AI configuration from environment variables
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
@@ -174,12 +259,15 @@ def send_confirmation_email(user_data, slot_data):
                     </ul>
 
                     <p style="margin-top: 30px;">See you soon!</p>
-                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn</p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
 
                     <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
-                        <p style="font-size: 0.9rem; color: #9CA3AF; text-align: center;">
+                        <p style="font-size: 0.9rem; color: #9CA3AF;">
                             <strong>Need to cancel or reschedule?</strong><br>
                             Visit <a href="https://uleairn.com" style="color: #6366F1;">uleairn.com</a>, click the "View My Booking" button, and you can manage your booking from there.
+                        </p>
+                        <p style="font-size: 0.85rem; color: #9CA3AF; margin-top: 20px;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
                         </p>
                     </div>
                 </div>
@@ -317,7 +405,13 @@ def send_booking_update_email(user_data, old_slot_data=None, new_slot_data=None,
                     </div>
 
                     <p style="margin-top: 30px;">If you have any questions or concerns about this change, please contact me directly.</p>
-                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com">cjpbuzaid@gmail.com</a></p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.85rem; color: #9CA3AF;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
+                        </p>
+                    </div>
                 </div>
             </body>
         </html>
@@ -360,18 +454,22 @@ def send_booking_deletion_email(user_data, slot_data):
                         <p><strong>Location:</strong> {user_data['selected_room']}</p>
                     </div>
 
-                    <div style="background: #f0fdf4; border-left: 4px solid #10B981; padding: 20px; margin: 20px 0;">
-                        <h2 style="margin-top: 0;">Want to Reschedule?</h2>
-                        <p>I'd still love to meet with you! You can book a new session anytime that works for you.</p>
-                        <p style="margin-top: 15px;">
-                            <a href="https://uleairn.com" style="display: inline-block; padding: 12px 24px; background: #6366F1; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                                Book a New Session
-                            </a>
-                        </p>
-                    </div>
+                    <h3>Want to Reschedule?</h3>
+                    <p>I'd still love to meet with you! You can book a new session anytime that works for you.</p>
+                    <p style="margin-top: 15px;">
+                        <a href="https://uleairn.com" style="display: inline-block; padding: 12px 24px; background: #6366F1; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                            Book a New Session
+                        </a>
+                    </p>
 
                     <p style="margin-top: 30px;">If you have any questions, please don't hesitate to reach out.</p>
-                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com">cjpbuzaid@gmail.com</a></p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.85rem; color: #9CA3AF;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
+                        </p>
+                    </div>
                 </div>
             </body>
         </html>
@@ -417,38 +515,42 @@ def send_booking_reminder_email(booking_data):
         <html>
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #6366F1;">Your AI Learning Session is Today! 🎉</h1>
+                    <h1 style="color: #6366F1;">Your AI Learning Session is Today!</h1>
                     <p>Hi {user_name},</p>
                     <p>Just a friendly reminder that your AI learning session with Christopher Buzaid is happening today!</p>
 
-                    <div style="background: #f0f9ff; border: 2px solid #6366F1; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                        <h2 style="margin-top: 0; color: #6366F1; text-align: center;">Session Details</h2>
+                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Session Details</h2>
                         <p style="margin: 10px 0;"><strong>📅 Date:</strong> {session_date}</p>
                         <p style="margin: 10px 0;"><strong>⏰ Time:</strong> {session_time}</p>
                         <p style="margin: 10px 0;"><strong>📍 Location:</strong> {session_location}</p>
                         <p style="margin: 10px 0;"><strong>⏱️ Duration:</strong> 30 minutes</p>
                     </div>
 
-                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 20px 0; border-radius: 4px;">
-                        <h3 style="margin-top: 0; color: #92400e;">📌 Tips Before You Come:</h3>
-                        <ul style="margin: 10px 0; padding-left: 20px;">
-                            <li>Arrive 5 minutes early</li>
-                            <li>Bring any questions or projects you're working on</li>
-                            <li>Have your laptop ready if we're doing hands-on work</li>
-                            <li>Let me know if you need to reschedule</li>
-                        </ul>
-                    </div>
+                    <h3>📌 Tips Before You Come:</h3>
+                    <ul>
+                        <li>Arrive 5 minutes early</li>
+                        <li>Bring any questions or projects you're working on</li>
+                        <li>Have your laptop ready if we're doing hands-on work</li>
+                        <li>Let me know if you need to reschedule</li>
+                    </ul>
 
-                    <div style="background: #f0fdf4; border-left: 4px solid #10B981; padding: 20px; margin: 20px 0; border-radius: 4px;">
-                        <h3 style="margin-top: 0; color: #166534;">Can't Make It?</h3>
-                        <p>If something came up and you need to reschedule, please let me know as soon as possible so I can open up this time slot for other students.</p>
-                        <p style="margin-top: 15px;">
-                            <a href="mailto:cjpbuzaid@gmail.com?subject=Need%20to%20reschedule%20my%20session" style="color: #6366F1; text-decoration: underline;">Email me to reschedule</a>
+                    <div style="background: #fff7ed; border-left: 4px solid #F59E0B; padding: 20px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #F59E0B;">Need to Reschedule?</h3>
+                        <p style="margin: 10px 0;">If something came up, please let me know as soon as possible.</p>
+                        <p style="margin: 10px 0;">
+                            <a href="https://uleairn.com" style="color: #F59E0B; font-weight: 600;">Visit LeAIrn to manage your booking</a>
                         </p>
                     </div>
 
-                    <p style="margin-top: 30px; color: #6B7280;">Looking forward to meeting with you!</p>
-                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com">cjpbuzaid@gmail.com</a></p>
+                    <p style="margin-top: 30px;">Looking forward to seeing you today!</p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.85rem; color: #9CA3AF;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
+                        </p>
+                    </div>
                 </div>
             </body>
         </html>
@@ -488,28 +590,32 @@ def send_feedback_request_email(user_data):
                     <p>Hi {user_data['full_name']},</p>
                     <p>I hope you enjoyed our AI learning session! Your feedback helps me improve and provide better experiences for future students.</p>
 
-                    <div style="background: #f0f9ff; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
-                        <h2 style="margin-top: 0; color: #6366F1;">Share Your Feedback</h2>
+                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Share Your Feedback</h2>
                         <p>It'll only take a minute - rate your experience and optionally share any comments.</p>
                         <p style="margin-top: 20px; margin-bottom: 0;">
-                            <a href="https://uleairn.com/feedback?token={feedback_token}" style="display: inline-block; padding: 14px 28px; background: #6366F1; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.5); border: 2px solid #4F46E5;">
+                            <a href="https://uleairn.com/feedback?token={feedback_token}" style="display: inline-block; padding: 14px 28px; background: #6366F1; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
                                 Leave Feedback
                             </a>
                         </p>
                     </div>
 
-                    <div style="background: #f0fdf4; border-left: 4px solid #10B981; padding: 20px; margin: 20px 0;">
-                        <h2 style="margin-top: 0;">Want to Learn More?</h2>
-                        <p>Feel free to book another session anytime. I'm always happy to help you dive deeper into AI!</p>
-                        <p style="margin-top: 15px;">
-                            <a href="https://uleairn.com" style="display: inline-block; padding: 12px 24px; background: #10B981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                                Book Another Session
-                            </a>
-                        </p>
-                    </div>
+                    <h3>Want to Learn More?</h3>
+                    <p>Feel free to book another session anytime. I'm always happy to help you dive deeper into AI!</p>
+                    <p style="margin-top: 15px;">
+                        <a href="https://uleairn.com" style="display: inline-block; padding: 12px 24px; background: #10B981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                            Book Another Session
+                        </a>
+                    </p>
 
                     <p style="margin-top: 30px;">Thank you for taking the time to learn with me!</p>
-                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com">cjpbuzaid@gmail.com</a></p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.85rem; color: #9CA3AF;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
+                        </p>
+                    </div>
                 </div>
             </body>
         </html>
@@ -553,10 +659,11 @@ def send_verification_email(email: str, code: str) -> bool:
                     <p style="color: #6B7280; font-size: 14px;">This code will expire in 10 minutes.</p>
                     <p style="color: #6B7280; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
 
-                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
-                        <p style="color: #6B7280; font-size: 14px; margin: 0;">
-                            - LeAIrn Team<br>
-                            <a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a>
+                    <p style="margin-top: 30px; color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.85rem; color: #9CA3AF;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
                         </p>
                     </div>
                 </div>
@@ -609,11 +716,12 @@ def send_booking_verification_email(email: str, code: str, name: str, slot_data:
                     <p style="color: #6B7280; font-size: 14px;">After verification, you'll receive a confirmation email with your session details and location.</p>
                     <p style="color: #6B7280; font-size: 14px;">If you didn't request this booking, you can safely ignore this email.</p>
 
-                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
-                        <p style="color: #6B7280; font-size: 14px; margin: 0;">
-                            - Christopher Buzaid<br>
-                            LeAIrn<br>
-                            <a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a>
+                    <p style="margin-top: 30px;">Looking forward to meeting you!</p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.85rem; color: #9CA3AF;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
                         </p>
                     </div>
                 </div>
@@ -693,22 +801,26 @@ def send_session_overview_email(user_data: dict, overview: str) -> bool:
                     <p>Hi {user_data['full_name']},</p>
                     <p>Here's a summary of what we covered in your AI learning session. Keep this for your reference!</p>
 
-                    <div style="background: #f0f9ff; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
                         <pre style="white-space: pre-wrap; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.8; margin: 0;">{overview}</pre>
                     </div>
 
-                    <div style="background: #f0fdf4; border-left: 4px solid #10B981; padding: 20px; margin: 20px 0;">
-                        <h2 style="margin-top: 0;">Keep Learning!</h2>
-                        <p>Feel free to book another session anytime if you have questions or want to dive deeper.</p>
-                        <p style="margin-top: 15px;">
-                            <a href="https://uleairn.com" style="display: inline-block; padding: 12px 24px; background: #10B981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                                Book Another Session
-                            </a>
-                        </p>
-                    </div>
+                    <h3>Keep Learning!</h3>
+                    <p>Feel free to book another session anytime if you have questions or want to dive deeper.</p>
+                    <p style="margin-top: 15px;">
+                        <a href="https://uleairn.com" style="display: inline-block; padding: 12px 24px; background: #10B981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                            Book Another Session
+                        </a>
+                    </p>
 
                     <p style="margin-top: 30px;">Happy learning!</p>
-                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com">cjpbuzaid@gmail.com</a></p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.85rem; color: #9CA3AF;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
+                        </p>
+                    </div>
                 </div>
             </body>
         </html>
@@ -751,26 +863,18 @@ def send_meeting_reminder_email(user_data: dict) -> bool:
                     <p>Hi {user_data['full_name']},</p>
                     <p>This is a friendly reminder that your AI learning session is scheduled for today.</p>
 
-                    <div style="background: linear-gradient(135deg, #6366F1, #8B5CF6); color: white; border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
-                        <h2 style="margin: 0 0 15px 0; font-size: 24px;">Session Details</h2>
-                        <div style="background: rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">TIME</div>
-                            <div style="font-size: 22px; font-weight: 700;">{time}</div>
-                        </div>
-                        <div style="background: rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 15px;">
-                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">LOCATION</div>
-                            <div style="font-size: 20px; font-weight: 700;">{location}</div>
-                        </div>
+                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Session Details</h2>
+                        <p style="margin: 10px 0;"><strong>⏰ Time:</strong> {time}</p>
+                        <p style="margin: 10px 0;"><strong>📍 Location:</strong> {location}</p>
                     </div>
 
-                    <div style="background: #f0f9ff; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
-                        <h3 style="margin-top: 0; color: #6366F1;">What to Bring</h3>
-                        <ul style="margin: 10px 0; padding-left: 20px;">
-                            <li>Your laptop or device</li>
-                            <li>Any specific questions or topics you want to cover</li>
-                            <li>An open mind and eagerness to learn!</li>
-                        </ul>
-                    </div>
+                    <h3>What to Bring</h3>
+                    <ul>
+                        <li>Your laptop or device</li>
+                        <li>Any specific questions or topics you want to cover</li>
+                        <li>An open mind and eagerness to learn!</li>
+                    </ul>
 
                     <div style="background: #fff7ed; border-left: 4px solid #F59E0B; padding: 20px; margin: 20px 0;">
                         <h3 style="margin-top: 0; color: #F59E0B;">Need to Reschedule?</h3>
@@ -782,6 +886,12 @@ def send_meeting_reminder_email(user_data: dict) -> bool:
 
                     <p style="margin-top: 30px;">Looking forward to seeing you today!</p>
                     <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.85rem; color: #9CA3AF;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
+                        </p>
+                    </div>
                 </div>
             </body>
         </html>
@@ -1065,7 +1175,8 @@ def generate_time_slots(weeks_ahead=6):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    recaptcha_site_key = os.getenv('RECAPTCHA_SITE_KEY')
+    return render_template('index.html', recaptcha_site_key=recaptcha_site_key)
 
 @app.route('/projects')
 def projects():
@@ -1128,16 +1239,60 @@ def request_booking_verification():
                 'message': 'Only @monmouth.edu email addresses are allowed. Please use your Monmouth University email.'
             }), 400
 
-        # Check rate limiting - prevent spam (max 3 new booking requests per hour per email)
-        rate_limit_check = db.check_verification_rate_limit(email, request_type='booking')
-        if not rate_limit_check['allowed']:
-            wait_minutes = rate_limit_check['wait_minutes']
+        # Verify reCAPTCHA token to prevent bots
+        recaptcha_token = data.get('recaptcha_token')
+        recaptcha_result = verify_recaptcha(recaptcha_token, action='booking')
+        if not recaptcha_result['success']:
+            print(f"⚠️ reCAPTCHA failed: {recaptcha_result.get('error')} (score: {recaptcha_result.get('score', 0.0)})")
             return jsonify({
                 'success': False,
-                'message': f'You\'ve reached the limit for booking requests. You can make a new booking again in {wait_minutes} minute{"s" if wait_minutes != 1 else ""}. This is a safety measure to prevent duplicate bookings.',
+                'message': 'Security verification failed. Please refresh the page and try again.',
+                'captcha_failed': True
+            }), 400
+
+        # Check IP-based rate limiting (prevent one IP from spamming with different emails)
+        # Limit: 3 booking requests per hour per IP address
+        client_ip = get_client_ip()
+        ip_rate_limit = db.check_ip_booking_rate_limit(client_ip)
+        if not ip_rate_limit['allowed']:
+            wait_hours = ip_rate_limit['wait_hours']
+            print(f"⚠️ IP rate limit exceeded for {client_ip}: {wait_hours} hours remaining")
+            return jsonify({
+                'success': False,
+                'message': f'Too many booking requests from your location. Please try again in {wait_hours} hour{"s" if wait_hours != 1 else ""}. This is a security measure to prevent abuse.',
                 'rate_limited': True,
-                'wait_minutes': wait_minutes
+                'wait_hours': wait_hours
             }), 429
+
+        # Check if this is a resend request (pending booking already exists)
+        existing_pending = db.get_pending_booking(email)
+        is_resend = existing_pending is not None and not existing_pending.get('used', False)
+
+        # Apply appropriate rate limiting
+        if is_resend:
+            # Resend: max 3 requests per 24 hours
+            rate_limit_check = db.check_verification_rate_limit(email, request_type='resend')
+            if not rate_limit_check['allowed']:
+                wait_minutes = rate_limit_check['wait_minutes']
+                wait_time_str = format_wait_time(wait_minutes)
+                return jsonify({
+                    'success': False,
+                    'message': f'You have reached the maximum number of resend requests (3 per 24 hours). Please try again in {wait_time_str}.',
+                    'rate_limited': True,
+                    'wait_minutes': wait_minutes
+                }), 429
+        else:
+            # New booking: max 1 request per 24 hours
+            rate_limit_check = db.check_verification_rate_limit(email, request_type='booking')
+            if not rate_limit_check['allowed']:
+                wait_minutes = rate_limit_check['wait_minutes']
+                wait_time_str = format_wait_time(wait_minutes)
+                return jsonify({
+                    'success': False,
+                    'message': f'Only one booking request is allowed every 24 hours. Please try again in {wait_time_str}. This is a safety measure to prevent duplicate bookings.',
+                    'rate_limited': True,
+                    'wait_minutes': wait_minutes
+                }), 429
 
         # Validate the slot exists and is available
         slots = db.get_all_slots()
@@ -1187,10 +1342,14 @@ def request_booking_verification():
                 'message': 'Failed to send verification email'
             }), 500
 
+        # Return appropriate message based on whether it's a resend
+        message = 'New verification code sent to your email!' if is_resend else 'Verification code sent to your email. Please check your inbox.'
+
         return jsonify({
             'success': True,
-            'message': 'Verification code sent to your email. Please check your inbox.',
-            'email': email
+            'message': message,
+            'email': email,
+            'is_resend': is_resend
         })
 
     except Exception as e:
@@ -1456,9 +1615,10 @@ def manual_send_reminders():
 def cron_send_reminders():
     """
     Cron endpoint to send morning reminders
-    
+
     VERCEL CRONS:
-    - Automatically called at 8:30 AM (schedule: "30 8 * * *" in vercel.json)
+    - Automatically called at 8:30 AM EST (schedule: "30 13 * * *" in vercel.json = 1:30 PM UTC)
+    - Note: During EDT (summer), this runs at 9:30 AM EDT (Vercel crons use UTC)
     - No authentication needed - Vercel manages security internally
     - Only available on Vercel Pro plan or higher
     
@@ -2291,9 +2451,10 @@ def lookup_booking():
         rate_limit_check = db.check_verification_rate_limit(email, request_type='lookup')
         if not rate_limit_check['allowed']:
             wait_minutes = rate_limit_check['wait_minutes']
+            wait_time_str = format_wait_time(wait_minutes)
             return jsonify({
                 'success': False,
-                'message': f'Too many lookup requests. You can look up your booking again in {wait_minutes} minute{"s" if wait_minutes != 1 else ""}. This is a safety measure to protect your account from unauthorized access attempts.',
+                'message': f'Too many lookup requests. You can look up your booking again in {wait_time_str}. This is a safety measure to protect your account from unauthorized access attempts.',
                 'rate_limited': True,
                 'wait_minutes': wait_minutes
             }), 429

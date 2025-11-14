@@ -1,8 +1,3 @@
-"""
-Firestore Database Module for LeAIrn Booking System
-
-This module handles all Firestore database operations, replacing JSON file storage.
-"""
 
 import os
 import json
@@ -1012,12 +1007,13 @@ def check_verification_rate_limit(email: str, request_type: str = 'booking') -> 
     """
     Check if email has exceeded verification code request rate limit.
     Limits:
-    - 3 requests per hour for new bookings
+    - 1 request per 24 hours for new bookings
+    - 3 requests per 24 hours for resending verification codes
     - 5 requests per hour for looking up existing bookings
 
     Args:
         email: User's email address
-        request_type: 'booking' (3/hour) or 'lookup' (5/hour)
+        request_type: 'booking' (1/24 hours), 'resend' (3/24 hours), or 'lookup' (5/hour)
 
     Returns:
         dict: {'allowed': bool, 'wait_minutes': int}
@@ -1029,8 +1025,16 @@ def check_verification_rate_limit(email: str, request_type: str = 'booking') -> 
         email = email.lower().strip()
         doc_key = f"{email}_{request_type}"
 
-        # Set limit based on request type
-        limit = 5 if request_type == 'lookup' else 3
+        # Set limit and time window based on request type
+        if request_type == 'lookup':
+            limit = 5
+            time_window_hours = 1
+        elif request_type == 'resend':
+            limit = 3
+            time_window_hours = 24
+        else:  # booking
+            limit = 1
+            time_window_hours = 24
 
         # Get rate limit record
         doc_ref = db.collection('rate_limits').document(doc_key)
@@ -1053,15 +1057,15 @@ def check_verification_rate_limit(email: str, request_type: str = 'booking') -> 
         rate_limit = doc.to_dict()
         requests = rate_limit.get('requests', [])
 
-        # Filter requests from last hour
-        one_hour_ago = (now - __import__('datetime').timedelta(hours=1)).isoformat()
-        recent_requests = [r for r in requests if r.get('timestamp', '') > one_hour_ago]
+        # Filter requests from last time window
+        time_window_ago = (now - __import__('datetime').timedelta(hours=time_window_hours)).isoformat()
+        recent_requests = [r for r in requests if r.get('timestamp', '') > time_window_ago]
 
         if len(recent_requests) >= limit:
             # Rate limit exceeded
             oldest_request = min([r.get('timestamp', '') for r in recent_requests])
             oldest_dt = datetime.fromisoformat(oldest_request)
-            wait_until = oldest_dt + __import__('datetime').timedelta(hours=1)
+            wait_until = oldest_dt + __import__('datetime').timedelta(hours=time_window_hours)
             wait_minutes = max(1, int((wait_until - now).total_seconds() / 60))
 
             return {'allowed': False, 'wait_minutes': wait_minutes}
@@ -1169,6 +1173,109 @@ def reset_admin_login_attempts(ip_address: str) -> bool:
 
     except Exception as e:
         print(f"ERROR: Failed to reset login attempts: {e}")
+        return False
+
+
+def check_ip_booking_rate_limit(ip_address: str) -> dict:
+    """
+    Check if IP address has exceeded booking request rate limit.
+    Limit: 1 booking request per 24 hours per IP address.
+    This prevents one person/bot from spamming bookings with different emails.
+
+    Args:
+        ip_address: Client IP address
+
+    Returns:
+        dict: {'allowed': bool, 'wait_hours': int}
+    """
+    try:
+        initialize_firestore()
+
+        # Normalize IP
+        ip_address = str(ip_address).strip()
+        limit = 1
+        time_window_hours = 24
+
+        # Get rate limit record
+        doc_ref = db.collection('ip_booking_limits').document(ip_address)
+        doc = doc_ref.get()
+
+        now = get_eastern_now()
+
+        if not doc.exists:
+            # First request from this IP, create record
+            doc_ref.set({
+                'ip_address': ip_address,
+                'requests': [{
+                    'timestamp': now.isoformat()
+                }],
+                'last_request': now.isoformat()
+            })
+            return {'allowed': True, 'wait_hours': 0}
+
+        rate_limit = doc.to_dict()
+        requests = rate_limit.get('requests', [])
+
+        # Filter requests from last 24 hours
+        time_window_ago = (now - __import__('datetime').timedelta(hours=time_window_hours)).isoformat()
+        recent_requests = [r for r in requests if r.get('timestamp', '') > time_window_ago]
+
+        if len(recent_requests) >= limit:
+            # Rate limit exceeded
+            oldest_request = min([r.get('timestamp', '') for r in recent_requests])
+            oldest_dt = datetime.fromisoformat(oldest_request)
+            wait_until = oldest_dt + __import__('datetime').timedelta(hours=time_window_hours)
+            wait_seconds = (wait_until - now).total_seconds()
+            wait_hours = max(1, int(wait_seconds / 3600))
+
+            return {'allowed': False, 'wait_hours': wait_hours}
+
+        # Add new request
+        recent_requests.append({'timestamp': now.isoformat()})
+        doc_ref.set({
+            'ip_address': ip_address,
+            'requests': recent_requests,
+            'last_request': now.isoformat()
+        })
+
+        return {'allowed': True, 'wait_hours': 0}
+
+    except Exception as e:
+        print(f"ERROR: Failed to check IP booking rate limit: {e}")
+        # On error, allow the booking to prevent false positives
+        return {'allowed': True, 'wait_hours': 0}
+
+
+def record_ip_booking(ip_address: str, email: str) -> bool:
+    """
+    Record a successful booking for an IP address.
+
+    Args:
+        ip_address: Client IP address
+        email: Email address that made the booking
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        ip_address = str(ip_address).strip()
+        now = get_eastern_now()
+
+        doc_ref = db.collection('ip_booking_limits').document(ip_address)
+        doc_ref.set({
+            'ip_address': ip_address,
+            'last_booking_time': now.isoformat(),
+            'last_booking_email': email,
+            'updated_at': now.isoformat()
+        })
+
+        print(f"OK: Recorded booking for IP {ip_address}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to record IP booking: {e}")
         return False
 
 

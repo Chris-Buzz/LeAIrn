@@ -18,6 +18,8 @@ venv/
 env/
 ENV/
 .venv
+get_affected_emails_today.py
+send_apology_emails.py
 
 # Flask
 instance/
@@ -42,6 +44,9 @@ Thumbs.db
 
 # Logs
 *.log
+
+#MarkDown
+SECURITY_IMPROVEMENTS.md
 
 # Distribution
 dist/
