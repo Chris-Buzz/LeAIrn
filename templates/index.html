@@ -522,6 +522,14 @@
                     </div>
                 </div>
 
+                {% if recaptcha_site_key %}
+                <p style="font-size: 0.75rem; color: var(--text-tertiary); text-align: center; margin: 1rem 0 0.5rem 0;">
+                    This site is protected by reCAPTCHA and the Google
+                    <a href="https://policies.google.com/privacy" target="_blank" style="color: var(--primary); text-decoration: none;">Privacy Policy</a> and
+                    <a href="https://policies.google.com/terms" target="_blank" style="color: var(--primary); text-decoration: none;">Terms of Service</a> apply.
+                </p>
+                {% endif %}
+
                 <div class="button-group">
                     <button class="btn-secondary" onclick="goToStep(6)">Back</button>
                     <button class="btn-primary" onclick="confirmBooking()">

@@ -3261,3 +3261,8 @@ body:hover .cursor-tracker {
         width: 100%;
     }
 }
+
+/* Hide reCAPTCHA Badge */
+.grecaptcha-badge {
+    visibility: hidden;
+}

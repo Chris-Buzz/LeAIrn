@@ -84,7 +84,12 @@ def verify_recaptcha(token, action='booking'):
     secret_key = os.getenv('RECAPTCHA_SECRET_KEY')
 
     # If reCAPTCHA is not configured, return success (graceful degradation)
-    if not secret_key or not token:
+    if not secret_key:
+        print("⚠️ WARNING: RECAPTCHA_SECRET_KEY not configured - bypassing reCAPTCHA")
+        return {'success': True, 'score': 1.0, 'action': action, 'error': None}
+
+    if not token:
+        print("⚠️ WARNING: No reCAPTCHA token provided - bypassing reCAPTCHA")
         return {'success': True, 'score': 1.0, 'action': action, 'error': None}
 
     try:
@@ -100,11 +105,14 @@ def verify_recaptcha(token, action='booking'):
         result = response.json()
 
         if not result.get('success'):
+            error_codes = result.get('error-codes', [])
+            print(f"⚠️ reCAPTCHA verification failed. Error codes: {error_codes}")
+            print(f"   Full response: {result}")
             return {
                 'success': False,
                 'score': 0.0,
                 'action': result.get('action'),
-                'error': 'reCAPTCHA verification failed'
+                'error': f'reCAPTCHA verification failed: {", ".join(error_codes) if error_codes else "unknown error"}'
             }
 
         # Check action matches (optional but recommended for v3)
@@ -1250,8 +1258,34 @@ def request_booking_verification():
                 'captcha_failed': True
             }), 400
 
-        # Check IP-based rate limiting (prevent one IP from spamming with different emails)
-        # Limit: 3 booking requests per hour per IP address
+        # Check device-based rate limiting (PRIMARY defense against email bombing)
+        # Limit: 2 booking requests per 24 hours per device
+        # This prevents someone from spamming 60+ emails from the same device
+        device_id = data.get('device_id')
+        if device_id:
+            device_rate_limit = db.check_device_booking_rate_limit(device_id)
+            if not device_rate_limit['allowed']:
+                wait_hours = device_rate_limit['wait_hours']
+                requests_used = device_rate_limit.get('requests_used', 2)
+                print(f"⚠️ Device rate limit exceeded for device {device_id[:16]}...: {requests_used} requests used, {wait_hours} hours remaining")
+                return jsonify({
+                    'success': False,
+                    'message': f'You have reached the limit of 2 booking requests per day from this device. Please try again in {wait_hours} hour{"s" if wait_hours != 1 else ""}.',
+                    'rate_limited': True,
+                    'wait_hours': wait_hours
+                }), 429
+        else:
+            # No device ID provided - deny the request
+            print(f"⚠️ No device ID provided for booking request from {email}")
+            return jsonify({
+                'success': False,
+                'message': 'Security verification failed. Please enable JavaScript and try again.',
+                'rate_limited': True
+            }), 400
+
+        # Check IP-based rate limiting (SECONDARY defense, allows shared networks)
+        # Limit: 25 booking requests per 24 hours per IP address
+        # This allows multiple students from same university wifi while blocking mass spam
         client_ip = get_client_ip()
         ip_rate_limit = db.check_ip_booking_rate_limit(client_ip)
         if not ip_rate_limit['allowed']:
@@ -1259,7 +1293,7 @@ def request_booking_verification():
             print(f"⚠️ IP rate limit exceeded for {client_ip}: {wait_hours} hours remaining")
             return jsonify({
                 'success': False,
-                'message': f'Too many booking requests from your location. Please try again in {wait_hours} hour{"s" if wait_hours != 1 else ""}. This is a security measure to prevent abuse.',
+                'message': f'Too many booking requests from your network. Please try again in {wait_hours} hour{"s" if wait_hours != 1 else ""}. This is a security measure to prevent abuse.',
                 'rate_limited': True,
                 'wait_hours': wait_hours
             }), 429
@@ -1282,14 +1316,14 @@ def request_booking_verification():
                     'wait_minutes': wait_minutes
                 }), 429
         else:
-            # New booking: max 1 request per 24 hours
+            # New booking: max 2 requests per 24 hours
             rate_limit_check = db.check_verification_rate_limit(email, request_type='booking')
             if not rate_limit_check['allowed']:
                 wait_minutes = rate_limit_check['wait_minutes']
                 wait_time_str = format_wait_time(wait_minutes)
                 return jsonify({
                     'success': False,
-                    'message': f'Only one booking request is allowed every 24 hours. Please try again in {wait_time_str}. This is a safety measure to prevent duplicate bookings.',
+                    'message': f'You have reached the limit of 2 booking requests per day. Please try again in {wait_time_str}.',
                     'rate_limited': True,
                     'wait_minutes': wait_minutes
                 }), 429
