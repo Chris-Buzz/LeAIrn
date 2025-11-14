@@ -1007,13 +1007,13 @@ def check_verification_rate_limit(email: str, request_type: str = 'booking') -> 
     """
     Check if email has exceeded verification code request rate limit.
     Limits:
-    - 1 request per 24 hours for new bookings
+    - 2 requests per 24 hours for new bookings
     - 3 requests per 24 hours for resending verification codes
     - 5 requests per hour for looking up existing bookings
 
     Args:
         email: User's email address
-        request_type: 'booking' (1/24 hours), 'resend' (3/24 hours), or 'lookup' (5/hour)
+        request_type: 'booking' (2/24 hours), 'resend' (3/24 hours), or 'lookup' (5/hour)
 
     Returns:
         dict: {'allowed': bool, 'wait_minutes': int}
@@ -1033,7 +1033,7 @@ def check_verification_rate_limit(email: str, request_type: str = 'booking') -> 
             limit = 3
             time_window_hours = 24
         else:  # booking
-            limit = 1
+            limit = 2
             time_window_hours = 24
 
         # Get rate limit record
@@ -1179,8 +1179,9 @@ def reset_admin_login_attempts(ip_address: str) -> bool:
 def check_ip_booking_rate_limit(ip_address: str) -> dict:
     """
     Check if IP address has exceeded booking request rate limit.
-    Limit: 1 booking request per 24 hours per IP address.
-    This prevents one person/bot from spamming bookings with different emails.
+    Limit: 25 booking requests per 24 hours per IP address.
+    This is a SECONDARY defense that allows shared networks (university wifi, offices)
+    while still blocking mass spam attacks. Device fingerprinting is the PRIMARY defense.
 
     Args:
         ip_address: Client IP address
@@ -1193,7 +1194,7 @@ def check_ip_booking_rate_limit(ip_address: str) -> dict:
 
         # Normalize IP
         ip_address = str(ip_address).strip()
-        limit = 1
+        limit = 25  # Increased to allow shared networks
         time_window_hours = 24
 
         # Get rate limit record
@@ -1244,6 +1245,81 @@ def check_ip_booking_rate_limit(ip_address: str) -> dict:
         print(f"ERROR: Failed to check IP booking rate limit: {e}")
         # On error, allow the booking to prevent false positives
         return {'allowed': True, 'wait_hours': 0}
+
+
+def check_device_booking_rate_limit(device_id: str) -> dict:
+    """
+    Check if device has exceeded booking request rate limit.
+    Limit: 2 booking requests per 24 hours per device.
+    This is the PRIMARY defense against email bombing attacks where someone
+    spams bookings with different emails from the same device.
+
+    Args:
+        device_id: Unique device fingerprint ID
+
+    Returns:
+        dict: {'allowed': bool, 'wait_hours': int, 'requests_used': int}
+    """
+    try:
+        initialize_firestore()
+
+        # Normalize device ID
+        device_id = str(device_id).strip()
+        if not device_id:
+            # If no device ID provided, deny the request
+            return {'allowed': False, 'wait_hours': 24, 'requests_used': 0}
+
+        limit = 2  # Allow 2 bookings per device per day (allows corrections/mistakes)
+        time_window_hours = 24
+
+        # Get rate limit record
+        doc_ref = db.collection('device_booking_limits').document(device_id)
+        doc = doc_ref.get()
+
+        now = get_eastern_now()
+
+        if not doc.exists:
+            # First request from this device, create record
+            doc_ref.set({
+                'device_id': device_id,
+                'requests': [{
+                    'timestamp': now.isoformat()
+                }],
+                'last_request': now.isoformat()
+            })
+            return {'allowed': True, 'wait_hours': 0, 'requests_used': 1}
+
+        rate_limit = doc.to_dict()
+        requests = rate_limit.get('requests', [])
+
+        # Filter requests from last 24 hours
+        time_window_ago = (now - __import__('datetime').timedelta(hours=time_window_hours)).isoformat()
+        recent_requests = [r for r in requests if r.get('timestamp', '') > time_window_ago]
+
+        if len(recent_requests) >= limit:
+            # Rate limit exceeded
+            oldest_request = min([r.get('timestamp', '') for r in recent_requests])
+            oldest_dt = datetime.fromisoformat(oldest_request)
+            wait_until = oldest_dt + __import__('datetime').timedelta(hours=time_window_hours)
+            wait_seconds = (wait_until - now).total_seconds()
+            wait_hours = max(1, int(wait_seconds / 3600))
+
+            return {'allowed': False, 'wait_hours': wait_hours, 'requests_used': len(recent_requests)}
+
+        # Add new request
+        recent_requests.append({'timestamp': now.isoformat()})
+        doc_ref.set({
+            'device_id': device_id,
+            'requests': recent_requests,
+            'last_request': now.isoformat()
+        })
+
+        return {'allowed': True, 'wait_hours': 0, 'requests_used': len(recent_requests)}
+
+    except Exception as e:
+        print(f"ERROR: Failed to check device booking rate limit: {e}")
+        # On error, allow the booking to prevent false positives
+        return {'allowed': True, 'wait_hours': 0, 'requests_used': 0}
 
 
 def record_ip_booking(ip_address: str, email: str) -> bool:
