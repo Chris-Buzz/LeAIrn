@@ -3262,6 +3262,443 @@ body:hover .cursor-tracker {
     }
 }
 
+/* ============================================================================
+   INVITE CODE GATE - Enhanced Modern Design
+   ============================================================================ */
+
+/* Main wrapper with animated gradient background */
+.invite-gate-wrapper {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    overflow-y: auto;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+}
+
+/* Animated gradient background */
+.invite-gate-bg {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg,
+        var(--bg) 0%,
+        var(--surface) 50%,
+        var(--bg) 100%);
+    z-index: -1;
+}
+
+[data-theme="dark"] .invite-gate-bg {
+    background: linear-gradient(135deg,
+        #0F172A 0%,
+        #1E293B 25%,
+        #1F2937 50%,
+        #1E293B 75%,
+        #0F172A 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+/* Main container */
+.invite-gate-container {
+    max-width: 500px;
+    width: 100%;
+    background: var(--surface);
+    border-radius: 1.5rem;
+    padding: 3rem 2.5rem;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    animation: slideUpFadeIn 0.6s ease;
+}
+
+[data-theme="dark"] .invite-gate-container {
+    background: rgba(31, 41, 55, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8),
+                0 0 80px rgba(99, 102, 241, 0.1);
+}
+
+@keyframes slideUpFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Header section */
+.invite-gate-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.invite-logo-pulse {
+    animation: gentlePulse 3s ease-in-out infinite;
+}
+
+@keyframes gentlePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+.invite-logo {
+    font-size: 3rem;
+    font-weight: 800;
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+}
+
+.logo-ai-gradient {
+    background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #D946EF 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 1.2em;
+    font-weight: 900;
+    display: inline-block;
+    filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.5));
+    animation: colorShift 8s ease infinite;
+}
+
+@keyframes colorShift {
+    0%, 100% { filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.5)); }
+    33% { filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.5)); }
+    66% { filter: drop-shadow(0 0 20px rgba(217, 70, 239, 0.5)); }
+}
+
+.invite-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    margin: 0;
+}
+
+/* Lock icon with glow effect */
+.invite-lock-container {
+    text-align: center;
+    margin-bottom: 2rem;
+    position: relative;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lock-glow {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: glowPulse 2s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+}
+
+.lock-icon {
+    width: 64px;
+    height: 64px;
+    stroke: var(--primary);
+    stroke-width: 2;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 4px 12px rgba(99, 102, 241, 0.4));
+    animation: lockFloat 3s ease-in-out infinite;
+}
+
+@keyframes lockFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+/* Title section */
+.invite-title-section {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.invite-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.75rem 0;
+}
+
+.invite-description {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* Input group */
+.invite-input-group {
+    margin-bottom: 1.5rem;
+}
+
+.invite-label {
+    display: block;
+    margin-bottom: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.invite-input-wrapper {
+    position: relative;
+}
+
+.invite-input {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    border: 2px solid var(--border);
+    border-radius: 0.75rem;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-size: 1.05rem;
+    font-family: 'Courier New', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.invite-input::placeholder {
+    color: var(--text-tertiary);
+    letter-spacing: 0.1em;
+}
+
+.invite-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1),
+                0 4px 12px rgba(99, 102, 241, 0.2);
+    transform: translateY(-1px);
+}
+
+.input-shimmer {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(99, 102, 241, 0.1),
+        transparent
+    );
+    border-radius: 0.75rem;
+    pointer-events: none;
+    transition: left 0.6s ease;
+}
+
+.invite-input:focus + .input-shimmer {
+    animation: shimmer 1.5s ease;
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Error message */
+.invite-error {
+    padding: 0.875rem 1.25rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--error);
+    border-radius: 0.75rem;
+    margin-bottom: 1.25rem;
+    color: var(--error);
+    font-size: 0.95rem;
+    text-align: center;
+    font-weight: 500;
+    animation: shakeError 0.4s ease;
+}
+
+@keyframes shakeError {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+[data-theme="dark"] .invite-error {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* Submit button */
+.invite-submit-btn {
+    width: 100%;
+    padding: 1.125rem 1.5rem;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+    letter-spacing: 0.02em;
+}
+
+.btn-content {
+    position: relative;
+    z-index: 1;
+}
+
+.btn-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+}
+
+.invite-submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+}
+
+.invite-submit-btn:hover .btn-glow {
+    width: 300px;
+    height: 300px;
+}
+
+.invite-submit-btn:active {
+    transform: translateY(0);
+}
+
+.invite-submit-btn:disabled {
+    background: var(--border);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Security notice */
+.invite-security-notice {
+    margin-top: 2rem;
+    padding: 1.25rem;
+    background: var(--bg);
+    border-left: 4px solid var(--primary);
+    border-radius: 0.5rem;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+[data-theme="dark"] .invite-security-notice {
+    background: rgba(99, 102, 241, 0.05);
+    border-left-color: var(--primary);
+}
+
+.security-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    margin-top: 2px;
+}
+
+.security-icon svg {
+    width: 100%;
+    height: 100%;
+    stroke: var(--primary);
+    stroke-width: 2;
+}
+
+.invite-security-notice p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.invite-security-notice strong {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+    .invite-gate-wrapper {
+        padding: 1rem;
+    }
+
+    .invite-gate-container {
+        padding: 2rem 1.5rem;
+    }
+
+    .invite-logo {
+        font-size: 2.5rem;
+    }
+
+    .invite-title {
+        font-size: 1.5rem;
+    }
+
+    .lock-icon {
+        width: 56px;
+        height: 56px;
+    }
+
+    .invite-input {
+        font-size: 0.95rem;
+        padding: 0.875rem 1rem;
+    }
+
+    .invite-submit-btn {
+        padding: 1rem 1.25rem;
+        font-size: 1rem;
+    }
+
+    .invite-security-notice {
+        padding: 1rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* Loading screen transition */
+#loadingScreen {
+    transition: opacity 0.3s ease;
+}
+
+#mainContent {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
 /* Hide reCAPTCHA Badge */
 .grecaptcha-badge {
     visibility: hidden;
