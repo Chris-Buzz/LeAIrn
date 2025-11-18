@@ -197,12 +197,15 @@ class AuthService:
     def clear_session(session: Dict) -> None:
         """
         Clear all OAuth-related session data
-        
+
         Args:
             session: Flask session dictionary (modified in place)
         """
         session.pop('logged_in', None)
+        session.pop('authenticated', None)
         session.pop('user_email', None)
         session.pop('user_name', None)
         session.pop('auth_flow', None)
+        session.pop('auth_state', None)
+        session.clear()  # Clear entire session to ensure logout
         print("[OK] Session cleared")

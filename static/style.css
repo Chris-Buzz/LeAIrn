@@ -520,6 +520,13 @@ body {
     height: 20px;
 }
 
+/* Hide reCAPTCHA badge (it's intrusive in bottom-right) */
+.grecaptcha-badge {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
 /* Progress Bar */
 .progress-bar {
     display: flex;
