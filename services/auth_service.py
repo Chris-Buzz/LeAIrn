@@ -90,7 +90,7 @@ class AuthService:
             flow: Auth flow dictionary stored in session
             
         Returns:
-            Token response dictionary or None if failed
+            Token response dictionary with id_token_claims or None if failed
         """
         msal_app = AuthService.get_msal_app()
         if not msal_app:
@@ -105,6 +105,19 @@ class AuthService:
             if 'error' in result:
                 print(f"✗ Token acquisition error: {result.get('error_description', result['error'])}")
                 return None
+            
+            # Extract and decode id_token to get claims
+            id_token = result.get('id_token')
+            if id_token:
+                try:
+                    id_token_claims = jwt.decode(id_token, options={"verify_signature": False})
+                    result['id_token_claims'] = id_token_claims
+                except Exception as e:
+                    print(f"⚠ Warning: Could not decode id_token claims: {e}")
+                    result['id_token_claims'] = {}
+            else:
+                print("⚠ Warning: No id_token in token response")
+                result['id_token_claims'] = {}
                 
             return result
             
