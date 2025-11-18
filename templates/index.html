@@ -830,13 +830,55 @@
         window.RECAPTCHA_SITE_KEY = '{{ recaptcha_site_key }}';
     </script>
     {% endif %}
-    <script src="/static/script.js"></script>
     <script>
         // Close AI Banner function - only closes for current session
         function closeAIBanner() {
             const banner = document.getElementById('aiBanner');
             banner.classList.add('hidden');
         }
+
+        // Logout function
+        function logout() {
+            window.location.href = '/logout';
+        }
+
+        // Authentication check - runs immediately when page loads
+        (function checkAuth() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const authGate = document.getElementById('authGate');
+            const mainContent = document.getElementById('mainContent');
+            const isAuthenticated = document.body.dataset.authenticated === 'true';
+
+            // Hide loading screen after a brief moment
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+
+                if (isAuthenticated) {
+                    // User is authenticated - show main content
+                    mainContent.style.display = 'block';
+
+                    // Populate email fields for authenticated users
+                    const userEmail = document.body.dataset.userEmail;
+                    const emailField = document.getElementById('email');
+                    const emailConfirmField = document.getElementById('email_confirm');
+
+                    if (userEmail && emailField && emailConfirmField) {
+                        emailField.value = userEmail;
+                        emailConfirmField.value = userEmail;
+                        // Make email fields read-only for authenticated users
+                        emailField.readOnly = true;
+                        emailConfirmField.readOnly = true;
+                    }
+                } else {
+                    // User is not authenticated - show auth gate
+                    authGate.style.display = 'flex';
+                    // Fade in the auth gate
+                    setTimeout(() => {
+                        authGate.style.opacity = '1';
+                    }, 10);
+                }
+            }, 300);
+        })();
     </script>
 
     <!-- Educational Popup for Coding Sessions -->
