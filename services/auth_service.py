@@ -14,7 +14,7 @@ load_dotenv()
 
 # OAuth Configuration
 MICROSOFT_CLIENT_ID = os.getenv('MICROSOFT_CLIENT_ID')
-MICROSOFT_TENANT = os.getenv('MICROSOFT_TENANT', 'organizations')
+MICROSOFT_TENANT = os.getenv('MICROSOFT_TENANT', 'd398fb56-1bf0-4c4a-9221-4d138fa72653')
 MICROSOFT_REDIRECT_URI = os.getenv('MICROSOFT_REDIRECT_URI', 'https://uleairn.com/auth/callback')
 MICROSOFT_SCOPES = []  # Empty - MSAL auto-includes reserved scopes
 
@@ -29,6 +29,7 @@ class AuthService:
     def get_msal_app() -> Optional[PublicClientApplication]:
         """
         Get or create MSAL PublicClientApplication instance (lazy initialization)
+        Uses specific tenant ID for public client flow
         
         Returns:
             PublicClientApplication instance or None if not configured
@@ -48,7 +49,7 @@ class AuthService:
                 client_id=MICROSOFT_CLIENT_ID,
                 authority=authority
             )
-            print(f"✓ MSAL app initialized (authority: {authority})")
+            print(f"✓ MSAL app initialized as public client (tenant: {MICROSOFT_TENANT})")
             return _msal_app
             
         except Exception as e:
