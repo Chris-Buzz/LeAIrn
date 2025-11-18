@@ -100,7 +100,7 @@ Keep the summary between 150-300 words. Format it as clear paragraphs (no markdo
             return None
             
         try:
-            model = genai.GenerativeModel('gemini-flash-2.5')
+            model = genai.GenerativeModel('gemini-2.5-flash')
             
             topics = session_data.get('topics', [])
             duration = session_data.get('duration', 30)
@@ -157,7 +157,7 @@ Keep the response concise (150-250 words) and actionable. Focus on practical imp
             return None
             
         try:
-            model = genai.GenerativeModel('gemini-pro')
+            model = genai.GenerativeModel('gemini-2.5-flash')
             
             prompt = f"""
 Generate personalized AI learning resources for a {skill_level} student who just learned about: {', '.join(topics)}

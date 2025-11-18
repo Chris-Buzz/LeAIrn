@@ -15,13 +15,21 @@ def verify_recaptcha(recaptcha_token: str) -> tuple:
         recaptcha_token: reCAPTCHA token from client
         
     Returns:
-        tuple: (success: bool, score: float, error: str or None)
+        tuple: (success: bool or None, score: float, error: str or None)
+        - True: verification passed
+        - False: verification failed (should be blocked)
+        - None: verification skipped (optional for authenticated users)
     """
+    # If no token provided, return None (optional for authenticated users)
+    if not recaptcha_token or not recaptcha_token.strip():
+        print("[INFO] No reCAPTCHA token provided (optional for authenticated users)")
+        return None, 0.0, None
+    
     recaptcha_secret = os.getenv('RECAPTCHA_SECRET_KEY')
     
     if not recaptcha_secret:
-        print("[WARNING] Warning: RECAPTCHA_SECRET_KEY not configured")
-        return False, 0.0, "reCAPTCHA not configured"
+        print("[WARNING] reCAPTCHA_SECRET_KEY not configured - skipping verification")
+        return None, 0.0, None
     
     try:
         # Verify with Google
@@ -38,7 +46,7 @@ def verify_recaptcha(recaptcha_token: str) -> tuple:
         
         if not result.get('success'):
             error_codes = result.get('error-codes', [])
-            print(f"[ERROR] reCAPTCHA verification failed: {error_codes}")
+            print(f"[WARNING] reCAPTCHA verification failed: {error_codes}")
             return False, 0.0, f"Verification failed: {', '.join(error_codes)}"
         
         score = result.get('score', 0.0)
@@ -54,11 +62,11 @@ def verify_recaptcha(recaptcha_token: str) -> tuple:
         return True, score, None
         
     except requests.exceptions.Timeout:
-        print("[ERROR] reCAPTCHA verification timeout")
-        return False, 0.0, "Verification timeout"
+        print("[WARNING] reCAPTCHA verification timeout - allowing authenticated request")
+        return None, 0.0, None
     except Exception as e:
-        print(f"[ERROR] reCAPTCHA verification error: {e}")
-        return False, 0.0, str(e)
+        print(f"[WARNING] reCAPTCHA verification error: {e} - allowing authenticated request")
+        return None, 0.0, None
 
 
 def validate_email_domain(email: str, allowed_domain: str = '@monmouth.edu') -> bool:

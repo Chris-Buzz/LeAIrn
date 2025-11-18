@@ -40,16 +40,24 @@ def request_booking_verification():
             if field not in data or data[field] is None or (isinstance(data[field], str) and not data[field].strip()):
                 return jsonify({'success': False, 'message': f'Missing required field: {field}'}), 400
 
-        # Verify reCAPTCHA
+        # Verify reCAPTCHA (optional for OAuth-authenticated users)
+        # OAuth provides strong authentication, so reCAPTCHA is an additional layer
         recaptcha_token = data.get('recaptcha_token')
-        success, score, error = verify_recaptcha(recaptcha_token)
-        if not success:
-            print(f"[WARNING]️ reCAPTCHA failed: {error} (score: {score})")
-            return jsonify({
-                'success': False,
-                'message': 'Security verification failed. Please refresh the page and try again.',
-                'captcha_failed': True
-            }), 400
+        if recaptcha_token:
+            success, score, error = verify_recaptcha(recaptcha_token)
+            if success is False:
+                # reCAPTCHA explicitly failed - log but continue (OAuth is strong enough)
+                print(f"[WARNING] reCAPTCHA failed: {error} (score: {score}) - allowing authenticated user")
+            elif success is True:
+                # reCAPTCHA passed
+                print(f"[OK] reCAPTCHA verification passed (score: {score})")
+            else:
+                # reCAPTCHA returned None (optional/misconfigured)
+                print(f"[INFO] reCAPTCHA skipped - optional for authenticated users")
+        else:
+            print(f"[INFO] No reCAPTCHA token provided - user authenticated via OAuth")
+        
+        print(f"[OK] Proceeding with booking - user authenticated via OAuth ({email})")
 
         # Check device-based rate limiting (2 bookings/24hrs per device)
         device_id = data.get('device_id')

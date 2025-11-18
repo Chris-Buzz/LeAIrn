@@ -679,10 +679,30 @@ async function confirmBooking() {
 
     // Disable button and show loading
     confirmBtn.disabled = true;
-    btnText.textContent = 'Sending verification code...';
+    btnText.textContent = 'Confirming booking...';
 
-    // Step 1: Request verification code
+    // Generate or get device ID for rate limiting
+    let deviceId = localStorage.getItem('device_id');
+    if (!deviceId) {
+        deviceId = 'dev_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem('device_id', deviceId);
+    }
+    formData.device_id = deviceId;
+
     try {
+        // Generate reCAPTCHA token if available
+        if (window.RECAPTCHA_SITE_KEY && typeof grecaptcha !== 'undefined') {
+            try {
+                await grecaptcha.ready();
+                const token = await grecaptcha.execute(window.RECAPTCHA_SITE_KEY, { action: 'booking' });
+                formData.recaptcha_token = token;
+            } catch (recaptchaError) {
+                console.warn('reCAPTCHA error:', recaptchaError);
+                // Continue without token - server will handle
+            }
+        }
+
+        // Submit booking directly (OAuth flow - no verification code needed)
         const response = await fetch('/api/booking/request-verification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -692,16 +712,25 @@ async function confirmBooking() {
         const result = await response.json();
 
         if (response.ok && result.success) {
-            // Store form data for later use
-            bookingData.pendingFormData = formData;
-            bookingData.userEmail = result.email;
+            // Booking confirmed! Show success page
+            const slotDetails = result.slot_details || {};
+            bookingData.slot = {
+                id: formData.selected_slot,
+                datetime: slotDetails.datetime,
+                day: slotDetails.day,
+                date: slotDetails.date,
+                time: slotDetails.time
+            };
+            bookingData.selected_room = fullLocation;
 
-            // Show verification code input modal
-            showVerificationModal(result.email);
+            displayBookingDetails({
+                name: formData.full_name,
+                slot: bookingData.slot,
+                room: fullLocation
+            });
 
-            // Re-enable button
-            confirmBtn.disabled = false;
-            btnText.textContent = 'Confirm Booking';
+            goToStep(8);
+            showNotification('Booking confirmed! Check your email for details.', 'success');
         } else {
             // Show error message
             confirmBtn.disabled = false;
@@ -710,14 +739,17 @@ async function confirmBooking() {
             if (response.status === 429) {
                 // Rate limited
                 showNotification(result.message || 'Too many requests. Please wait before trying again.', 'error');
+            } else if (result.captcha_failed) {
+                // reCAPTCHA failed
+                showNotification('Security verification failed. Please refresh the page and try again.', 'error');
             } else {
                 // Other error
-                showNotification(result.message || 'Failed to send verification code. Please try again.', 'error');
+                showNotification(result.message || 'Failed to confirm booking. Please try again.', 'error');
             }
         }
 
     } catch (error) {
-        console.error('Verification request error:', error);
+        console.error('Booking error:', error);
         confirmBtn.disabled = false;
         btnText.textContent = 'Confirm Booking';
         showNotification('Connection error. Please check your internet and try again.', 'error');
