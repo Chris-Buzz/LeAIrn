@@ -6,7 +6,7 @@ Handles Microsoft OAuth 2.0 SSO and Monmouth University email verification.
 import os
 import jwt
 from typing import Optional, Dict, Tuple
-from msal import PublicClientApplication
+from msal import ConfidentialClientApplication
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -14,6 +14,7 @@ load_dotenv()
 
 # OAuth Configuration
 MICROSOFT_CLIENT_ID = os.getenv('MICROSOFT_CLIENT_ID')
+MICROSOFT_CLIENT_SECRET = os.getenv('MICROSOFT_CLIENT_SECRET')
 MICROSOFT_TENANT = os.getenv('MICROSOFT_TENANT', 'd398fb56-1bf0-4c4a-9221-4d138fa72653')
 MICROSOFT_REDIRECT_URI = os.getenv('MICROSOFT_REDIRECT_URI', 'https://uleairn.com/auth/callback')
 MICROSOFT_SCOPES = []  # Empty - MSAL auto-includes reserved scopes
@@ -26,32 +27,37 @@ class AuthService:
     """Service for OAuth authentication and token validation"""
 
     @staticmethod
-    def get_msal_app() -> Optional[PublicClientApplication]:
+    def get_msal_app() -> Optional[ConfidentialClientApplication]:
         """
-        Get or create MSAL PublicClientApplication instance (lazy initialization)
-        Uses specific tenant ID for public client flow
-        
+        Get or create MSAL ConfidentialClientApplication instance (lazy initialization)
+        Uses specific tenant ID and client secret for web application flow
+
         Returns:
-            PublicClientApplication instance or None if not configured
+            ConfidentialClientApplication instance or None if not configured
         """
         global _msal_app
-        
+
         if _msal_app is not None:
             return _msal_app
-            
+
         if not MICROSOFT_CLIENT_ID:
             print("⚠ Warning: MICROSOFT_CLIENT_ID not configured")
             return None
-            
+
+        if not MICROSOFT_CLIENT_SECRET:
+            print("⚠ Warning: MICROSOFT_CLIENT_SECRET not configured")
+            return None
+
         try:
             authority = f"https://login.microsoftonline.com/{MICROSOFT_TENANT}"
-            _msal_app = PublicClientApplication(
+            _msal_app = ConfidentialClientApplication(
                 client_id=MICROSOFT_CLIENT_ID,
+                client_credential=MICROSOFT_CLIENT_SECRET,
                 authority=authority
             )
-            print(f"✓ MSAL app initialized as public client (tenant: {MICROSOFT_TENANT})")
+            print(f"✓ MSAL app initialized as confidential client (tenant: {MICROSOFT_TENANT})")
             return _msal_app
-            
+
         except Exception as e:
             print(f"✗ MSAL initialization failed: {e}")
             return None
@@ -84,29 +90,31 @@ class AuthService:
     def acquire_token_by_code(auth_code: str, state: str, flow: Dict) -> Optional[Dict]:
         """
         Exchange authorization code for access token
-        
+
         Args:
             auth_code: Authorization code from OAuth callback
             state: State parameter for CSRF protection
             flow: Auth flow dictionary stored in session
-            
+
         Returns:
             Token response dictionary with id_token_claims or None if failed
+            If failed, includes 'error_message' key with user-friendly error
         """
         msal_app = AuthService.get_msal_app()
         if not msal_app:
-            return None
-            
+            return {'error_message': 'OAuth service not configured properly. Missing client credentials.'}
+
         try:
             result = msal_app.acquire_token_by_auth_code_flow(
                 auth_code_flow=flow,
                 auth_response={'code': auth_code, 'state': state}
             )
-            
+
             if 'error' in result:
-                print(f"✗ Token acquisition error: {result.get('error_description', result['error'])}")
-                return None
-            
+                error_msg = result.get('error_description', result['error'])
+                print(f"✗ Token acquisition error: {error_msg}")
+                return {'error_message': error_msg}
+
             # Extract and decode id_token to get claims
             id_token = result.get('id_token')
             if id_token:
@@ -119,12 +127,13 @@ class AuthService:
             else:
                 print("⚠ Warning: No id_token in token response")
                 result['id_token_claims'] = {}
-                
+
             return result
-            
+
         except Exception as e:
-            print(f"✗ Token acquisition failed: {e}")
-            return None
+            error_msg = f"Token acquisition failed: {str(e)}"
+            print(f"✗ {error_msg}")
+            return {'error_message': error_msg}
 
     @staticmethod
     def verify_monmouth_token(token: str) -> Tuple[bool, Optional[str], Optional[str]]:

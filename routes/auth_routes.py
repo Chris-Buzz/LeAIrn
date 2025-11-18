@@ -55,10 +55,13 @@ def auth_callback():
         
         # Exchange authorization code for token
         token_response = AuthService.acquire_token_by_code(code, state, flow)
-        
-        if not token_response:
-            return redirect(url_for('api.index', error="Token acquisition failed"))
-        
+
+        # Check for error in response
+        if not token_response or 'error_message' in token_response:
+            error_msg = token_response.get('error_message', 'Token acquisition failed') if token_response else 'Token acquisition failed'
+            print(f"Token acquisition failed: {error_msg}")
+            return redirect(url_for('api.index', error=error_msg))
+
         # Get ID token
         id_token = token_response.get('id_token')
         if not id_token:
