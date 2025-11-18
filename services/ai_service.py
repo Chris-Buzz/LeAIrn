@@ -100,7 +100,7 @@ Keep the summary between 150-300 words. Format it as clear paragraphs (no markdo
             return None
             
         try:
-            model = genai.GenerativeModel('gemini-pro')
+            model = genai.GenerativeModel('gemini-flash-2.5')
             
             topics = session_data.get('topics', [])
             duration = session_data.get('duration', 30)

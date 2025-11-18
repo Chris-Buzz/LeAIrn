@@ -484,6 +484,42 @@ body {
     color: var(--text-primary);
 }
 
+/* Sign Out Toggle Button (below theme toggle) */
+.signout-toggle {
+    position: fixed;
+    top: 5rem;
+    right: 1.5rem;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: all 0.3s;
+    z-index: 1000;
+    color: var(--text-secondary);
+}
+
+.signout-toggle:hover {
+    transform: scale(1.1);
+    background: #FEE2E2;
+    border-color: var(--error);
+    color: var(--error);
+}
+
+[data-theme="dark"] .signout-toggle:hover {
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.signout-toggle svg {
+    width: 20px;
+    height: 20px;
+}
+
 /* Progress Bar */
 .progress-bar {
     display: flex;

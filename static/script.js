@@ -416,34 +416,58 @@ function updateDetailedProgress(activeStep) {
 function validateCurrentStep() {
     if (currentStep === 1) {
         const name = document.getElementById('full_name').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const emailConfirm = document.getElementById('email_confirm').value.trim();
         const role = document.getElementById('role').value;
         const departmentField = document.getElementById('department-field');
         const department = document.getElementById('department').value.trim();
 
-        if (!name || !email || !emailConfirm || !role) {
+        // Check if user is authenticated
+        const isAuthenticated = document.body.dataset.authenticated === 'true';
+
+        // Basic validation
+        if (!name || !role) {
             showNotification('Please fill in all required fields', 'error');
             return false;
         }
 
-        // Email validation
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            showNotification('Please enter a valid email address', 'error');
-            return false;
-        }
+        // Email validation only for non-authenticated users
+        if (!isAuthenticated) {
+            const emailField = document.getElementById('email');
+            const emailConfirmField = document.getElementById('email_confirm');
 
-        // Monmouth.edu email validation
-        if (!email.toLowerCase().endsWith('@monmouth.edu')) {
-            showNotification('Only @monmouth.edu email addresses are allowed. Please use your Monmouth University email.', 'error');
-            return false;
-        }
+            if (!emailField || !emailConfirmField) {
+                showNotification('Email fields not found', 'error');
+                return false;
+            }
 
-        // Email confirmation validation
-        if (email !== emailConfirm) {
-            showNotification('Email addresses do not match. Please check and try again.', 'error');
-            document.getElementById('email-match-hint').style.display = 'block';
-            return false;
+            const email = emailField.value.trim();
+            const emailConfirm = emailConfirmField.value.trim();
+
+            if (!email || !emailConfirm) {
+                showNotification('Please fill in all required fields', 'error');
+                return false;
+            }
+
+            // Email validation
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showNotification('Please enter a valid email address', 'error');
+                return false;
+            }
+
+            // Monmouth.edu email validation
+            if (!email.toLowerCase().endsWith('@monmouth.edu')) {
+                showNotification('Only @monmouth.edu email addresses are allowed. Please use your Monmouth University email.', 'error');
+                return false;
+            }
+
+            // Email confirmation validation
+            if (email !== emailConfirm) {
+                showNotification('Email addresses do not match. Please check and try again.', 'error');
+                document.getElementById('email-match-hint').style.display = 'block';
+                return false;
+            }
+
+            // Hide email match hint if validation passes
+            document.getElementById('email-match-hint').style.display = 'none';
         }
 
         // Department/Major validation (if field is visible)
@@ -451,9 +475,6 @@ function validateCurrentStep() {
             showNotification('Please enter your department or major', 'error');
             return false;
         }
-
-        // Hide email match hint if validation passes
-        document.getElementById('email-match-hint').style.display = 'none';
 
         return true;
     }
@@ -624,10 +645,14 @@ async function confirmBooking() {
     const departmentField = document.getElementById('department-field');
     const department = departmentField.style.display !== 'none' ? document.getElementById('department').value.trim() : null;
 
+    // Check if user is authenticated (email will be from session)
+    const isAuthenticated = document.body.dataset.authenticated === 'true';
+    const userEmail = isAuthenticated ? document.body.dataset.userEmail : document.getElementById('email')?.value.trim();
+
     // Get form data
     const formData = {
         full_name: document.getElementById('full_name').value.trim(),
-        email: document.getElementById('email').value.trim(),
+        email: userEmail,
         phone: null, // Phone is no longer collected
         role: document.getElementById('role').value,
         department: department, // Add department/major

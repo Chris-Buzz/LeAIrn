@@ -25,10 +25,21 @@
         <svg id="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
         </svg>
-    <svg id="theme-icon-dark" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <svg id="theme-icon-dark" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
     </button>
+
+    <!-- Sign Out Button (for authenticated users) -->
+    {% if session.get('authenticated') %}
+    <button onclick="logout()" class="signout-toggle" title="Sign Out" aria-label="Sign out">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+    </button>
+    {% endif %}
 
     <!-- View Booking Button -->
     <button onclick="showViewBookingModal()" class="view-booking-btn" title="View Previous Booking">
@@ -100,7 +111,7 @@
     </div>
 
     <!-- Invite Code Gate (hidden initially, shown after check) -->
-    <div id="authGate" class="invite-gate-wrapper" style="display: none; position: fixed; inset: 0; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 9000; opacity: 0; transition: opacity 0.3s ease;">
+    <div id="authGate" class="invite-gate-wrapper" style="display: none; position: fixed; inset: 0; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); backdrop-filter: blur(10px); align-items: center; justify-content: center; z-index: 9000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none;">
         <div class="invite-gate-bg" style="position: absolute; inset: 0;"></div>
         <div class="invite-gate-container" style="position: relative; z-index: 10; background: var(--surface); border-radius: 16px; padding: 3rem; max-width: 450px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); border: 1px solid var(--border); animation: slideUp 0.5s ease;">
             <!-- Logo and Header -->
@@ -168,32 +179,6 @@
                 <div class="ai-badge">Built with AI</div>
             </a>
 
-            <!-- Authentication Controls (Top Right) -->
-            <div style="position: absolute; top: 1.5rem; right: 1.5rem; display: flex; align-items: center; gap: 1rem;">
-                {% if session.get('authenticated') %}
-                    <div style="display: flex; align-items: center; gap: 0.75rem; background: var(--surface); padding: 0.625rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
-                        <div style="text-align: right;">
-                            <p style="margin: 0; font-size: 0.75rem; color: var(--text-secondary);">Signed in as</p>
-                            <p style="margin: 0.125rem 0 0 0; font-weight: 600; color: var(--text-primary); font-size: 0.875rem;">{{ session.get('user_email', 'User') }}</p>
-                        </div>
-                        <button onclick="logout()" class="btn-logout" style="padding: 0.5rem 0.875rem; background: transparent; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 0.5rem; cursor: pointer; font-weight: 500; transition: all 0.3s; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem;" onmouseover="this.style.background='var(--error-bg)'; this.style.color='var(--error)'; this.style.borderColor='var(--error)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-secondary)'; this.style.borderColor='var(--border)';">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                                <polyline points="16 17 21 12 16 7"></polyline>
-                                <line x1="21" y1="12" x2="9" y2="12"></line>
-                            </svg>
-                            Sign Out
-                        </button>
-                    </div>
-                {% else %}
-                    <a href="/login" class="btn-login" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s; text-decoration: none; display: inline-flex; align-items: center; gap: 0.625rem; box-shadow: 0 2px 8px rgba(0, 120, 212, 0.2);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 120, 212, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0, 120, 212, 0.2)';">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 18px; height: 18px;">
-                            <path d="M11.4 24H0V12.6h11.4V24ZM24 24H12.6V12.6H24V24ZM11.4 11.4H0V0h11.4v11.4Zm12.6 0H12.6V0H24v11.4Z"/>
-                        </svg>
-                        Sign In with Monmouth
-                    </a>
-                {% endif %}
-            </div>
 
             <!-- Hand-drawn annotation pointing to badge -->
             <div class="annotation-wrapper">
@@ -842,12 +827,16 @@
             window.location.href = '/logout';
         }
 
-        // Authentication check - runs immediately when page loads
-        (function checkAuth() {
+        // Authentication check - runs when DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
             const loadingScreen = document.getElementById('loadingScreen');
             const authGate = document.getElementById('authGate');
             const mainContent = document.getElementById('mainContent');
             const isAuthenticated = document.body.dataset.authenticated === 'true';
+
+            console.log('Authentication check running...');
+            console.log('Is authenticated:', isAuthenticated);
+            console.log('User email:', document.body.dataset.userEmail);
 
             // Hide loading screen after a brief moment
             setTimeout(() => {
@@ -855,30 +844,24 @@
 
                 if (isAuthenticated) {
                     // User is authenticated - show main content
+                    console.log('Showing main content for authenticated user');
                     mainContent.style.display = 'block';
 
-                    // Populate email fields for authenticated users
-                    const userEmail = document.body.dataset.userEmail;
-                    const emailField = document.getElementById('email');
-                    const emailConfirmField = document.getElementById('email_confirm');
-
-                    if (userEmail && emailField && emailConfirmField) {
-                        emailField.value = userEmail;
-                        emailConfirmField.value = userEmail;
-                        // Make email fields read-only for authenticated users
-                        emailField.readOnly = true;
-                        emailConfirmField.readOnly = true;
-                    }
+                    // Note: For authenticated users, email fields may not exist
+                    // as they are conditionally rendered in the template
+                    // The user's email is shown in a static display instead
                 } else {
                     // User is not authenticated - show auth gate
+                    console.log('Showing auth gate for unauthenticated user');
                     authGate.style.display = 'flex';
+                    authGate.style.pointerEvents = 'auto';
                     // Fade in the auth gate
                     setTimeout(() => {
                         authGate.style.opacity = '1';
                     }, 10);
                 }
             }, 300);
-        })();
+        });
     </script>
 
     <!-- Educational Popup for Coding Sessions -->
