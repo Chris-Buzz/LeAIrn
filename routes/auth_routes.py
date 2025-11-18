@@ -82,6 +82,7 @@ def auth_callback():
         session['authenticated'] = True
         session['user_email'] = email
         session['user_name'] = name
+        session['session_created'] = __import__('datetime').datetime.now().isoformat()
         
         print(f"[OK] User authenticated: {email} ({name})")
         

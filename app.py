@@ -7,6 +7,7 @@ from flask import Flask
 import os
 import threading
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 # Import database
 import firestore_db as db
@@ -93,6 +94,29 @@ if os.getenv('FLASK_ENV') != 'development' or os.getenv('WERKZEUG_RUN_MAIN') == 
 # ============================================================================
 # MAINTENANCE HOOK
 # ============================================================================
+
+@app.before_request
+def enforce_session_timeout():
+    """Enforce 24-hour session timeout for authenticated users"""
+    from flask import session, redirect, url_for
+    
+    if session.get('authenticated'):
+        # Check session age
+        session_created = session.get('session_created')
+        
+        if session_created:
+            try:
+                created_time = datetime.fromisoformat(session_created)
+                if datetime.now() - created_time > timedelta(hours=24):
+                    # Session expired, clear it
+                    session.clear()
+                    return redirect(url_for('api.index', message='Your session has expired. Please sign in again.'))
+            except Exception as e:
+                print(f"[WARNING] Session timeout check failed: {e}")
+        else:
+            # First request after login, mark session creation time
+            session['session_created'] = datetime.now().isoformat()
+
 
 @app.before_request
 def periodic_maintenance():

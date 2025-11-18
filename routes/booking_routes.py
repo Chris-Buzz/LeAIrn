@@ -6,7 +6,7 @@ Handles all booking-related operations (create, update, delete, lookup).
 from flask import Blueprint, request, session, jsonify
 from datetime import datetime
 import firestore_db as db
-from utils import get_client_ip, verify_recaptcha
+from utils import get_client_ip
 from services.email_service import EmailService
 
 booking_bp = Blueprint('booking', __name__)
@@ -40,23 +40,7 @@ def request_booking_verification():
             if field not in data or data[field] is None or (isinstance(data[field], str) and not data[field].strip()):
                 return jsonify({'success': False, 'message': f'Missing required field: {field}'}), 400
 
-        # Verify reCAPTCHA (optional for OAuth-authenticated users)
-        # OAuth provides strong authentication, so reCAPTCHA is an additional layer
-        recaptcha_token = data.get('recaptcha_token')
-        if recaptcha_token:
-            success, score, error = verify_recaptcha(recaptcha_token)
-            if success is False:
-                # reCAPTCHA explicitly failed - log but continue (OAuth is strong enough)
-                print(f"[WARNING] reCAPTCHA failed: {error} (score: {score}) - allowing authenticated user")
-            elif success is True:
-                # reCAPTCHA passed
-                print(f"[OK] reCAPTCHA verification passed (score: {score})")
-            else:
-                # reCAPTCHA returned None (optional/misconfigured)
-                print(f"[INFO] reCAPTCHA skipped - optional for authenticated users")
-        else:
-            print(f"[INFO] No reCAPTCHA token provided - user authenticated via OAuth")
-        
+        # OAuth provides strong authentication - no additional verification needed
         print(f"[OK] Proceeding with booking - user authenticated via OAuth ({email})")
 
         # Check device-based rate limiting (2 bookings/24hrs per device)
@@ -115,19 +99,19 @@ def request_booking_verification():
                 'message': 'Invalid time slot'
             }), 400
 
-        # Create booking data
+        # Create booking data (safely handle None values)
         booking_data = {
             'full_name': data['full_name'].strip(),
             'email': email,
-            'phone': data.get('phone', '').strip(),
+            'phone': (data.get('phone') or '').strip(),
             'role': data['role'].strip(),
-            'department': data.get('department', '').strip(),
-            'ai_familiarity': data.get('ai_familiarity', '').strip(),
-            'ai_tools': data.get('ai_tools', '').strip(),
-            'primary_use': data.get('primary_use', '').strip(),
-            'learning_goal': data.get('learning_goal', '').strip(),
+            'department': (data.get('department') or '').strip(),
+            'ai_familiarity': (data.get('ai_familiarity') or '').strip(),
+            'ai_tools': (data.get('ai_tools') or '').strip(),
+            'primary_use': (data.get('primary_use') or '').strip(),
+            'learning_goal': (data.get('learning_goal') or '').strip(),
             'confidence_level': data.get('confidence_level', 3),
-            'personal_comments': data.get('personal_comments', '').strip(),
+            'personal_comments': (data.get('personal_comments') or '').strip(),
             'selected_slot': selected_slot_data,
             'selected_room': data['selected_room'].strip(),
             'timestamp': datetime.now().isoformat(),
