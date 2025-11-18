@@ -74,13 +74,6 @@ def feedback_page():
     return render_template('feedback.html')
 
 
-@api_bp.route('/media/<path:filename>')
-def serve_media(filename):
-    """Serve media files"""
-    media_folder = os.path.join(os.path.dirname(__file__), '..', 'static', 'images')
-    return send_from_directory(media_folder, filename)
-
-
 # ============================================================================
 # SLOTS MANAGEMENT
 # ============================================================================
