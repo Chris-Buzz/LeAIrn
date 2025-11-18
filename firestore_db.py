@@ -1171,6 +1171,226 @@ def reset_admin_login_attempts(ip_address: str) -> bool:
         return False
 
 
+# ============================================================================
+# BOOKING RATE LIMITING
+# ============================================================================
+
+def check_device_booking_rate_limit(device_id: str) -> dict:
+    """
+    Check if device has exceeded booking rate limit (2 bookings per 24 hours).
+
+    Args:
+        device_id: Unique device identifier
+
+    Returns:
+        dict: {'allowed': bool, 'wait_hours': int, 'bookings': int}
+    """
+    try:
+        initialize_firestore()
+
+        device_id = str(device_id).strip()
+
+        # Get rate limit record
+        doc_ref = db.collection('device_booking_limits').document(device_id)
+        doc = doc_ref.get()
+
+        now = datetime.now()
+
+        if not doc.exists:
+            # First booking, create record
+            doc_ref.set({
+                'device_id': device_id,
+                'bookings': [{
+                    'timestamp': now.isoformat()
+                }],
+                'last_booking': now.isoformat()
+            })
+            return {'allowed': True, 'wait_hours': 0, 'bookings': 1}
+
+        rate_limit = doc.to_dict()
+        bookings = rate_limit.get('bookings', [])
+
+        # Filter bookings from last 24 hours
+        twenty_four_hours_ago = (now - __import__('datetime').timedelta(hours=24)).isoformat()
+        recent_bookings = [b for b in bookings if b.get('timestamp', '') > twenty_four_hours_ago]
+
+        if len(recent_bookings) >= 2:
+            # Rate limit exceeded (2 bookings per 24 hours)
+            oldest_booking = min([b.get('timestamp', '') for b in recent_bookings])
+            oldest_dt = datetime.fromisoformat(oldest_booking)
+            wait_until = oldest_dt + __import__('datetime').timedelta(hours=24)
+            wait_hours = max(1, int((wait_until - now).total_seconds() / 3600))
+
+            return {'allowed': False, 'wait_hours': wait_hours, 'bookings': len(recent_bookings)}
+
+        # Add new booking
+        recent_bookings.append({'timestamp': now.isoformat()})
+        doc_ref.set({
+            'device_id': device_id,
+            'bookings': recent_bookings,
+            'last_booking': now.isoformat()
+        })
+
+        return {'allowed': True, 'wait_hours': 0, 'bookings': len(recent_bookings)}
+
+    except Exception as e:
+        print(f"ERROR: Failed to check device booking rate limit: {e}")
+        # On error, allow the booking
+        return {'allowed': True, 'wait_hours': 0, 'bookings': 0}
+
+
+def check_ip_booking_rate_limit(ip_address: str) -> dict:
+    """
+    Check if IP has exceeded booking rate limit (25 bookings per 24 hours).
+
+    Args:
+        ip_address: Client IP address
+
+    Returns:
+        dict: {'allowed': bool, 'wait_hours': int, 'bookings': int}
+    """
+    try:
+        initialize_firestore()
+
+        ip_address = str(ip_address).strip()
+
+        # Get rate limit record
+        doc_ref = db.collection('ip_booking_limits').document(ip_address)
+        doc = doc_ref.get()
+
+        now = datetime.now()
+
+        if not doc.exists:
+            # First booking, create record
+            doc_ref.set({
+                'ip_address': ip_address,
+                'bookings': [{
+                    'timestamp': now.isoformat()
+                }],
+                'last_booking': now.isoformat()
+            })
+            return {'allowed': True, 'wait_hours': 0, 'bookings': 1}
+
+        rate_limit = doc.to_dict()
+        bookings = rate_limit.get('bookings', [])
+
+        # Filter bookings from last 24 hours
+        twenty_four_hours_ago = (now - __import__('datetime').timedelta(hours=24)).isoformat()
+        recent_bookings = [b for b in bookings if b.get('timestamp', '') > twenty_four_hours_ago]
+
+        if len(recent_bookings) >= 25:
+            # Rate limit exceeded (25 bookings per 24 hours)
+            oldest_booking = min([b.get('timestamp', '') for b in recent_bookings])
+            oldest_dt = datetime.fromisoformat(oldest_booking)
+            wait_until = oldest_dt + __import__('datetime').timedelta(hours=24)
+            wait_hours = max(1, int((wait_until - now).total_seconds() / 3600))
+
+            return {'allowed': False, 'wait_hours': wait_hours, 'bookings': len(recent_bookings)}
+
+        # Add new booking
+        recent_bookings.append({'timestamp': now.isoformat()})
+        doc_ref.set({
+            'ip_address': ip_address,
+            'bookings': recent_bookings,
+            'last_booking': now.isoformat()
+        })
+
+        return {'allowed': True, 'wait_hours': 0, 'bookings': len(recent_bookings)}
+
+    except Exception as e:
+        print(f"ERROR: Failed to check IP booking rate limit: {e}")
+        # On error, allow the booking
+        return {'allowed': True, 'wait_hours': 0, 'bookings': 0}
+
+
+def record_device_booking_request(device_id: str) -> bool:
+    """
+    Record a device booking request for rate limiting tracking.
+
+    Args:
+        device_id: Unique device identifier
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        device_id = str(device_id).strip()
+        doc_ref = db.collection('device_booking_activity').document(device_id)
+        
+        doc_ref.set({
+            'device_id': device_id,
+            'last_request': datetime.now().isoformat()
+        })
+        
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to record device booking request: {e}")
+        return False
+
+
+def record_ip_booking_request(ip_address: str) -> bool:
+    """
+    Record an IP booking request for rate limiting tracking.
+
+    Args:
+        ip_address: Client IP address
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        ip_address = str(ip_address).strip()
+        doc_ref = db.collection('ip_booking_activity').document(ip_address)
+        
+        doc_ref.set({
+            'ip_address': ip_address,
+            'last_request': datetime.now().isoformat()
+        })
+        
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to record IP booking request: {e}")
+        return False
+
+
+def store_confirmed_booking(email: str, booking_data: dict, slot_data: dict) -> bool:
+    """
+    Store a confirmed booking in Firestore.
+
+    Args:
+        email: User's email address
+        booking_data: Full booking data from form
+        slot_data: Selected slot details
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        # Add the booking
+        result = add_booking(booking_data)
+        
+        if result:
+            # Mark the slot as booked
+            slot_id = slot_data.get('id') or slot_data.get('doc_id')
+            if slot_id:
+                book_slot(slot_id, email, booking_data.get('selected_room'))
+            return True
+        
+        return False
+
+    except Exception as e:
+        print(f"ERROR: Failed to store confirmed booking: {e}")
+        return False
+
+
 if __name__ == "__main__":
     # Test connection
     print("Testing Firestore connection...")
