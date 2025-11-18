@@ -44,7 +44,7 @@ def request_booking_verification():
         recaptcha_token = data.get('recaptcha_token')
         success, score, error = verify_recaptcha(recaptcha_token)
         if not success:
-            print(f"⚠️ reCAPTCHA failed: {error} (score: {score})")
+            print(f"[WARNING]️ reCAPTCHA failed: {error} (score: {score})")
             return jsonify({
                 'success': False,
                 'message': 'Security verification failed. Please refresh the page and try again.',

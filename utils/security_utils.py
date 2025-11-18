@@ -20,7 +20,7 @@ def verify_recaptcha(recaptcha_token: str) -> tuple:
     recaptcha_secret = os.getenv('RECAPTCHA_SECRET_KEY')
     
     if not recaptcha_secret:
-        print("⚠ Warning: RECAPTCHA_SECRET_KEY not configured")
+        print("[WARNING] Warning: RECAPTCHA_SECRET_KEY not configured")
         return False, 0.0, "reCAPTCHA not configured"
     
     try:
@@ -38,26 +38,26 @@ def verify_recaptcha(recaptcha_token: str) -> tuple:
         
         if not result.get('success'):
             error_codes = result.get('error-codes', [])
-            print(f"✗ reCAPTCHA verification failed: {error_codes}")
+            print(f"[ERROR] reCAPTCHA verification failed: {error_codes}")
             return False, 0.0, f"Verification failed: {', '.join(error_codes)}"
         
         score = result.get('score', 0.0)
         action = result.get('action', '')
         
-        print(f"✓ reCAPTCHA verified: score={score}, action={action}")
+        print(f"[OK] reCAPTCHA verified: score={score}, action={action}")
         
         # Check score threshold (0.3 is lenient, adjust as needed)
         if score < 0.3:
-            print(f"⚠ Low reCAPTCHA score: {score}")
+            print(f"[WARNING] Low reCAPTCHA score: {score}")
             return False, score, f"Score too low: {score}"
         
         return True, score, None
         
     except requests.exceptions.Timeout:
-        print("✗ reCAPTCHA verification timeout")
+        print("[ERROR] reCAPTCHA verification timeout")
         return False, 0.0, "Verification timeout"
     except Exception as e:
-        print(f"✗ reCAPTCHA verification error: {e}")
+        print(f"[ERROR] reCAPTCHA verification error: {e}")
         return False, 0.0, str(e)
 
 

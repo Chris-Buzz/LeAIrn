@@ -171,16 +171,26 @@
             <!-- Authentication Controls (Top Right) -->
             <div style="position: absolute; top: 1.5rem; right: 1.5rem; display: flex; align-items: center; gap: 1rem;">
                 {% if session.get('authenticated') %}
-                    <div style="text-align: right;">
-                        <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Signed in as</p>
-                        <p style="margin: 0.25rem 0 0 0; font-weight: 600; color: var(--text-primary);">{{ session.get('user_email', 'User') }}</p>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; background: var(--surface); padding: 0.625rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                        <div style="text-align: right;">
+                            <p style="margin: 0; font-size: 0.75rem; color: var(--text-secondary);">Signed in as</p>
+                            <p style="margin: 0.125rem 0 0 0; font-weight: 600; color: var(--text-primary); font-size: 0.875rem;">{{ session.get('user_email', 'User') }}</p>
+                        </div>
+                        <button onclick="logout()" class="btn-logout" style="padding: 0.5rem 0.875rem; background: transparent; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 0.5rem; cursor: pointer; font-weight: 500; transition: all 0.3s; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem;" onmouseover="this.style.background='var(--error-bg)'; this.style.color='var(--error)'; this.style.borderColor='var(--error)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-secondary)'; this.style.borderColor='var(--border)';">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            Sign Out
+                        </button>
                     </div>
-                    <button onclick="logout()" class="btn-logout" style="padding: 0.625rem 1rem; background: var(--error-bg, #fee2e2); color: var(--error, #991b1b); border: 1px solid var(--error-border, #fecaca); border-radius: 0.5rem; cursor: pointer; font-weight: 500; transition: all 0.3s; font-size: 0.875rem;">
-                        Sign Out
-                    </button>
                 {% else %}
-                    <a href="/login" class="btn-login" style="padding: 0.625rem 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600; transition: all 0.3s; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
-                        Sign In
+                    <a href="/login" class="btn-login" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s; text-decoration: none; display: inline-flex; align-items: center; gap: 0.625rem; box-shadow: 0 2px 8px rgba(0, 120, 212, 0.2);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 120, 212, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0, 120, 212, 0.2)';">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 18px; height: 18px;">
+                            <path d="M11.4 24H0V12.6h11.4V24ZM24 24H12.6V12.6H24V24ZM11.4 11.4H0V0h11.4v11.4Zm12.6 0H12.6V0H24v11.4Z"/>
+                        </svg>
+                        Sign In with Monmouth
                     </a>
                 {% endif %}
             </div>

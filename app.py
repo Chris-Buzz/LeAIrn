@@ -81,9 +81,9 @@ def start_background_scheduler():
             name='MorningReminderScheduler'
         )
         reminder_thread.start()
-        print("✓ Morning reminder scheduler started")
+        print("[OK] Morning reminder scheduler started")
     except Exception as e:
-        print(f"✗ Failed to start reminder scheduler: {e}")
+        print(f"[ERROR] Failed to start reminder scheduler: {e}")
 
 
 # Start background scheduler when app starts
@@ -131,10 +131,10 @@ if __name__ == '__main__':
     print(f"  Port: {port}")
     print(f"  Debug: {debug}")
     print("=" * 60)
-    print("\n✓ Application initialized successfully")
-    print("✓ All services loaded")
-    print("✓ Route blueprints registered")
-    print("✓ Background scheduler active")
+    print("\n[OK] Application initialized successfully")
+    print("[OK] All services loaded")
+    print("[OK] Route blueprints registered")
+    print("[OK] Background scheduler active")
     print("\nServer starting...\n")
     
     app.run(

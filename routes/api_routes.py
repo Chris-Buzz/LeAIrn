@@ -3,7 +3,7 @@ API Routes Blueprint
 Handles slots management, feedback, exports, cron jobs, and public pages.
 """
 
-from flask import Blueprint, request, render_template, jsonify, send_file, send_from_directory
+from flask import Blueprint, request, session, render_template, jsonify, send_file, send_from_directory
 from datetime import datetime
 import os
 import csv
@@ -40,10 +40,15 @@ api_bp = Blueprint('api', __name__)
 def index():
     """Home page"""
     recaptcha_site_key = os.getenv('RECAPTCHA_SITE_KEY')
-    return render_template('index.html', 
+    is_authenticated = session.get('authenticated', False)
+    user_email = session.get('user_email', '')
+    user_name = session.get('user_name', '')
+
+    return render_template('index.html',
                          recaptcha_site_key=recaptcha_site_key,
-                         authenticated=request.cookies.get('session', False),
-                         user_email=request.cookies.get('user_email', ''))
+                         authenticated=is_authenticated,
+                         user_email=user_email,
+                         user_name=user_name)
 
 
 @api_bp.route('/projects')

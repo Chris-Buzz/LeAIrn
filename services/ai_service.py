@@ -18,32 +18,32 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 else:
-    print("⚠ Warning: GEMINI_API_KEY not configured")
+    print("[WARNING] Warning: GEMINI_API_KEY not configured")
 
 
 class AIService:
     """Service for AI-powered insights and content generation"""
 
     @staticmethod
-    def enhance_session_notes(notes: str, student_name: str, student_role: str) -> Optional[str]:
+    def enhance_session_notes(notes: str, student_name: str, student_role: str) -> str:
         """
         Generate AI-enhanced overview from session notes
-        
+
         Args:
             notes: Raw session notes from instructor
             student_name: Student's full name
             student_role: Student's role (student/faculty/staff)
-            
+
         Returns:
-            Enhanced session overview string or None if failed
+            Enhanced session overview string (returns original notes as fallback if AI fails)
         """
         if not GEMINI_API_KEY:
-            print("✗ Gemini API key not configured")
-            return None
-            
+            print("[ERROR] Gemini API key not configured - using original notes")
+            return notes
+
         try:
             model = genai.GenerativeModel('gemini-pro')
-            
+
             prompt = f"""
 You are an AI assistant helping to summarize educational sessions about AI and technology.
 
@@ -68,13 +68,17 @@ Keep the summary between 150-300 words. Format it as clear paragraphs (no markdo
 
             response = model.generate_content(prompt)
             overview = response.text.strip()
-            
-            print(f"✓ Generated session overview ({len(overview)} chars)")
+
+            if not overview:
+                print("[WARNING] AI returned empty response - using original notes")
+                return notes
+
+            print(f"[OK] Generated session overview ({len(overview)} chars)")
             return overview
-            
+
         except Exception as e:
-            print(f"✗ Session notes enhancement failed: {e}")
-            return None
+            print(f"[ERROR] Session notes enhancement failed: {e} - using original notes as fallback")
+            return notes
 
     @staticmethod
     def get_teaching_insights(session_data: dict) -> Optional[str]:
@@ -92,7 +96,7 @@ Keep the summary between 150-300 words. Format it as clear paragraphs (no markdo
             Teaching insights string or None if failed
         """
         if not GEMINI_API_KEY:
-            print("✗ Gemini API key not configured")
+            print("[ERROR] Gemini API key not configured")
             return None
             
         try:
@@ -129,11 +133,11 @@ Keep the response concise (150-250 words) and actionable. Focus on practical imp
             response = model.generate_content(prompt)
             insights = response.text.strip()
             
-            print(f"✓ Generated teaching insights ({len(insights)} chars)")
+            print(f"[OK] Generated teaching insights ({len(insights)} chars)")
             return insights
             
         except Exception as e:
-            print(f"✗ Teaching insights generation failed: {e}")
+            print(f"[ERROR] Teaching insights generation failed: {e}")
             return None
 
     @staticmethod
@@ -149,7 +153,7 @@ Keep the response concise (150-250 words) and actionable. Focus on practical imp
             Resource recommendations or None if failed
         """
         if not GEMINI_API_KEY:
-            print("✗ Gemini API key not configured")
+            print("[ERROR] Gemini API key not configured")
             return None
             
         try:
@@ -170,9 +174,9 @@ Keep it concise and practical. Focus on free or accessible resources.
             response = model.generate_content(prompt)
             resources = response.text.strip()
             
-            print(f"✓ Generated learning resources ({len(resources)} chars)")
+            print(f"[OK] Generated learning resources ({len(resources)} chars)")
             return resources
             
         except Exception as e:
-            print(f"✗ Resource generation failed: {e}")
+            print(f"[ERROR] Resource generation failed: {e}")
             return None

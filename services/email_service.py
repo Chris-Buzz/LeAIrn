@@ -45,11 +45,11 @@ class EmailService:
                 server.login(EMAIL_USER, EMAIL_PASSWORD)
                 server.send_message(msg)
 
-            print(f"✓ Email sent to {to_email}: {subject}")
+            print(f"[OK] Email sent to {to_email}: {subject}")
             return True
 
         except Exception as e:
-            print(f"✗ Email failed to {to_email}: {e}")
+            print(f"[ERROR] Email failed to {to_email}: {e}")
             return False
 
     @staticmethod
@@ -69,7 +69,7 @@ class EmailService:
         <html>
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #6366F1;">✓ Your Booking is Confirmed!</h1>
+                    <h1 style="color: #6366F1;">[OK] Your Booking is Confirmed!</h1>
                     <p>Hi {name},</p>
                     <p>Great news! Your AI learning session booking has been confirmed. We look forward to meeting you!</p>
 
@@ -105,7 +105,7 @@ class EmailService:
 
                     <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
                         <p style="font-size: 0.85rem; color: #9CA3AF;">
-                            <strong>✓ Verified via Monmouth University SSO</strong><br>
+                            <strong>[OK] Verified via Monmouth University SSO</strong><br>
                             This booking was created using your verified @monmouth.edu email address.
                         </p>
                     </div>

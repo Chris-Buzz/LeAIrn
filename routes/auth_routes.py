@@ -83,7 +83,7 @@ def auth_callback():
         session['user_email'] = email
         session['user_name'] = name
         
-        print(f"✓ User authenticated: {email} ({name})")
+        print(f"[OK] User authenticated: {email} ({name})")
         
         # Redirect to home page
         return redirect(url_for('api.index'))

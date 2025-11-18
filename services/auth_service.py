@@ -41,11 +41,11 @@ class AuthService:
             return _msal_app
 
         if not MICROSOFT_CLIENT_ID:
-            print("⚠ Warning: MICROSOFT_CLIENT_ID not configured")
+            print("[WARNING] Warning: MICROSOFT_CLIENT_ID not configured")
             return None
 
         if not MICROSOFT_CLIENT_SECRET:
-            print("⚠ Warning: MICROSOFT_CLIENT_SECRET not configured")
+            print("[WARNING] Warning: MICROSOFT_CLIENT_SECRET not configured")
             return None
 
         try:
@@ -55,11 +55,11 @@ class AuthService:
                 client_credential=MICROSOFT_CLIENT_SECRET,
                 authority=authority
             )
-            print(f"✓ MSAL app initialized as confidential client (tenant: {MICROSOFT_TENANT})")
+            print(f"[OK] MSAL app initialized as confidential client (tenant: {MICROSOFT_TENANT})")
             return _msal_app
 
         except Exception as e:
-            print(f"✗ MSAL initialization failed: {e}")
+            print(f"[ERROR] MSAL initialization failed: {e}")
             return None
 
     @staticmethod
@@ -83,7 +83,7 @@ class AuthService:
             return result.get('auth_uri'), result.get('state'), result
             
         except Exception as e:
-            print(f"✗ Authorization URL generation failed: {e}")
+            print(f"[ERROR] Authorization URL generation failed: {e}")
             return None, None, None
 
     @staticmethod
@@ -112,7 +112,7 @@ class AuthService:
 
             if 'error' in result:
                 error_msg = result.get('error_description', result['error'])
-                print(f"✗ Token acquisition error: {error_msg}")
+                print(f"[ERROR] Token acquisition error: {error_msg}")
                 return {'error_message': error_msg}
 
             # Extract and decode id_token to get claims
@@ -122,17 +122,17 @@ class AuthService:
                     id_token_claims = jwt.decode(id_token, options={"verify_signature": False})
                     result['id_token_claims'] = id_token_claims
                 except Exception as e:
-                    print(f"⚠ Warning: Could not decode id_token claims: {e}")
+                    print(f"[WARNING] Warning: Could not decode id_token claims: {e}")
                     result['id_token_claims'] = {}
             else:
-                print("⚠ Warning: No id_token in token response")
+                print("[WARNING] Warning: No id_token in token response")
                 result['id_token_claims'] = {}
 
             return result
 
         except Exception as e:
             error_msg = f"Token acquisition failed: {str(e)}"
-            print(f"✗ {error_msg}")
+            print(f"[ERROR] {error_msg}")
             return {'error_message': error_msg}
 
     @staticmethod
@@ -164,7 +164,7 @@ class AuthService:
             if not email.lower().endswith('@monmouth.edu'):
                 return False, None, f"Email {email} is not a Monmouth University address"
             
-            print(f"✓ Verified Monmouth email: {email}")
+            print(f"[OK] Verified Monmouth email: {email}")
             return True, email, None
             
         except jwt.DecodeError as e:
@@ -205,4 +205,4 @@ class AuthService:
         session.pop('user_email', None)
         session.pop('user_name', None)
         session.pop('auth_flow', None)
-        print("✓ Session cleared")
+        print("[OK] Session cleared")

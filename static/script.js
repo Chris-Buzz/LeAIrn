@@ -2,97 +2,6 @@
 
 let currentStep = 1;
 let bookingData = {};
-let inviteCodeVerified = false;
-
-// Device Fingerprinting - Generate unique device ID to prevent abuse
-async function generateDeviceId() {
-    try {
-        // Check if we already have a device ID stored
-        let deviceId = localStorage.getItem('device_id');
-
-        if (deviceId) {
-            return deviceId;
-        }
-
-        // Generate a new device ID based on browser fingerprint
-        const fingerprint = {
-            userAgent: navigator.userAgent,
-            language: navigator.language,
-            languages: navigator.languages ? navigator.languages.join(',') : '',
-            platform: navigator.platform,
-            hardwareConcurrency: navigator.hardwareConcurrency || 0,
-            deviceMemory: navigator.deviceMemory || 0,
-            screenResolution: `${screen.width}x${screen.height}`,
-            screenColorDepth: screen.colorDepth,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            timezoneOffset: new Date().getTimezoneOffset(),
-            touchSupport: 'ontouchstart' in window,
-            canvas: getCanvasFingerprint(),
-            webgl: getWebGLFingerprint()
-        };
-
-        // Create hash from fingerprint
-        const fingerprintString = JSON.stringify(fingerprint);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(fingerprintString));
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        deviceId = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-        // Store device ID
-        localStorage.setItem('device_id', deviceId);
-
-        return deviceId;
-    } catch (error) {
-        console.error('Device ID generation failed:', error);
-        // Fallback to random ID if fingerprinting fails
-        const fallbackId = 'fallback_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-        localStorage.setItem('device_id', fallbackId);
-        return fallbackId;
-    }
-}
-
-// Canvas fingerprinting
-function getCanvasFingerprint() {
-    try {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 200;
-        canvas.height = 50;
-
-        ctx.textBaseline = 'top';
-        ctx.font = '14px Arial';
-        ctx.textBaseline = 'alphabetic';
-        ctx.fillStyle = '#f60';
-        ctx.fillRect(125, 1, 62, 20);
-        ctx.fillStyle = '#069';
-        ctx.fillText('LeAIrn 🤖', 2, 15);
-        ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
-        ctx.fillText('LeAIrn 🤖', 4, 17);
-
-        return canvas.toDataURL().substring(0, 100); // Just use first 100 chars
-    } catch (error) {
-        return 'canvas_error';
-    }
-}
-
-// WebGL fingerprinting
-function getWebGLFingerprint() {
-    try {
-        const canvas = document.createElement('canvas');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-
-        if (!gl) return 'no_webgl';
-
-        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-        if (!debugInfo) return 'no_debug_info';
-
-        const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
-        const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-
-        return `${vendor}_${renderer}`.substring(0, 50);
-    } catch (error) {
-        return 'webgl_error';
-    }
-}
 
 // Typewriter effect for annotation
 function typeWriterEffect() {
@@ -286,12 +195,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Theme Toggle
-function logout() {
-    if (confirm('Are you sure you want to sign out?')) {
-        window.location.href = '/logout';
-    }
-}
-
 function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -429,12 +332,6 @@ function goToStep(stepNumber, skipValidation = false) {
     // Show consent modal when moving from step 1 to step 2 (after personal info, before questions)
     if (currentStep === 1 && stepNumber === 2 && consentGiven === null) {
         showConsentModal(stepNumber);
-        return;
-    }
-
-    // Show educational modal when moving from step 5 to 6 (before time selection) if coding interest detected
-    if (currentStep === 5 && stepNumber === 6 && !educationModalShown && checkForCodingInterest()) {
-        showCodingEducationModal(stepNumber);
         return;
     }
 
@@ -727,35 +624,10 @@ async function confirmBooking() {
     const departmentField = document.getElementById('department-field');
     const department = departmentField.style.display !== 'none' ? document.getElementById('department').value.trim() : null;
 
-    // Check if user is authenticated via OAuth
-    const isAuthenticated = document.body.getAttribute('data-authenticated') === 'true';
-    
-    // Get email - from session if authenticated, from form if not
-    let userEmail = null;
-    if (isAuthenticated) {
-        userEmail = document.body.getAttribute('data-user-email');
-    } else {
-        // Validate email match if not authenticated
-        const email = document.getElementById('email').value.trim();
-        const emailConfirm = document.getElementById('email_confirm').value.trim();
-        
-        if (!email || !emailConfirm) {
-            showNotification('Please enter and confirm your email address', 'error');
-            return;
-        }
-        
-        if (email !== emailConfirm) {
-            showNotification('Email addresses do not match', 'error');
-            return;
-        }
-        
-        userEmail = email;
-    }
-
     // Get form data
     const formData = {
         full_name: document.getElementById('full_name').value.trim(),
-        email: userEmail,  // Use authenticated or entered email
+        email: document.getElementById('email').value.trim(),
         phone: null, // Phone is no longer collected
         role: document.getElementById('role').value,
         department: department, // Add department/major
@@ -782,26 +654,9 @@ async function confirmBooking() {
 
     // Disable button and show loading
     confirmBtn.disabled = true;
-    const buttonText = isAuthenticated ? 'Creating booking...' : 'Sending verification code...';
-    btnText.textContent = buttonText;
+    btnText.textContent = 'Sending verification code...';
 
-    // Get device ID for rate limiting
-    const deviceId = await generateDeviceId();
-    formData.device_id = deviceId;
-
-    // Get reCAPTCHA token if available
-    let recaptchaToken = null;
-    if (window.RECAPTCHA_SITE_KEY && typeof grecaptcha !== 'undefined') {
-        try {
-            recaptchaToken = await grecaptcha.execute(window.RECAPTCHA_SITE_KEY, { action: 'booking' });
-            formData.recaptcha_token = recaptchaToken;
-        } catch (error) {
-            console.warn('reCAPTCHA token generation failed:', error);
-            // Continue without reCAPTCHA if it fails (graceful degradation)
-        }
-    }
-
-    // For OAuth users, create booking directly. For non-authenticated, request verification code.
+    // Step 1: Request verification code
     try {
         const response = await fetch('/api/booking/request-verification', {
             method: 'POST',
@@ -812,57 +667,34 @@ async function confirmBooking() {
         const result = await response.json();
 
         if (response.ok && result.success) {
-            if (isAuthenticated) {
-                // OAuth user: booking created immediately
-                bookingData.userEmail = result.email;
-                showNotification('✓ Booking confirmed! Check your email for details.', 'success');
-                
-                // Show booking confirmation
-                setTimeout(() => {
-                    displayBookingDetails({
-                        name: formData.full_name,
-                        slot: {
-                            day: 'Your booked slot',
-                            date: 'Check your email',
-                            time: 'for details'
-                        },
-                        room: fullLocation,
-                        email_sent: true
-                    });
-                    goToStep(8);
-                }, 1000);
-            } else {
-                // Non-authenticated user: show verification code modal
-                bookingData.pendingFormData = formData;
-                bookingData.userEmail = result.email;
-                showVerificationModal(result.email);
-            }
+            // Store form data for later use
+            bookingData.pendingFormData = formData;
+            bookingData.userEmail = result.email;
+
+            // Show verification code input modal
+            showVerificationModal(result.email);
 
             // Re-enable button
             confirmBtn.disabled = false;
-            btnText.textContent = isAuthenticated ? 'Create Booking' : 'Confirm Booking';
+            btnText.textContent = 'Confirm Booking';
         } else {
             // Show error message
             confirmBtn.disabled = false;
-            btnText.textContent = isAuthenticated ? 'Create Booking' : 'Confirm Booking';
+            btnText.textContent = 'Confirm Booking';
 
             if (response.status === 429) {
                 // Rate limited
                 showNotification(result.message || 'Too many requests. Please wait before trying again.', 'error');
-            } else if (response.status === 401) {
-                // Not authenticated
-                showNotification('Please sign in with your Monmouth University account to book a session.', 'error');
-                window.location.href = '/login';
             } else {
                 // Other error
-                showNotification(result.message || 'Failed to create booking. Please try again.', 'error');
+                showNotification(result.message || 'Failed to send verification code. Please try again.', 'error');
             }
         }
 
     } catch (error) {
-        console.error('Booking request error:', error);
+        console.error('Verification request error:', error);
         confirmBtn.disabled = false;
-        btnText.textContent = isAuthenticated ? 'Create Booking' : 'Confirm Booking';
+        btnText.textContent = 'Confirm Booking';
         showNotification('Connection error. Please check your internet and try again.', 'error');
     }
 }
@@ -1249,36 +1081,18 @@ async function verifyCode() {
 }
 
 async function resendVerificationCode() {
-    // Check if we have pending booking form data
-    if (!bookingData.pendingFormData || !bookingData.userEmail) {
-        showNotification('Please start a new booking request', 'error');
+    if (!verificationEmail) {
+        showNotification('Please enter your email first', 'error');
         return;
     }
 
     try {
-        // Get fresh reCAPTCHA token if available
-        let recaptchaToken = null;
-        if (window.RECAPTCHA_SITE_KEY && typeof grecaptcha !== 'undefined') {
-            try {
-                recaptchaToken = await grecaptcha.execute(window.RECAPTCHA_SITE_KEY, { action: 'booking' });
-            } catch (error) {
-                console.warn('reCAPTCHA token generation failed:', error);
-            }
-        }
-
-        // Prepare form data with fresh reCAPTCHA token
-        const formData = { ...bookingData.pendingFormData };
-        if (recaptchaToken) {
-            formData.recaptcha_token = recaptchaToken;
-        }
-
-        // Call the same verification request endpoint (it will detect it's a resend)
-        const response = await fetch('/api/booking/request-verification', {
+        const response = await fetch('/api/booking/lookup', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(formData)
+            body: JSON.stringify({ email: verificationEmail })
         });
 
         const result = await response.json();
@@ -1287,9 +1101,8 @@ async function resendVerificationCode() {
             showNotification('New verification code sent!', 'success');
             document.getElementById('verification_code').value = '';
             document.getElementById('verification_code').focus();
-        } else if (response.status === 429 || result.rate_limited) {
-            // Rate limited
-            showNotification(result.message || 'Too many resend requests. Please wait before trying again.', 'error');
+        } else if (result.rate_limited) {
+            showNotification(result.message, 'error');
         } else {
             showNotification(result.message || 'Failed to resend code', 'error');
         }
@@ -2006,292 +1819,3 @@ async function confirmVerificationCode() {
         errorMsg.style.display = 'block';
     }
 }
-
-// ==========================================
-// CODING EDUCATION MODAL
-// ==========================================
-
-// Track if educational modal has been shown this session
-let educationModalShown = false;
-
-/**
- * Check if user's selection or comments indicate coding/building interest
- */
-function checkForCodingInterest() {
-    // Don't show if already shown this session
-    if (educationModalShown) {
-        console.log('Modal already shown this session');
-        return false;
-    }
-
-    // Check Step 4: Primary Use - look for "coding" selection
-    const primaryUseCheckboxes = document.querySelectorAll('input[name="primary_use"]:checked');
-    if (primaryUseCheckboxes.length > 0) {
-        for (let checkbox of primaryUseCheckboxes) {
-            const selectedValue = checkbox.value.toLowerCase();
-            console.log('Checking primary use value:', selectedValue);
-
-            if (selectedValue === 'coding' || selectedValue.includes('cod')) {
-                console.log('✓ Coding interest detected from primary use:', selectedValue);
-                return true;
-            }
-        }
-    }
-
-    // Check Step 5: Learning Goals - look for "build" selection
-    const learningGoalCheckboxes = document.querySelectorAll('input[name="learning_goal"]:checked');
-    if (learningGoalCheckboxes.length > 0) {
-        for (let checkbox of learningGoalCheckboxes) {
-            const selectedValue = checkbox.value.toLowerCase();
-            console.log('Checking learning goal value:', selectedValue);
-
-            if (selectedValue === 'build' || selectedValue.includes('build')) {
-                console.log('✓ Coding interest detected from learning goal:', selectedValue);
-                return true;
-            }
-        }
-    }
-
-    // Check Step 7: Personal Comments - look for coding keywords
-    const commentsField = document.getElementById('personal_comments');
-    if (commentsField && commentsField.value.trim()) {
-        const comments = commentsField.value.toLowerCase();
-        console.log('Checking comments:', comments);
-        const codingKeywords = [
-            'build', 'create', 'code', 'develop', 'program',
-            'website', 'app', 'application', 'project'
-        ];
-
-        for (let keyword of codingKeywords) {
-            if (comments.includes(keyword)) {
-                console.log('✓ Coding interest detected from comments with keyword:', keyword);
-                return true;
-            }
-        }
-    }
-
-    console.log('✗ No coding interest detected');
-    return false;
-}
-
-// Store the target step for after modal closes
-let pendingStepAfterEducationModal = null;
-let educationModalResponse = null;
-
-/**
- * Show the coding education modal (starts with STOP sign)
- */
-function showCodingEducationModal(nextStep) {
-    console.log('showCodingEducationModal() called, nextStep:', nextStep);
-    pendingStepAfterEducationModal = nextStep;
-
-    const modal = document.getElementById('codingEducationModal');
-    const stopSignScreen = document.getElementById('stopSignScreen');
-    const fullContent = document.getElementById('fullEducationContent');
-
-    console.log('Modal element found:', modal);
-
-    if (modal && stopSignScreen && fullContent) {
-        // Show modal with STOP sign
-        modal.classList.remove('hidden');
-        stopSignScreen.classList.remove('hidden');
-        fullContent.classList.add('hidden');
-
-        educationModalShown = true;
-
-        // Prevent body scroll when modal is open
-        document.body.style.overflow = 'hidden';
-        console.log('STOP sign modal should now be visible!');
-    } else {
-        console.error('❌ Modal element not found in DOM!');
-    }
-}
-
-/**
- * Transition from STOP sign to full educational content
- */
-function showFullEducationModal() {
-    const stopSignScreen = document.getElementById('stopSignScreen');
-    const fullContent = document.getElementById('fullEducationContent');
-
-    if (stopSignScreen && fullContent) {
-        // Fade out stop sign
-        stopSignScreen.style.animation = 'slideDownContent 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
-
-        setTimeout(() => {
-            stopSignScreen.classList.add('hidden');
-            fullContent.classList.remove('hidden');
-            fullContent.style.animation = 'slideUpContent 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
-
-            // Track that user viewed full content
-            educationModalResponse = 'viewed_full';
-        }, 400);
-    }
-}
-
-/**
- * Close the coding education modal
- */
-function closeCodingEducationModal(response) {
-    // Track response
-    if (response) {
-        educationModalResponse = response;
-    } else if (!educationModalResponse) {
-        educationModalResponse = 'dismissed';
-    }
-
-    // Store response in hidden field for form submission
-    let responseField = document.getElementById('coding_setup_response');
-    if (!responseField) {
-        responseField = document.createElement('input');
-        responseField.type = 'hidden';
-        responseField.id = 'coding_setup_response';
-        responseField.name = 'coding_setup_response';
-        document.querySelector('form').appendChild(responseField);
-    }
-    responseField.value = educationModalResponse;
-
-    console.log('Education modal response:', educationModalResponse);
-
-    const modal = document.getElementById('codingEducationModal');
-    if (modal) {
-        // Add closing animation
-        modal.style.animation = 'modalSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
-        const modalContent = modal.querySelector('.modal-content:not(.hidden)');
-        if (modalContent) {
-            modalContent.style.animation = 'slideDownContent 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
-        }
-
-        // Wait for animation to complete before hiding
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            // Reset animations
-            modal.style.animation = '';
-            if (modalContent) {
-                modalContent.style.animation = '';
-            }
-
-            // Restore body scroll
-            document.body.style.overflow = '';
-
-            // Continue to the pending step if there is one
-            if (pendingStepAfterEducationModal !== null) {
-                goToStep(pendingStepAfterEducationModal);
-                pendingStepAfterEducationModal = null;
-            }
-        }, 300);
-    }
-}
-
-/**
- * User acknowledged and wants to continue
- */
-function acknowledgeAndContinue(response) {
-    closeCodingEducationModal(response || 'ready');
-}
-
-// ============================================================================
-// INVITE CODE SYSTEM - Required for access
-// ============================================================================
-
-/**
- * Check if user has verified invite code access on page load
- */
-async function checkAuthAccess() {
-    try {
-        const response = await fetch('/api/check-access', {
-            method: 'GET',
-            credentials: 'same-origin'
-        });
-
-        const result = await response.json();
-
-        if (result.has_access) {
-            // User is authenticated via OAuth - show main app
-            authVerified = true;
-            showMainApp();
-        } else {
-            // User needs to authenticate via OAuth
-            showAuthGate();
-        }
-    } catch (error) {
-        console.error('Error checking auth access:', error);
-        // On error, show auth gate to be safe
-        showAuthGate();
-    }
-}
-
-/**
- * Show the auth gate (blocks access to main app)
- */
-function showAuthGate() {
-    const loadingScreen = document.getElementById('loadingScreen');
-    const gate = document.getElementById('authGate');
-    const mainContent = document.getElementById('mainContent');
-
-    // Hide loading screen
-    if (loadingScreen) {
-        loadingScreen.style.opacity = '0';
-        setTimeout(() => {
-            loadingScreen.style.display = 'none';
-        }, 300);
-    }
-
-    // Show auth gate with fade in
-    if (gate) {
-        gate.style.display = 'flex';
-        setTimeout(() => {
-            gate.style.opacity = '1';
-        }, 50);
-    }
-
-    if (mainContent) {
-        mainContent.style.display = 'none';
-    }
-
-    // Ensure body can scroll
-    document.body.style.overflow = 'auto';
-}
-
-/**
- * Show the main app (after successful OAuth authentication)
- */
-function showMainApp() {
-    const loadingScreen = document.getElementById('loadingScreen');
-    const gate = document.getElementById('authGate');
-    const mainContent = document.getElementById('mainContent');
-
-    // Hide loading screen
-    if (loadingScreen) {
-        loadingScreen.style.opacity = '0';
-        setTimeout(() => {
-            loadingScreen.style.display = 'none';
-        }, 300);
-    }
-
-    // Hide auth gate with fade out
-    if (gate) {
-        gate.style.opacity = '0';
-        setTimeout(() => {
-            gate.style.display = 'none';
-        }, 300);
-    }
-
-    // Show main content with fade in
-    if (mainContent) {
-        mainContent.style.display = 'block';
-        mainContent.style.opacity = '1';
-        setTimeout(() => {
-            mainContent.style.opacity = '1';
-        }, 50);
-    }
-
-    // Ensure body can scroll
-    document.body.style.overflow = 'auto';
-}
-
-// Run auth check on page load
-document.addEventListener('DOMContentLoaded', function() {
-    checkAuthAccess();
-});
-

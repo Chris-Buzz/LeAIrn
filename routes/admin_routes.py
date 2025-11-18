@@ -39,7 +39,7 @@ def admin_login():
         # Check rate limit on failed attempts (5 per hour)
         rate_limit_check = db.check_admin_login_rate_limit(client_ip)
         if not rate_limit_check['allowed']:
-            print(f"✗ Login attempt blocked - IP {client_ip} exceeded rate limit")
+            print(f"[ERROR] Login attempt blocked - IP {client_ip} exceeded rate limit")
             return jsonify({
                 'success': False,
                 'message': f'Too many failed login attempts. Please wait {rate_limit_check["wait_minutes"]} minutes.'
@@ -50,10 +50,10 @@ def admin_login():
             db.reset_admin_login_attempts(client_ip)
             session['logged_in'] = True
             session['admin_username'] = username
-            print(f"✓ Login successful for: {username}")
+            print(f"[OK] Login successful for: {username}")
             return jsonify({'success': True})
 
-        print(f"✗ Login failed for: {username}")
+        print(f"[ERROR] Login failed for: {username}")
         return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
         
     return render_template('admin_login.html')
@@ -121,6 +121,9 @@ def mark_booking_complete(booking_id):
                     completed_user.get('full_name', ''),
                     completed_user.get('role', '')
                 )
+                # Ensure we have something to send
+                if not enhanced_notes:
+                    enhanced_notes = session_notes
 
             # Store session overview
             overview_data = {
@@ -219,7 +222,10 @@ def create_manual_overview():
         if not skip_ai:
             print(f"Enhancing manual session notes with AI...")
             enhanced_notes = AIService.enhance_session_notes(notes, user_name, 'N/A')
-        
+            # Ensure we have something to store
+            if not enhanced_notes:
+                enhanced_notes = notes
+
         # Store session overview
         overview_data = {
             'notes': notes,
@@ -268,8 +274,11 @@ def preview_session_overview():
             enhanced_notes = notes
         else:
             enhanced_notes = AIService.enhance_session_notes(notes, user_name, user_role)
+            # Ensure we have something to return
+            if not enhanced_notes:
+                enhanced_notes = notes
 
-        return jsonify({'success': True, 'enhanced_notes': enhanced_notes})
+        return jsonify({'success': True, 'enhanced_notes': enhanced_notes or notes})
 
     except Exception as e:
         print(f"Error previewing session overview: {e}")

@@ -193,9 +193,9 @@ class SlotService:
                         success = EmailService.send_meeting_reminder(booking)
                         if success:
                             reminders_sent += 1
-                            print(f"✓ Reminder sent to {booking['email']}")
+                            print(f"[OK] Reminder sent to {booking['email']}")
                         else:
-                            print(f"✗ Failed to send reminder to {booking['email']}")
+                            print(f"[ERROR] Failed to send reminder to {booking['email']}")
                 except Exception as e:
                     print(f"Error parsing datetime for booking {booking.get('id')}: {e}")
                     continue
