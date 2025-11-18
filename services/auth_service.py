@@ -56,27 +56,28 @@ class AuthService:
             return None
 
     @staticmethod
-    def get_authorization_url() -> Tuple[Optional[str], Optional[str]]:
+    def get_authorization_url() -> Tuple[Optional[str], Optional[str], Optional[Dict]]:
         """
         Generate Microsoft OAuth authorization URL
         
         Returns:
-            Tuple of (auth_url, state) or (None, None) if failed
+            Tuple of (auth_url, state, flow) or (None, None, None) if failed
+            flow: Auth flow dictionary that must be stored in session
         """
         msal_app = AuthService.get_msal_app()
         if not msal_app:
-            return None, None
+            return None, None, None
             
         try:
             result = msal_app.initiate_auth_code_flow(
                 scopes=MICROSOFT_SCOPES,
                 redirect_uri=MICROSOFT_REDIRECT_URI
             )
-            return result.get('auth_uri'), result.get('state')
+            return result.get('auth_uri'), result.get('state'), result
             
         except Exception as e:
             print(f"✗ Authorization URL generation failed: {e}")
-            return None, None
+            return None, None, None
 
     @staticmethod
     def acquire_token_by_code(auth_code: str, state: str, flow: Dict) -> Optional[Dict]:

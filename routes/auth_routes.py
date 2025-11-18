@@ -13,13 +13,14 @@ auth_bp = Blueprint('auth', __name__)
 def login():
     """Microsoft OAuth login initiation - redirect directly to Microsoft"""
     try:
-        auth_url, state = AuthService.get_authorization_url()
+        auth_url, state, flow = AuthService.get_authorization_url()
         
-        if not auth_url:
+        if not auth_url or not flow:
             return "OAuth service temporarily unavailable. Please try again later.", 503
         
-        # Store state in session for CSRF protection
+        # Store state and flow in session for CSRF protection and callback
         session['auth_state'] = state
+        session['auth_flow'] = flow
         
         # Redirect directly to Microsoft login
         return redirect(auth_url)
