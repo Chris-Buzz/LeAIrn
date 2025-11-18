@@ -18,9 +18,9 @@ venv/
 env/
 ENV/
 .venv
-get_affected_emails_today.py
-send_apology_emails.py
-
+send_reminders.py
+timezone_utils.py
+app_backup_original.py
 # Flask
 instance/
 .webassets-cache

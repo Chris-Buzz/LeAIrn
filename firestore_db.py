@@ -6,7 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime
 from typing import List, Dict, Optional
-from timezone_utils import get_eastern_now
+from utils.datetime_utils import get_eastern_now
 
 # Global Firestore client
 db = None
@@ -1000,6 +1000,74 @@ def mark_pending_booking_used(email: str) -> bool:
 
     except Exception as e:
         print(f"ERROR: Failed to mark pending booking as used: {e}")
+        return False
+
+
+def store_confirmed_booking(email: str, booking_data: dict, slot_data: dict) -> bool:
+    """
+    Create a confirmed booking directly (no verification code needed).
+    Used when user is authenticated via OAuth with verified @monmouth.edu email.
+
+    Args:
+        email: OAuth-authenticated user's email address
+        booking_data: Full booking information including name, phone, role, etc.
+        slot_data: Selected time slot details
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        # Normalize email
+        email = email.lower().strip()
+
+        # Prepare confirmed booking document
+        confirmed_booking = {
+            'email': email,
+            'full_name': booking_data.get('full_name', ''),
+            'phone': booking_data.get('phone', ''),
+            'role': booking_data.get('role', ''),
+            'selected_room': booking_data.get('selected_room', ''),
+            'selected_slot': slot_data,
+            'timestamp': booking_data.get('timestamp', get_eastern_now().isoformat()),
+            'submission_date': get_eastern_now().isoformat(),
+            'status': 'confirmed',
+            'oauth_authenticated': True,  # Flag indicating OAuth verification
+            'verification_method': 'microsoft_oauth'
+        }
+
+        # Add to Firestore bookings collection
+        result = db.collection('bookings').add(confirmed_booking)
+
+        # Extract document ID
+        doc_id = None
+        try:
+            doc_ref = result[1]
+            doc_id = getattr(doc_ref, 'id', None)
+        except Exception:
+            doc_ref = result
+            doc_id = getattr(doc_ref, 'id', None)
+
+        if not doc_id:
+            print('ERROR: Could not determine document id for confirmed booking')
+            return False
+
+        # Mark slot as booked
+        try:
+            slot_doc_id = slot_data.get('doc_id') or slot_data.get('id')
+            if slot_doc_id:
+                db.collection('time_slots').document(slot_doc_id).update({'booked': True})
+                print(f"OK: Marked slot {slot_doc_id} as booked")
+        except Exception as e:
+            print(f"WARNING: Failed to mark slot as booked: {e}")
+            # Don't fail the entire booking if slot update fails
+
+        print(f"OK: Confirmed booking created for {email}: {doc_id}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to store confirmed booking: {e}")
         return False
 
 
