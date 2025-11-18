@@ -57,6 +57,17 @@ def projects():
     return render_template('projects.html')
 
 
+@api_bp.route('/media/<path:filename>')
+def serve_media(filename):
+    """Serve media files (images, GIFs) from the media directory"""
+    try:
+        media_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'media')
+        return send_from_directory(media_dir, filename)
+    except Exception as e:
+        print(f"Error serving media file {filename}: {e}")
+        return "File not found", 404
+
+
 @api_bp.route('/feedback')
 def feedback_page():
     """Feedback submission page"""
