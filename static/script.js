@@ -286,6 +286,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Theme Toggle
+function logout() {
+    if (confirm('Are you sure you want to sign out?')) {
+        window.location.href = '/logout';
+    }
+}
+
 function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -721,10 +727,35 @@ async function confirmBooking() {
     const departmentField = document.getElementById('department-field');
     const department = departmentField.style.display !== 'none' ? document.getElementById('department').value.trim() : null;
 
+    // Check if user is authenticated via OAuth
+    const isAuthenticated = document.body.getAttribute('data-authenticated') === 'true';
+    
+    // Get email - from session if authenticated, from form if not
+    let userEmail = null;
+    if (isAuthenticated) {
+        userEmail = document.body.getAttribute('data-user-email');
+    } else {
+        // Validate email match if not authenticated
+        const email = document.getElementById('email').value.trim();
+        const emailConfirm = document.getElementById('email_confirm').value.trim();
+        
+        if (!email || !emailConfirm) {
+            showNotification('Please enter and confirm your email address', 'error');
+            return;
+        }
+        
+        if (email !== emailConfirm) {
+            showNotification('Email addresses do not match', 'error');
+            return;
+        }
+        
+        userEmail = email;
+    }
+
     // Get form data
     const formData = {
         full_name: document.getElementById('full_name').value.trim(),
-        email: document.getElementById('email').value.trim(),
+        email: userEmail,  // Use authenticated or entered email
         phone: null, // Phone is no longer collected
         role: document.getElementById('role').value,
         department: department, // Add department/major
@@ -751,7 +782,8 @@ async function confirmBooking() {
 
     // Disable button and show loading
     confirmBtn.disabled = true;
-    btnText.textContent = 'Sending verification code...';
+    const buttonText = isAuthenticated ? 'Creating booking...' : 'Sending verification code...';
+    btnText.textContent = buttonText;
 
     // Get device ID for rate limiting
     const deviceId = await generateDeviceId();
@@ -769,7 +801,7 @@ async function confirmBooking() {
         }
     }
 
-    // Step 1: Request verification code
+    // For OAuth users, create booking directly. For non-authenticated, request verification code.
     try {
         const response = await fetch('/api/booking/request-verification', {
             method: 'POST',
@@ -780,34 +812,57 @@ async function confirmBooking() {
         const result = await response.json();
 
         if (response.ok && result.success) {
-            // Store form data for later use
-            bookingData.pendingFormData = formData;
-            bookingData.userEmail = result.email;
-
-            // Show verification code input modal
-            showVerificationModal(result.email);
+            if (isAuthenticated) {
+                // OAuth user: booking created immediately
+                bookingData.userEmail = result.email;
+                showNotification('✓ Booking confirmed! Check your email for details.', 'success');
+                
+                // Show booking confirmation
+                setTimeout(() => {
+                    displayBookingDetails({
+                        name: formData.full_name,
+                        slot: {
+                            day: 'Your booked slot',
+                            date: 'Check your email',
+                            time: 'for details'
+                        },
+                        room: fullLocation,
+                        email_sent: true
+                    });
+                    goToStep(8);
+                }, 1000);
+            } else {
+                // Non-authenticated user: show verification code modal
+                bookingData.pendingFormData = formData;
+                bookingData.userEmail = result.email;
+                showVerificationModal(result.email);
+            }
 
             // Re-enable button
             confirmBtn.disabled = false;
-            btnText.textContent = 'Confirm Booking';
+            btnText.textContent = isAuthenticated ? 'Create Booking' : 'Confirm Booking';
         } else {
             // Show error message
             confirmBtn.disabled = false;
-            btnText.textContent = 'Confirm Booking';
+            btnText.textContent = isAuthenticated ? 'Create Booking' : 'Confirm Booking';
 
             if (response.status === 429) {
                 // Rate limited
                 showNotification(result.message || 'Too many requests. Please wait before trying again.', 'error');
+            } else if (response.status === 401) {
+                // Not authenticated
+                showNotification('Please sign in with your Monmouth University account to book a session.', 'error');
+                window.location.href = '/login';
             } else {
                 // Other error
-                showNotification(result.message || 'Failed to send verification code. Please try again.', 'error');
+                showNotification(result.message || 'Failed to create booking. Please try again.', 'error');
             }
         }
 
     } catch (error) {
-        console.error('Verification request error:', error);
+        console.error('Booking request error:', error);
         confirmBtn.disabled = false;
-        btnText.textContent = 'Confirm Booking';
+        btnText.textContent = isAuthenticated ? 'Create Booking' : 'Confirm Booking';
         showNotification('Connection error. Please check your internet and try again.', 'error');
     }
 }
@@ -2142,9 +2197,9 @@ function acknowledgeAndContinue(response) {
 /**
  * Check if user has verified invite code access on page load
  */
-async function checkInviteCodeAccess() {
+async function checkAuthAccess() {
     try {
-        const response = await fetch('/api/check-invite-access', {
+        const response = await fetch('/api/check-access', {
             method: 'GET',
             credentials: 'same-origin'
         });
@@ -2152,26 +2207,26 @@ async function checkInviteCodeAccess() {
         const result = await response.json();
 
         if (result.has_access) {
-            // User has access - show main app
-            inviteCodeVerified = true;
+            // User is authenticated via OAuth - show main app
+            authVerified = true;
             showMainApp();
         } else {
-            // User needs to enter invite code
-            showInviteCodeGate();
+            // User needs to authenticate via OAuth
+            showAuthGate();
         }
     } catch (error) {
-        console.error('Error checking invite access:', error);
-        // On error, show invite code gate to be safe
-        showInviteCodeGate();
+        console.error('Error checking auth access:', error);
+        // On error, show auth gate to be safe
+        showAuthGate();
     }
 }
 
 /**
- * Show the invite code gate (blocks access to main app)
+ * Show the auth gate (blocks access to main app)
  */
-function showInviteCodeGate() {
+function showAuthGate() {
     const loadingScreen = document.getElementById('loadingScreen');
-    const gate = document.getElementById('inviteCodeGate');
+    const gate = document.getElementById('authGate');
     const mainContent = document.getElementById('mainContent');
 
     // Hide loading screen
@@ -2182,7 +2237,7 @@ function showInviteCodeGate() {
         }, 300);
     }
 
-    // Show invite gate with fade in
+    // Show auth gate with fade in
     if (gate) {
         gate.style.display = 'flex';
         setTimeout(() => {
@@ -2199,11 +2254,11 @@ function showInviteCodeGate() {
 }
 
 /**
- * Show the main app (after successful invite code verification)
+ * Show the main app (after successful OAuth authentication)
  */
 function showMainApp() {
     const loadingScreen = document.getElementById('loadingScreen');
-    const gate = document.getElementById('inviteCodeGate');
+    const gate = document.getElementById('authGate');
     const mainContent = document.getElementById('mainContent');
 
     // Hide loading screen
@@ -2214,7 +2269,7 @@ function showMainApp() {
         }, 300);
     }
 
-    // Hide invite gate with fade out
+    // Hide auth gate with fade out
     if (gate) {
         gate.style.opacity = '0';
         setTimeout(() => {
@@ -2225,6 +2280,7 @@ function showMainApp() {
     // Show main content with fade in
     if (mainContent) {
         mainContent.style.display = 'block';
+        mainContent.style.opacity = '1';
         setTimeout(() => {
             mainContent.style.opacity = '1';
         }, 50);
@@ -2234,82 +2290,8 @@ function showMainApp() {
     document.body.style.overflow = 'auto';
 }
 
-/**
- * Submit invite code for verification
- */
-async function submitInviteCode() {
-    const input = document.getElementById('inviteCodeInput');
-    const submitBtn = document.getElementById('inviteCodeSubmitBtn');
-    const errorMsg = document.getElementById('inviteCodeError');
-
-    const inviteCode = input.value.trim();
-
-    if (!inviteCode) {
-        errorMsg.textContent = 'Please enter an invite code';
-        errorMsg.style.display = 'block';
-        return;
-    }
-
-    // Disable button during submission
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Verifying...';
-    errorMsg.style.display = 'none';
-
-    try {
-        const response = await fetch('/api/verify-invite-code', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify({ invite_code: inviteCode })
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-            // Success - show main app
-            inviteCodeVerified = true;
-            showNotification(result.message || 'Access granted!', 'success');
-            showMainApp();
-        } else if (result.blocked) {
-            // Blocked
-            errorMsg.textContent = result.message || 'Access denied. Too many failed attempts.';
-            errorMsg.style.display = 'block';
-            errorMsg.style.color = '#EF4444';
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Blocked';
-            input.disabled = true;
-        } else {
-            // Invalid code
-            errorMsg.textContent = result.message || 'Invalid invite code';
-            errorMsg.style.display = 'block';
-            input.value = '';
-            input.focus();
-        }
-    } catch (error) {
-        console.error('Error verifying invite code:', error);
-        errorMsg.textContent = 'Connection error. Please try again.';
-        errorMsg.style.display = 'block';
-    } finally {
-        if (!inviteCodeVerified) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Verify Code';
-        }
-    }
-}
-
-/**
- * Handle Enter key on invite code input
- */
-function handleInviteCodeKeypress(event) {
-    if (event.key === 'Enter') {
-        submitInviteCode();
-    }
-}
-
-// Run invite code check on page load
+// Run auth check on page load
 document.addEventListener('DOMContentLoaded', function() {
-    checkInviteCodeAccess();
+    checkAuthAccess();
 });
 
