@@ -315,21 +315,53 @@ def bulk_delete_slots():
 @api_bp.route('/api/slots/delete-range', methods=['POST'])
 @login_required
 def delete_slots_range():
-    """Delete slots within a date range"""
+    """Delete slots within a date range or based on weeks"""
     try:
+        from datetime import timedelta
+        import pytz
+        
         data = request.json
-        start_date = data.get('start_date')
-        end_date = data.get('end_date')
+        mode = data.get('mode', 'date_range')
         
         all_slots = db.get_all_slots()
         deleted_count = 0
 
-        for slot in all_slots:
-            slot_date = slot.get('datetime', '')
-            if start_date <= slot_date <= end_date:
-                success = db.delete_slot(slot['id'])
-                if success:
-                    deleted_count += 1
+        if mode == 'last_weeks':
+            # Delete slots that are further than N weeks in the future
+            weeks = data.get('weeks', 6)
+            
+            eastern = pytz.timezone('America/New_York')
+            now = datetime.now(eastern)
+            cutoff_date = now + timedelta(weeks=weeks)
+            
+            for slot in all_slots:
+                try:
+                    slot_datetime_str = slot.get('datetime', '')
+                    if slot_datetime_str:
+                        # Parse the slot datetime
+                        slot_dt = datetime.fromisoformat(slot_datetime_str)
+                        if slot_dt.tzinfo is None:
+                            slot_dt = pytz.utc.localize(slot_dt)
+                        slot_dt_eastern = slot_dt.astimezone(eastern)
+                        
+                        # Only delete unbooked slots that are beyond the cutoff
+                        if not slot.get('booked', False) and slot_dt_eastern > cutoff_date:
+                            success = db.delete_slot(slot['id'])
+                            if success:
+                                deleted_count += 1
+                except:
+                    pass
+        else:
+            # Delete by date range
+            start_date = data.get('start_date')
+            end_date = data.get('end_date')
+            
+            for slot in all_slots:
+                slot_date = slot.get('datetime', '')
+                if start_date and end_date and start_date <= slot_date <= end_date:
+                    success = db.delete_slot(slot['id'])
+                    if success:
+                        deleted_count += 1
 
         return jsonify({
             'success': True,
@@ -337,6 +369,7 @@ def delete_slots_range():
             'deleted_count': deleted_count
         })
     except Exception as e:
+        print(f"Error in delete_slots_range: {e}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -381,7 +414,7 @@ def submit_feedback():
             'submitted': True
         }
 
-        success = db.store_feedback(booking_id, feedback_data)
+        success = db.add_feedback(feedback_data)
         if not success:
             return jsonify({'success': False, 'message': 'Failed to submit feedback'}), 500
 

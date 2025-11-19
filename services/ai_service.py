@@ -55,15 +55,30 @@ You are an AI assistant helping to summarize educational sessions about AI and t
 - Role: {student_role}
 
 **Task:**
-Create a concise, professional summary of this AI learning session that can be emailed to the student. The summary should:
+Create a concise, professional summary of this AI learning session that can be emailed to the student. Use the following format:
 
-1. Highlight the main topics covered
-2. List key takeaways and concepts learned
-3. Include any specific tools or resources mentioned
-4. Provide actionable next steps for continued learning
-5. Be written in a friendly, encouraging tone
+**Key Topics Covered:**
+• [Topic 1]
+• [Topic 2]
+• [Topic 3]
 
-Keep the summary between 150-300 words. Format it as clear paragraphs (no markdown headers).
+**Main Takeaways:**
+• [Takeaway 1]
+• [Takeaway 2]
+• [Takeaway 3]
+
+**Tools & Resources Mentioned:**
+• [Resource 1]
+• [Resource 2]
+
+**Next Steps for Learning:**
+• [Action 1]
+• [Action 2]
+
+**Summary:**
+[1-2 sentences wrapping it up in a friendly, encouraging tone]
+
+Keep the entire summary between 150-300 words. Use bullet points throughout - DO NOT write it as paragraphs or a letter.
 """
 
             response = model.generate_content(prompt)
