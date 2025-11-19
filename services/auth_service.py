@@ -16,7 +16,7 @@ load_dotenv()
 MICROSOFT_CLIENT_ID = os.getenv('MICROSOFT_CLIENT_ID')
 MICROSOFT_CLIENT_SECRET = os.getenv('MICROSOFT_CLIENT_SECRET')
 MICROSOFT_TENANT = os.getenv('MICROSOFT_TENANT', 'd398fb56-1bf0-4c4a-9221-4d138fa72653')
-MICROSOFT_REDIRECT_URI = os.getenv('MICROSOFT_REDIRECT_URI', 'https://uleairn.com/auth/callback')
+MICROSOFT_REDIRECT_URI = os.getenv('MICROSOFT_REDIRECT_URI')
 MICROSOFT_SCOPES = []  # Empty - MSAL auto-includes reserved scopes
 
 # Lazy-loaded MSAL app instance

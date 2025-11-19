@@ -162,7 +162,14 @@ def mark_booking_complete(booking_id):
 
         # Delete the time slot
         if slot_id:
-            db.delete_slot(slot_id)
+            # slot_id might be a dict with 'id' or 'doc_id' field, or a string ID
+            if isinstance(slot_id, dict):
+                actual_slot_id = slot_id.get('id') or slot_id.get('doc_id')
+            else:
+                actual_slot_id = slot_id
+            
+            if actual_slot_id:
+                db.delete_slot(actual_slot_id)
 
         return jsonify({'success': True, 'message': 'Session marked complete'})
 

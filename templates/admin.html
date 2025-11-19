@@ -1766,8 +1766,8 @@
                             <div><strong>AI Tools Used:</strong> ${formatAITools(user.ai_tools)}</div>
                             <div><strong>Primary Use:</strong> ${formatPrimaryUse(user.primary_use)}</div>
                             <div><strong>Learning Goals:</strong> ${formatLearningGoals(user.learning_goal)}</div>
-                            <div><strong>Confidence Level:</strong> ${formatConfidenceLevel(user.confidence_level)}</div>
                             ${user.research_participant !== undefined ? `<div><strong>Research Participant:</strong> <span style="color: ${user.research_participant ? 'var(--success)' : 'var(--error)'};">${user.research_participant ? '✓ Yes' : '✗ No'}</span></div>` : ''}
+                            ${user.research_question_response ? `<div><strong>Research Question Agreement:</strong> <span style="color: ${user.research_question_response === 'agreed' ? 'var(--success)' : user.research_question_response === 'disagreed' ? 'var(--error)' : 'var(--text-secondary)'};">${user.research_question_response === 'agreed' ? '✓ Agreed' : user.research_question_response === 'disagreed' ? '✗ Disagreed' : user.research_question_response}</span></div>` : ''}
                             ${user.coding_setup_response ? `<div><strong>Coding Setup Response:</strong> ${formatCodingSetupResponse(user.coding_setup_response)}</div>` : ''}
                         </div>
                     </div>
