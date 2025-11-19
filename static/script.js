@@ -953,6 +953,25 @@ function closeViewBookingModal() {
     }
 }
 
+// Direct access to View My Booking for authenticated users
+async function openViewMyBookingDirect() {
+    const isAuthenticated = document.documentElement.getAttribute('data-authenticated') === 'true';
+    
+    if (!isAuthenticated) {
+        // For non-authenticated users, show the modal with email input
+        showViewBookingModal();
+        return;
+    }
+    
+    // For authenticated users, open modal and immediately fetch their booking
+    showViewBookingModal();
+    
+    // Give the modal a moment to open, then fetch their booking
+    setTimeout(() => {
+        lookupBooking();
+    }, 100);
+}
+
 let verificationEmail = '';
 
 async function lookupBooking() {

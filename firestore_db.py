@@ -444,9 +444,14 @@ def unbook_slot(slot_id: str) -> bool:
         doc_ref.update({
             'booked': False,
             'booked_by': None,
-            'room': None
+            'booking_id': None,
+            'room': None,
+            'date': None,
+            'datetime': None,
+            'day': None,
+            'time': None
         })
-        print(f"OK: Slot unboked: {slot_id}")
+        print(f"OK: Slot unbooked: {slot_id}")
         return True
 
     except Exception as e:
