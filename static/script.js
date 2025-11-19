@@ -923,23 +923,32 @@ function showViewBookingModal() {
         const userEmail = document.documentElement.getAttribute('data-user-email');
         const emailInputSection = document.getElementById('emailInputSection');
         const authenticatedUserSection = document.getElementById('authenticatedUserSection');
+        const buttonSection = document.getElementById('buttonSection');
+        const viewBookingButton = document.getElementById('viewBookingButton');
         const resultDiv = document.getElementById('booking-lookup-result');
+        
+        console.log('[showViewBookingModal] isAuthenticated:', isAuthenticated, 'userEmail:', userEmail);
         
         if (resultDiv) {
             resultDiv.style.display = 'none';
         }
 
         if (isAuthenticated && userEmail) {
+            console.log('[showViewBookingModal] Showing authenticated section');
             // Hide email input for authenticated users
             if (emailInputSection) emailInputSection.style.display = 'none';
             if (authenticatedUserSection) {
                 authenticatedUserSection.style.display = 'block';
                 document.getElementById('authenticatedUserEmail').textContent = userEmail;
             }
+            // Hide the View Booking button and Cancel button for authenticated users
+            if (buttonSection) buttonSection.style.display = 'none';
         } else {
+            console.log('[showViewBookingModal] Showing email input section');
             // Show email input for non-authenticated users
             if (emailInputSection) emailInputSection.style.display = 'block';
             if (authenticatedUserSection) authenticatedUserSection.style.display = 'none';
+            if (buttonSection) buttonSection.style.display = 'flex';
             document.getElementById('lookup_email').value = '';
         }
     }

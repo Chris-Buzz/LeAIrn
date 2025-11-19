@@ -49,6 +49,18 @@
         </svg>
     </button>
 
+    <script>
+        // Debug: Log authentication status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const auth = document.documentElement.getAttribute('data-authenticated');
+            const email = document.documentElement.getAttribute('data-user-email');
+            console.log('[PAGE_LOAD] Authentication Status:');
+            console.log('  data-authenticated:', auth);
+            console.log('  data-user-email:', email);
+            console.log('  Body HTML:', document.body.outerHTML.substring(0, 200));
+        });
+    </script>
+
     <!-- Email Contact Button -->
     <a href="#" onclick="openContactForm(); return false;" class="email-contact-btn" title="Email Christopher">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -761,11 +773,12 @@
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 1rem;">
+                <!-- Button section - hidden for authenticated users, shown for non-authenticated -->
+                <div id="buttonSection" style="display: flex; gap: 1rem;">
                     <button onclick="closeViewBookingModal()" style="flex: 1; padding: 1rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s;">
                         Cancel
                     </button>
-                    <button onclick="lookupBooking()" class="btn-welcome-start" style="flex: 1; padding: 1rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                    <button onclick="lookupBooking()" class="btn-welcome-start" id="viewBookingButton" style="flex: 1; padding: 1rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s;">
                         View Booking
                     </button>
                 </div>
