@@ -339,6 +339,48 @@ def delete_booking_by_email():
     }), 410
 
 
+@booking_bp.route('/api/user-booking', methods=['GET'])
+def get_user_booking():
+    """Get the current user's booking (authenticated users only)"""
+    try:
+        # Check if user is authenticated
+        if not session.get('authenticated'):
+            return jsonify({'success': False, 'message': 'Not authenticated'}), 401
+        
+        user_email = session.get('user_email')
+        if not user_email:
+            return jsonify({'success': False, 'message': 'User email not found'}), 401
+        
+        # Get all bookings and find one for this user with a future date
+        bookings = db.get_all_bookings()
+        
+        for booking in bookings:
+            if booking.get('email', '').lower() == user_email.lower():
+                # Check if this booking is in the future
+                slot_details = booking.get('slot_details', {})
+                slot_datetime = slot_details.get('datetime', '')
+                
+                # Import for timezone-aware comparison
+                from utils.datetime_utils import get_eastern_now, get_eastern_datetime
+                
+                now_eastern = get_eastern_now()
+                slot_datetime_eastern = get_eastern_datetime(slot_datetime)
+                
+                if slot_datetime_eastern and slot_datetime_eastern > now_eastern:
+                    # Return this booking (exclude past bookings)
+                    return jsonify({
+                        'success': True,
+                        'booking': booking
+                    })
+        
+        # No future booking found
+        return jsonify({'success': False, 'message': 'No upcoming booking found'}), 404
+        
+    except Exception as e:
+        print(f"Error fetching user booking: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 @booking_bp.route('/api/booking/update-by-email', methods=['POST'])
 def update_booking_by_email():
     """DEPRECATED: Use OAuth-authenticated update instead."""

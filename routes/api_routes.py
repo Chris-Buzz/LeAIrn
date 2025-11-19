@@ -92,10 +92,26 @@ def get_slots():
 @api_bp.route('/api/slots/manage', methods=['GET'])
 @login_required
 def manage_slots():
-    """Get all slots for admin management"""
+    """Get all slots for admin management (only future slots in Eastern time)"""
     try:
-        slots = db.get_all_slots()
-        return jsonify(slots)
+        from utils.datetime_utils import get_eastern_now, get_eastern_datetime
+        
+        all_slots = db.get_all_slots()
+        now_eastern = get_eastern_now()
+        
+        # Filter to only show future slots in Eastern time
+        future_slots = []
+        for slot in all_slots:
+            slot_datetime_str = slot.get('datetime', '')
+            try:
+                slot_datetime_eastern = get_eastern_datetime(slot_datetime_str)
+                if slot_datetime_eastern and slot_datetime_eastern > now_eastern:
+                    future_slots.append(slot)
+            except:
+                # If can't parse datetime, skip this slot
+                pass
+        
+        return jsonify(future_slots)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
