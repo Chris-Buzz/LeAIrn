@@ -42,7 +42,7 @@ class AIService:
             return notes
 
         try:
-            model = genai.GenerativeModel('gemini-flash-2.5')
+            model = genai.GenerativeModel('gemini-2.5-flash')
 
             prompt = f"""
 You are an AI assistant helping to summarize educational sessions about AI and technology.
