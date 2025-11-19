@@ -129,23 +129,34 @@ def add_slot():
         if not datetime_str:
             return jsonify({'success': False, 'message': 'Datetime is required'}), 400
         
-        # Convert the datetime-local format to ISO format
+        # Convert the datetime-local format to ISO format and parse it
         try:
             # datetime-local format: "2025-11-18T14:30"
             dt = datetime.fromisoformat(datetime_str)
             iso_datetime = dt.isoformat()
         except:
             iso_datetime = datetime_str
+            dt = datetime.fromisoformat(datetime_str)
         
         # Generate slot ID in format: YYYYMMDDHHMI
         slot_id = datetime_str.replace('-', '').replace(':', '').replace('T', '')
+        
+        # Format date components for display
+        day_name = dt.strftime('%A')  # e.g., "Friday"
+        date_str = dt.strftime('%B %d, %Y')  # e.g., "December 05, 2025"
+        time_str = dt.strftime('%I:%M %p')  # e.g., "01:00 PM"
         
         # Prepare slot data
         slot_data = {
             'id': slot_id,
             'datetime': iso_datetime,
+            'day': day_name,
+            'date': date_str,
+            'time': time_str,
             'booked': False,
             'booking_id': None,
+            'booked_by': None,
+            'room': None,
             'created_at': datetime.utcnow().isoformat()
         }
         
