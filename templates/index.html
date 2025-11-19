@@ -743,13 +743,22 @@
             <button onclick="closeViewBookingModal()" style="position: absolute; top: 1rem; right: 1rem; background: var(--bg); border: 2px solid var(--border); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 1.5rem; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.3s; z-index: 10;">×</button>
             <div class="welcome-modal-header">
                 <h1>View My Booking</h1>
-                <p class="welcome-subtitle">Enter your email to view your upcoming booking</p>
+                <p class="welcome-subtitle" id="viewBookingSubtitle">Enter your email to view your upcoming booking</p>
             </div>
 
             <div class="welcome-modal-body" style="padding: 2rem;">
-                <div style="margin-bottom: 1.5rem;">
+                <!-- Email input (hidden for authenticated users) -->
+                <div id="emailInputSection" style="margin-bottom: 1.5rem;">
                     <label for="lookup_email" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Email Address</label>
                     <input type="email" id="lookup_email" placeholder="john@example.com" style="width: 100%; padding: 1rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1rem; background: var(--bg); color: var(--text-primary);" required>
+                </div>
+
+                <!-- Authenticated user display (hidden initially) -->
+                <div id="authenticatedUserSection" style="margin-bottom: 1.5rem; display: none;">
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 0.5rem;">Loading your booking for:</p>
+                    <div style="background: var(--bg); border: 2px solid var(--border); border-radius: 0.75rem; padding: 1rem; color: var(--primary); font-weight: 600;">
+                        <span id="authenticatedUserEmail"></span>
+                    </div>
                 </div>
 
                 <div style="display: flex; gap: 1rem;">

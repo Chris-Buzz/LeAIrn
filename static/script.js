@@ -918,10 +918,29 @@ function showViewBookingModal() {
     if (modal) {
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
-        document.getElementById('lookup_email').value = '';
+        
+        const isAuthenticated = document.documentElement.getAttribute('data-authenticated') === 'true';
+        const userEmail = document.documentElement.getAttribute('data-user-email');
+        const emailInputSection = document.getElementById('emailInputSection');
+        const authenticatedUserSection = document.getElementById('authenticatedUserSection');
         const resultDiv = document.getElementById('booking-lookup-result');
+        
         if (resultDiv) {
             resultDiv.style.display = 'none';
+        }
+
+        if (isAuthenticated && userEmail) {
+            // Hide email input for authenticated users
+            if (emailInputSection) emailInputSection.style.display = 'none';
+            if (authenticatedUserSection) {
+                authenticatedUserSection.style.display = 'block';
+                document.getElementById('authenticatedUserEmail').textContent = userEmail;
+            }
+        } else {
+            // Show email input for non-authenticated users
+            if (emailInputSection) emailInputSection.style.display = 'block';
+            if (authenticatedUserSection) authenticatedUserSection.style.display = 'none';
+            document.getElementById('lookup_email').value = '';
         }
     }
 }
@@ -937,80 +956,96 @@ function closeViewBookingModal() {
 let verificationEmail = '';
 
 async function lookupBooking() {
-    const email = document.getElementById('lookup_email').value.trim();
     const resultDiv = document.getElementById('booking-lookup-result');
+    const isAuthenticated = document.documentElement.getAttribute('data-authenticated') === 'true';
+    let email = null;
 
-    if (!email) {
-        showNotification('Please enter your email address', 'error');
-        return;
-    }
+    if (isAuthenticated) {
+        // Use authenticated user's email directly
+        email = document.documentElement.getAttribute('data-user-email');
+        if (!email) {
+            showNotification('Unable to retrieve your email. Please try again.', 'error');
+            return;
+        }
+    } else {
+        // Use manual email input for non-authenticated users
+        email = document.getElementById('lookup_email').value.trim();
 
-    // Email validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showNotification('Please enter a valid email address', 'error');
-        return;
+        if (!email) {
+            showNotification('Please enter your email address', 'error');
+            return;
+        }
+
+        // Email validation
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showNotification('Please enter a valid email address', 'error');
+            return;
+        }
     }
 
     try {
         // Show loading state
-        resultDiv.innerHTML = '<div style="text-align: center; padding: 2rem;"><div class="spinner" style="margin: 0 auto; border-color: rgba(99, 102, 241, 0.3); border-top-color: var(--primary);"></div><p style="margin-top: 1rem; color: var(--text-secondary);">Checking for booking...</p></div>';
+        resultDiv.innerHTML = '<div style="text-align: center; padding: 2rem;"><div class="spinner" style="margin: 0 auto; border-color: rgba(99, 102, 241, 0.3); border-top-color: var(--primary);"></div><p style="margin-top: 1rem; color: var(--text-secondary);">Loading your booking...</p></div>';
         resultDiv.style.display = 'block';
 
-        const response = await fetch('/api/booking/lookup', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email: email })
-        });
-        const result = await response.json();
+        if (isAuthenticated) {
+            // For authenticated users, call /api/user-booking directly
+            const response = await fetch('/api/user-booking', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
 
-        if (response.ok && result.success) {
-            // Verification code sent - show verification form
-            verificationEmail = email;
-            showNotification('Verification code sent to your email!', 'success');
+            if (response.status === 401) {
+                showNotification('Your session has expired. Please log in again.', 'error');
+                return;
+            }
 
-            resultDiv.innerHTML = `
-                <div style="background: var(--bg); border: 2px solid var(--primary); border-radius: 1rem; padding: 1.5rem;">
-                    <h3 style="margin-bottom: 1rem; color: var(--primary);">Check Your Email</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">We've sent a 6-digit verification code to <strong>${email}</strong></p>
+            const result = await response.json();
 
-                    <div style="margin-bottom: 1.5rem;">
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Enter Verification Code</label>
-                        <input type="text" id="verification_code" maxlength="6" placeholder="000000"
-                            style="width: 100%; padding: 0.875rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1.5rem; text-align: center; letter-spacing: 0.5rem; font-weight: 600;"
-                            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-                        <small style="display: block; margin-top: 0.5rem; color: var(--text-tertiary);">Code expires in 10 minutes</small>
-                    </div>
+            if (response.ok && result.success && result.booking) {
+                const booking = result.booking;
+                const slotDetails = booking.slot_details || {};
 
-                    <div style="display: flex; gap: 0.75rem;">
-                        <button onclick="verifyCode()" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
-                            Verify Code
-                        </button>
-                        <button onclick="resendVerificationCode()" style="flex: 1; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
-                            Resend Code
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            // Focus on code input
-            setTimeout(() => {
-                document.getElementById('verification_code').focus();
-            }, 100);
-        } else {
-            // Check if this is a rate limit error
-            if (result.rate_limited) {
                 resultDiv.innerHTML = `
-                    <div style="background: var(--bg); border: 2px solid var(--error); border-radius: 1rem; padding: 1.5rem; text-align: center;">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--error); margin-bottom: 1rem;">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                        <h3 style="margin-bottom: 0.5rem; color: var(--error);">Too Many Lookup Requests</h3>
-                        <p style="color: var(--text-secondary); margin-bottom: 1rem;">${result.message}</p>
-                        <p style="color: var(--text-tertiary); font-size: 0.9rem;">This limit protects your account from unauthorized access attempts.</p>
+                    <div style="background: var(--bg); border: 2px solid var(--primary); border-radius: 1rem; padding: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem; color: var(--primary);">Your Booking</h3>
+
+                        <div style="display: grid; gap: 0.75rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <strong style="color: var(--text-secondary);">Name:</strong>
+                                <div>${booking.full_name}</div>
+                            </div>
+
+                            <div>
+                                <strong style="color: var(--text-secondary);">Date & Time:</strong>
+                                <div>${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}</div>
+                            </div>
+
+                            <div>
+                                <strong style="color: var(--text-secondary);">Location:</strong>
+                                <div>${booking.selected_room || 'Not specified'}</div>
+                            </div>
+
+                            <div>
+                                <strong style="color: var(--text-secondary);">Status:</strong>
+                                <div style="color: var(--success); font-weight: 600;">✓ Confirmed</div>
+                            </div>
+                        </div>
+
+                        <div style="margin: 1.5rem 0; padding: 1.5rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--text-secondary); font-size: 0.9rem;">
+                            <p>A confirmation email was sent to <strong>${booking.email}</strong></p>
+                        </div>
+
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button onclick="showEditBookingForm('${booking.id}', '${JSON.stringify(booking).replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                Edit Booking
+                            </button>
+                            <button onclick="confirmDeleteSpecificBooking('${booking.id}', '${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}')" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                Delete Booking
+                            </button>
+                        </div>
                     </div>
                 `;
             } else {
@@ -1021,11 +1056,85 @@ async function lookupBooking() {
                             <line x1="12" y1="8" x2="12" y2="12"></line>
                             <line x1="12" y1="16" x2="12.01" y2="16"></line>
                         </svg>
-                        <h3 style="margin-bottom: 0.5rem;">No Upcoming Booking Found</h3>
-                        <p style="color: var(--text-secondary);">We couldn't find an upcoming booking with this email address.</p>
-                        <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">Past bookings are not shown. Please book a new session if needed.</p>
+                        <h3 style="margin-bottom: 0.5rem;">No Booking Found</h3>
+                        <p style="color: var(--text-secondary);">You don't have any bookings yet.</p>
+                        <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">Click "Book a Session" to schedule your first AI learning experience!</p>
                     </div>
                 `;
+            }
+        } else {
+            // For non-authenticated users, use the old verification code flow
+            const response = await fetch('/api/booking/lookup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email: email })
+            });
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                // Verification code sent - show verification form
+                verificationEmail = email;
+                showNotification('Verification code sent to your email!', 'success');
+
+                resultDiv.innerHTML = `
+                    <div style="background: var(--bg); border: 2px solid var(--primary); border-radius: 1rem; padding: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem; color: var(--primary);">Check Your Email</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">We've sent a 6-digit verification code to <strong>${email}</strong></p>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Enter Verification Code</label>
+                            <input type="text" id="verification_code" maxlength="6" placeholder="000000"
+                                style="width: 100%; padding: 0.875rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1.5rem; text-align: center; letter-spacing: 0.5rem; font-weight: 600;"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                            <small style="display: block; margin-top: 0.5rem; color: var(--text-tertiary);">Code expires in 10 minutes</small>
+                        </div>
+
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button onclick="verifyCode()" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                                Verify Code
+                            </button>
+                            <button onclick="resendVerificationCode()" style="flex: 1; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                                Resend Code
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Focus on code input
+                setTimeout(() => {
+                    document.getElementById('verification_code').focus();
+                }, 100);
+            } else {
+                // Check if this is a rate limit error
+                if (result.rate_limited) {
+                    resultDiv.innerHTML = `
+                        <div style="background: var(--bg); border: 2px solid var(--error); border-radius: 1rem; padding: 1.5rem; text-align: center;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--error); margin-bottom: 1rem;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <h3 style="margin-bottom: 0.5rem; color: var(--error);">Too Many Lookup Requests</h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 1rem;">${result.message}</p>
+                            <p style="color: var(--text-tertiary); font-size: 0.9rem;">This limit protects your account from unauthorized access attempts.</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div style="background: var(--bg); border: 2px solid var(--border); border-radius: 1rem; padding: 1.5rem; text-align: center;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-tertiary); margin-bottom: 1rem;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <h3 style="margin-bottom: 0.5rem;">No Upcoming Booking Found</h3>
+                            <p style="color: var(--text-secondary);">We couldn't find an upcoming booking with this email address.</p>
+                            <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">Past bookings are not shown. Please book a new session if needed.</p>
+                        </div>
+                    `;
+                }
             }
         }
     } catch (error) {
