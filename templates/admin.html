@@ -2123,6 +2123,34 @@
                 return;
             }
 
+            // Parse the datetime input and create a proper slot object
+            const slotDate = new Date(datetimeInput);
+            const year = slotDate.getFullYear();
+            const month = String(slotDate.getMonth() + 1).padStart(2, '0');
+            const date = String(slotDate.getDate()).padStart(2, '0');
+            const hours = String(slotDate.getHours()).padStart(2, '0');
+            const minutes = String(slotDate.getMinutes()).padStart(2, '0');
+            
+            const slotId = `${year}${month}${date}${hours}${minutes}`;
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            
+            const dayName = dayNames[slotDate.getDay()];
+            const monthName = monthNames[slotDate.getMonth()];
+            const dateStr = `${monthName} ${String(slotDate.getDate()).padStart(2, '0')}, ${year}`;
+            const timeStr = slotDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+            const slotData = {
+                id: slotId,
+                datetime: slotDate.toISOString(),
+                day: dayName,
+                date: dateStr,
+                time: timeStr,
+                booked: false,
+                booked_by: null,
+                room: null
+            };
+
             // Get the button and show loading state
             const button = modal.querySelector('.btn-modal-primary');
             const originalContent = button.innerHTML;
@@ -2133,7 +2161,7 @@
                 const response = await fetch('/api/slots/add', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ datetime: datetimeInput })
+                    body: JSON.stringify(slotData)
                 });
 
                 const result = await response.json();
