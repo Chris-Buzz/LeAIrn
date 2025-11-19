@@ -107,8 +107,15 @@ def mark_booking_complete(booking_id):
             return jsonify({'success': False, 'message': 'Booking not found'}), 404
 
         slot_id = completed_user.get('selected_slot')
+        
+        # Handle slot_details - could be stored directly or need to extract from slot_id
         slot_details = completed_user.get('slot_details', {})
-        session_date = f"{slot_details.get('day', '')}, {slot_details.get('date', '')} at {slot_details.get('time', '')}"
+        if not slot_details and isinstance(slot_id, dict):
+            slot_details = slot_id
+        
+        session_date = f"{slot_details.get('day', '')}, {slot_details.get('date', '')} at {slot_details.get('time', '')}".strip()
+        if not session_date or session_date == ',':
+            session_date = 'Not specified'
 
         # Process session notes if provided
         enhanced_notes = ''
@@ -145,7 +152,7 @@ def mark_booking_complete(booking_id):
 
         # Send feedback request email
         try:
-            EmailService.send_feedback_request(completed_user)
+            EmailService.send_feedback_request(completed_user, booking_id)
         except Exception as e:
             print(f"Email error: {e}")
 

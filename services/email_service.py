@@ -364,32 +364,54 @@ class EmailService:
         )
 
     @staticmethod
-    def send_feedback_request(user_data: Dict) -> bool:
+    def send_feedback_request(user_data: Dict, booking_id: str = None) -> bool:
         """
         Send feedback request email after session
         
         Args:
             user_data: Dictionary containing user information
+            booking_id: The booking ID to use as feedback token
             
         Returns:
             bool: True if email sent successfully
         """
-        feedback_link = "https://uleairn.com/feedback"
+        # Generate feedback token using booking ID
+        feedback_token = booking_id if booking_id else user_data.get('id', '')
         
         html = f"""
         <html>
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #6366F1;">📝 How Was Your Session?</h1>
-                    <p>Hi {user_data.get('full_name', 'there')},</p>
-                    <p>Thank you for attending your AI learning session! I'd love to hear your feedback.</p>
-                    <p>Your input helps me improve future sessions and better serve the Monmouth University community.</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="{feedback_link}" style="display: inline-block; background: #6366F1; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">Share Your Feedback</a>
+                    <h1 style="color: #6366F1;">Thanks for Your Session!</h1>
+                    <p>Hi {user_data['full_name']},</p>
+                    <p>I hope you enjoyed our AI learning session! Your feedback helps me improve and provide better experiences for future students.</p>
+
+                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Share Your Feedback</h2>
+                        <p>It'll only take a minute - rate your experience and optionally share any comments.</p>
+                        <p style="margin-top: 20px; margin-bottom: 0;">
+                            <a href="https://uleairn.com/feedback?token={feedback_token}" style="display: inline-block; padding: 14px 28px; background: #6366F1; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                                Leave Feedback
+                            </a>
+                        </p>
                     </div>
-                    <p>It only takes 2 minutes and your responses are anonymous.</p>
-                    <p>Thank you!</p>
-                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn</p>
+
+                    <h3>Want to Learn More?</h3>
+                    <p>Feel free to book another session anytime. I'm always happy to help you dive deeper into AI!</p>
+                    <p style="margin-top: 15px;">
+                        <a href="https://uleairn.com" style="display: inline-block; padding: 12px 24px; background: #10B981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                            Book Another Session
+                        </a>
+                    </p>
+
+                    <p style="margin-top: 30px;">Thank you for taking the time to learn with me!</p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.85rem; color: #9CA3AF;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
+                        </p>
+                    </div>
                 </div>
             </body>
         </html>
@@ -397,14 +419,14 @@ class EmailService:
 
         return EmailService._send_email(
             to_email=user_data.get('email', ''),
-            subject='Share Your Feedback - LeAIrn',
+            subject='How Was Your AI Learning Session? Share Your Feedback - LeAIrn',
             html_content=html
         )
 
     @staticmethod
     def send_session_overview(user_data: Dict, overview: str) -> bool:
         """
-        Send AI-generated session overview to student
+        Send session overview email to user
         
         Args:
             user_data: Dictionary containing user information
@@ -417,14 +439,30 @@ class EmailService:
         <html>
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #6366F1;">📄 Your Session Summary</h1>
-                    <p>Hi {user_data.get('full_name', 'there')},</p>
-                    <p>Here's a summary of your AI learning session:</p>
-                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0; white-space: pre-wrap;">
-                        {overview}
+                    <h1 style="color: #6366F1;">Your Session Summary</h1>
+                    <p>Hi {user_data['full_name']},</p>
+                    <p>Here's a summary of what we covered in your AI learning session. Keep this for your reference!</p>
+
+                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                        <pre style="white-space: pre-wrap; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.8; margin: 0;">{overview}</pre>
                     </div>
-                    <p>Feel free to reach out if you have any follow-up questions!</p>
-                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com">cjpbuzaid@gmail.com</a></p>
+
+                    <h3>Keep Learning!</h3>
+                    <p>Feel free to book another session anytime if you have questions or want to dive deeper.</p>
+                    <p style="margin-top: 15px;">
+                        <a href="https://uleairn.com" style="display: inline-block; padding: 12px 24px; background: #10B981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                            Book Another Session
+                        </a>
+                    </p>
+
+                    <p style="margin-top: 30px;">Happy learning!</p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.85rem; color: #9CA3AF;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
+                        </p>
+                    </div>
                 </div>
             </body>
         </html>
@@ -432,6 +470,6 @@ class EmailService:
 
         return EmailService._send_email(
             to_email=user_data.get('email', ''),
-            subject='Your Session Summary - LeAIrn',
+            subject='Your AI Learning Session Summary - LeAIrn',
             html_content=html
         )

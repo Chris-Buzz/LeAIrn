@@ -956,14 +956,22 @@ function closeViewBookingModal() {
 // Direct access to View My Booking for authenticated users
 async function openViewMyBookingDirect() {
     const isAuthenticated = document.documentElement.getAttribute('data-authenticated') === 'true';
+    const userEmail = document.documentElement.getAttribute('data-user-email');
+    
+    console.log('[DEBUG] openViewMyBookingDirect called');
+    console.log('[DEBUG] data-authenticated:', document.documentElement.getAttribute('data-authenticated'));
+    console.log('[DEBUG] data-user-email:', userEmail);
+    console.log('[DEBUG] isAuthenticated:', isAuthenticated);
     
     if (!isAuthenticated) {
         // For non-authenticated users, show the modal with email input
+        console.log('[DEBUG] User not authenticated, showing email input form');
         showViewBookingModal();
         return;
     }
     
     // For authenticated users, open modal and immediately fetch their booking
+    console.log('[DEBUG] User authenticated, showing modal and fetching booking');
     showViewBookingModal();
     
     // Give the modal a moment to open, then fetch their booking

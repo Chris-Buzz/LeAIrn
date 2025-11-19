@@ -61,11 +61,28 @@ def projects():
 def serve_media(filename):
     """Serve media files (images, GIFs) from the media directory"""
     try:
+        # Get the media directory path
         media_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'media')
-        return send_from_directory(media_dir, filename)
+        
+        # Security: prevent directory traversal
+        if '..' in filename or filename.startswith('/'):
+            return "Access denied", 403
+        
+        # Check if file exists
+        file_path = os.path.join(media_dir, filename)
+        if not os.path.isfile(file_path):
+            print(f"Media file not found: {filename} (looked in {media_dir})")
+            return "File not found", 404
+        
+        # Serve the file with caching headers for production
+        response = send_from_directory(media_dir, filename)
+        response.headers['Cache-Control'] = 'public, max-age=86400'  # Cache for 24 hours
+        return response
     except Exception as e:
         print(f"Error serving media file {filename}: {e}")
-        return "File not found", 404
+        import traceback
+        traceback.print_exc()
+        return "Error serving file", 500
 
 
 @api_bp.route('/feedback')
