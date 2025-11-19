@@ -77,28 +77,10 @@ def admin():
 @admin_bp.route('/api/users', methods=['GET'])
 @login_required
 def get_users():
-    """Get all bookings for admin dashboard"""
+    """Get all bookings for admin dashboard (including past bookings)"""
     try:
-        from utils.datetime_utils import get_eastern_now, get_eastern_datetime
-        
         users = db.get_all_bookings()
-        
-        # Filter to only show future bookings and organize by status
-        future_bookings = []
-        for booking in users:
-            slot_details = booking.get('slot_details', {})
-            slot_datetime = slot_details.get('datetime', '')
-            
-            try:
-                now_eastern = get_eastern_now()
-                slot_datetime_eastern = get_eastern_datetime(slot_datetime)
-                if slot_datetime_eastern and slot_datetime_eastern > now_eastern:
-                    future_bookings.append(booking)
-            except:
-                # Include bookings where we can't parse datetime
-                future_bookings.append(booking)
-        
-        return jsonify(future_bookings)
+        return jsonify(users)
     except Exception as e:
         print(f"Error fetching users: {e}")
         return jsonify({'error': str(e)}), 500

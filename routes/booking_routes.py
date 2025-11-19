@@ -351,30 +351,46 @@ def get_user_booking():
         if not user_email:
             return jsonify({'success': False, 'message': 'User email not found'}), 401
         
-        # Get all bookings and find one for this user with a future date
+        # Get all bookings and find one for this user (most recent/upcoming)
         bookings = db.get_all_bookings()
         
+        # Find all bookings for this user
+        user_bookings = []
         for booking in bookings:
             if booking.get('email', '').lower() == user_email.lower():
-                # Check if this booking is in the future
-                slot_details = booking.get('slot_details', {})
-                slot_datetime = slot_details.get('datetime', '')
-                
-                # Import for timezone-aware comparison
-                from utils.datetime_utils import get_eastern_now, get_eastern_datetime
-                
-                now_eastern = get_eastern_now()
-                slot_datetime_eastern = get_eastern_datetime(slot_datetime)
-                
-                if slot_datetime_eastern and slot_datetime_eastern > now_eastern:
-                    # Return this booking (exclude past bookings)
-                    return jsonify({
-                        'success': True,
-                        'booking': booking
-                    })
+                user_bookings.append(booking)
         
-        # No future booking found
-        return jsonify({'success': False, 'message': 'No upcoming booking found'}), 404
+        if not user_bookings:
+            return jsonify({'success': False, 'message': 'No booking found'}), 404
+        
+        # If multiple bookings, return the most recent one
+        # (sort by datetime and return the last one)
+        from utils.datetime_utils import get_eastern_datetime
+        
+        sorted_bookings = []
+        for booking in user_bookings:
+            slot_details = booking.get('slot_details', {})
+            slot_datetime = slot_details.get('datetime', '')
+            try:
+                slot_datetime_eastern = get_eastern_datetime(slot_datetime)
+                sorted_bookings.append((slot_datetime_eastern, booking))
+            except:
+                sorted_bookings.append((None, booking))
+        
+        # Sort by datetime, most recent first
+        sorted_bookings.sort(key=lambda x: x[0] if x[0] else datetime.min, reverse=True)
+        
+        if sorted_bookings:
+            return jsonify({
+                'success': True,
+                'booking': sorted_bookings[0][1]
+            })
+        
+        # Fallback: return first booking if no datetime
+        return jsonify({
+            'success': True,
+            'booking': user_bookings[0]
+        })
         
     except Exception as e:
         print(f"Error fetching user booking: {e}")
