@@ -69,44 +69,35 @@ class EmailService:
         <html>
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #6366F1;">[OK] Your Booking is Confirmed!</h1>
+                    <h1 style="color: #6366F1;">You're All Set!</h1>
                     <p>Hi {name},</p>
-                    <p>Great news! Your AI learning session booking has been confirmed. We look forward to meeting you!</p>
+                    <p>Your AI learning session with Christopher Buzaid has been confirmed. I'm looking forward to meeting you and helping you discover the best way to use AI for your goals!</p>
 
-                    <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                        <h3 style="margin-top: 0; color: #16a34a;">Session Details</h3>
-                        <p style="margin: 5px 0;"><strong>Date & Time:</strong> {slot_data.get('day', '')}, {slot_data.get('date', '')} at {slot_data.get('time', '')}</p>
-                        <p style="margin: 5px 0;"><strong>Duration:</strong> 30 minutes</p>
-                        <p style="margin: 5px 0;"><strong>Location:</strong> {slot_data.get('location', 'To be confirmed')}</p>
+                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Session Details</h2>
+                        <p><strong>Date & Time:</strong> {slot_data.get('day', '')}, {slot_data.get('date', '')} at {slot_data.get('time', '')}</p>
+                        <p><strong>Location:</strong> {slot_data.get('location', 'To be confirmed')}</p>
+                        <p><strong>Duration:</strong> 30 minutes</p>
+                        <p><strong>Your AI Mentor:</strong> Christopher Buzaid</p>
                     </div>
 
-                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 15px; margin: 20px 0;">
-                        <h3 style="margin-top: 0; color: #111827;">What to Expect</h3>
-                        <ul style="margin: 10px 0; padding-left: 20px;">
-                            <li>Introduction to AI tools and concepts</li>
-                            <li>Hands-on demonstration of relevant AI applications</li>
-                            <li>Q&A and personalized guidance</li>
-                            <li>Resources for continued learning</li>
-                        </ul>
-                    </div>
+                    <h3>What to Bring:</h3>
+                    <ul>
+                        <li>Any specific questions or topics you'd like to cover</li>
+                        <li>Your laptop if you want hands-on practice</li>
+                        <li>An open mind and curiosity!</li>
+                    </ul>
 
-                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
-                        <h3 style="margin-top: 0; color: #92400e;">Important Reminders</h3>
-                        <ul style="margin: 10px 0; padding-left: 20px;">
-                            <li>Please arrive 5 minutes early</li>
-                            <li>Bring any specific questions or projects you'd like to discuss</li>
-                            <li>You'll receive a reminder email 1 hour before your session</li>
-                        </ul>
-                    </div>
-
-                    <p>If you need to reschedule or cancel, please contact me as soon as possible.</p>
-                    <p style="margin-top: 30px;">Looking forward to working with you!</p>
+                    <p style="margin-top: 30px;">See you soon!</p>
                     <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
 
                     <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
-                        <p style="font-size: 0.85rem; color: #9CA3AF;">
-                            <strong>[OK] Verified via Monmouth University SSO</strong><br>
-                            This booking was created using your verified @monmouth.edu email address.
+                        <p style="font-size: 0.9rem; color: #9CA3AF;">
+                            <strong>Need to cancel or reschedule?</strong><br>
+                            Visit <a href="https://uleairn.com" style="color: #6366F1;">uleairn.com</a>, click the "View My Booking" button, and you can manage your booking from there.
+                        </p>
+                        <p style="font-size: 0.85rem; color: #9CA3AF; margin-top: 20px;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
                         </p>
                     </div>
                 </div>
@@ -116,7 +107,7 @@ class EmailService:
 
         return EmailService._send_email(
             to_email=email,
-            subject='Booking Confirmed - LeAIrn',
+            subject='Your AI Learning Session is Confirmed - LeAIrn',
             html_content=html
         )
 
@@ -132,18 +123,43 @@ class EmailService:
         Returns:
             bool: True if email sent successfully
         """
-        admin_email = os.getenv('ADMIN_EMAIL', EMAIL_USER)
+        admin_email = os.getenv('EMAIL_RECIPIENT', os.getenv('EMAIL_USER'))
         
         html = f"""
         <html>
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #6366F1;">🎓 New Booking</h1>
-                    <p><strong>Name:</strong> {user_data.get('full_name', 'N/A')}</p>
-                    <p><strong>Email:</strong> {user_data.get('email', 'N/A')}</p>
-                    <p><strong>Role:</strong> {user_data.get('role', 'N/A')}</p>
-                    <p><strong>Time:</strong> {slot_data.get('day', '')}, {slot_data.get('date', '')} at {slot_data.get('time', '')}</p>
-                    <p><strong>Location:</strong> {user_data.get('selected_room', 'Not specified')}</p>
+                    <h1 style="color: #6366F1;">New AI Learning Session Booked</h1>
+                    <p>A new session has been scheduled on LeAIrn.</p>
+
+                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Participant Information</h2>
+                        <p><strong>Name:</strong> {user_data.get('full_name', 'N/A')}</p>
+                        <p><strong>Email:</strong> <a href="mailto:{user_data.get('email', '')}">{user_data.get('email', 'N/A')}</a></p>
+                        <p><strong>Role:</strong> {user_data.get('role', 'N/A').capitalize() if user_data.get('role') else 'N/A'}</p>
+                        <p><strong>Department/Major:</strong> {user_data.get('department', 'Not specified')}</p>
+                    </div>
+
+                    <div style="background: #f0fdf4; border-left: 4px solid #10B981; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Session Details</h2>
+                        <p><strong>Date & Time:</strong> {slot_data.get('day', '')}, {slot_data.get('date', '')} at {slot_data.get('time', '')}</p>
+                        <p><strong>Location:</strong> {user_data.get('selected_room', 'Not specified')}</p>
+                        <p><strong>Duration:</strong> 30 minutes</p>
+                    </div>
+
+                    <div style="background: #fef3c7; border-left: 4px solid #F59E0B; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">AI Experience Profile</h2>
+                        <p><strong>Experience Level:</strong> {user_data.get('ai_familiarity', 'Not specified')}</p>
+                        <p><strong>Tools Used:</strong> {user_data.get('ai_tools', 'None')}</p>
+                        <p><strong>Primary Interests:</strong> {user_data.get('primary_use', 'Not specified')}</p>
+                        <p><strong>Learning Goals:</strong> {user_data.get('learning_goal', 'Not specified')}</p>
+                        {f"<p><strong>Personal Comments:</strong> {user_data.get('personal_comments')}</p>" if user_data.get('personal_comments') else ""}
+                    </div>
+
+                    <p style="margin-top: 30px; color: #6B7280; font-size: 0.9rem;">
+                        This is an automated notification from LeAIrn. You can view and manage all bookings in your
+                        <a href="https://uleairn.com/admin" style="color: #6366F1;">admin dashboard</a>.
+                    </p>
                 </div>
             </body>
         </html>
@@ -151,14 +167,14 @@ class EmailService:
 
         return EmailService._send_email(
             to_email=admin_email,
-            subject=f'New Booking: {user_data.get("full_name", "Student")}',
+            subject=f'New Booking: {user_data.get("full_name", "Student")} - LeAIrn',
             html_content=html
         )
 
     @staticmethod
     def send_meeting_reminder(user_data: Dict) -> bool:
         """
-        Send meeting reminder email 1 hour before session
+        Send meeting reminder email on day of session at 8:30 AM
         
         Args:
             user_data: Dictionary containing booking information
@@ -167,39 +183,60 @@ class EmailService:
             bool: True if email sent successfully
         """
         slot_details = user_data.get('slot_details', {})
+        user_email = user_data.get('email', '')
+        user_name = user_data.get('full_name', 'Student')
+        session_location = user_data.get('selected_room', 'TBD')
+        session_time = slot_details.get('time', 'N/A')
+        session_date = f"{slot_details.get('day', '')}, {slot_details.get('date', '')}"
         
         html = f"""
         <html>
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #6366F1;">⏰ Your Session Starts Soon!</h1>
-                    <p>Hi {user_data.get('full_name', 'there')},</p>
-                    <p>This is a friendly reminder that your AI learning session with Christopher Buzaid is coming up in <strong>1 hour</strong>!</p>
+                    <h1 style="color: #6366F1;">Your AI Learning Session is Today!</h1>
+                    <p>Hi {user_name},</p>
+                    <p>Just a friendly reminder that your AI learning session with Christopher Buzaid is happening today!</p>
 
-                    <div style="background: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                        <h3 style="margin-top: 0; color: #0c4a6e;">Session Details</h3>
-                        <p style="margin: 5px 0;"><strong>Time:</strong> {slot_details.get('day', '')}, {slot_details.get('date', '')} at {slot_details.get('time', '')}</p>
-                        <p style="margin: 5px 0;"><strong>Location:</strong> {user_data.get('selected_room', 'Check your confirmation email')}</p>
-                        <p style="margin: 5px 0;"><strong>Duration:</strong> 30 minutes</p>
+                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Session Details</h2>
+                        <p style="margin: 10px 0;"><strong>📅 Date:</strong> {session_date}</p>
+                        <p style="margin: 10px 0;"><strong>⏰ Time:</strong> {session_time}</p>
+                        <p style="margin: 10px 0;"><strong>📍 Location:</strong> {session_location}</p>
+                        <p style="margin: 10px 0;"><strong>⏱️ Duration:</strong> 30 minutes</p>
                     </div>
 
-                    <p><strong>Quick Tips:</strong></p>
+                    <h3>📌 Tips Before You Come:</h3>
                     <ul>
                         <li>Arrive 5 minutes early</li>
-                        <li>Bring any questions or projects you'd like to discuss</li>
-                        <li>Have a notebook or laptop ready for notes</li>
+                        <li>Bring any questions or projects you're working on</li>
+                        <li>Have your laptop ready if we're doing hands-on work</li>
+                        <li>Let me know if you need to reschedule</li>
                     </ul>
 
-                    <p>See you soon!</p>
-                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn</p>
+                    <div style="background: #fff7ed; border-left: 4px solid #F59E0B; padding: 20px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #F59E0B;">Need to Reschedule?</h3>
+                        <p style="margin: 10px 0;">If something came up, please let me know as soon as possible.</p>
+                        <p style="margin: 10px 0;">
+                            <a href="https://uleairn.com" style="color: #F59E0B; font-weight: 600;">Visit LeAIrn to manage your booking</a>
+                        </p>
+                    </div>
+
+                    <p style="margin-top: 30px;">Looking forward to seeing you today!</p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.85rem; color: #9CA3AF;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
+                        </p>
+                    </div>
                 </div>
             </body>
         </html>
         """
 
         return EmailService._send_email(
-            to_email=user_data.get('email', ''),
-            subject='⏰ Reminder: Your AI Session Starts in 1 Hour',
+            to_email=user_email,
+            subject=f"Reminder: Your AI Learning Session with Christopher Today! - LeAIrn",
             html_content=html
         )
 
@@ -223,24 +260,45 @@ class EmailService:
         """
         changes = []
         if old_slot_data and new_slot_data:
-            changes.append(f"<li><strong>Time:</strong> {old_slot_data.get('day')} {old_slot_data.get('time')} → {new_slot_data.get('day')} {new_slot_data.get('time')}</li>")
-        if old_room and new_room:
-            changes.append(f"<li><strong>Location:</strong> {old_room} → {new_room}</li>")
+            changes.append(f"<li><strong>Time Changed:</strong> From {old_slot_data.get('day', '')}, {old_slot_data.get('date', '')} at {old_slot_data.get('time', '')} → To {new_slot_data.get('day', '')}, {new_slot_data.get('date', '')} at {new_slot_data.get('time', '')}</li>")
+        if old_room and new_room and old_room != new_room:
+            changes.append(f"<li><strong>Location Changed:</strong> From {old_room} → To {new_room}</li>")
 
-        changes_html = "".join(changes) if changes else "<li>Booking details updated</li>"
+        changes_html = ''.join(changes) if changes else '<li>Booking details updated</li>'
+        current_slot = new_slot_data if new_slot_data else old_slot_data
+        current_room = new_room if new_room else old_room
         
         html = f"""
         <html>
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #f59e0b;">📝 Booking Updated</h1>
+                    <h1 style="color: #F59E0B;">Your Session Has Been Updated</h1>
                     <p>Hi {user_data.get('full_name', 'there')},</p>
-                    <p>Your AI learning session booking has been updated:</p>
-                    <ul style="background: #fef3c7; padding: 15px; border-radius: 8px;">
-                        {changes_html}
-                    </ul>
-                    <p>All other details remain the same. See you soon!</p>
-                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn</p>
+                    <p>Your AI learning session with Christopher Buzaid has been updated by an administrator.</p>
+
+                    <div style="background: #fef3c7; border-left: 4px solid #F59E0B; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">What Changed</h2>
+                        <ul style="margin: 0; padding-left: 20px;">
+                            {changes_html}
+                        </ul>
+                    </div>
+
+                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Updated Session Details</h2>
+                        <p><strong>Date & Time:</strong> {current_slot.get('day', '')}, {current_slot.get('date', '')} at {current_slot.get('time', '')}</p>
+                        <p><strong>Location:</strong> {current_room}</p>
+                        <p><strong>Duration:</strong> 30 minutes</p>
+                        <p><strong>Your AI Mentor:</strong> Christopher Buzaid</p>
+                    </div>
+
+                    <p style="margin-top: 30px;">If you have any questions or concerns about this change, please contact me directly.</p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.85rem; color: #9CA3AF;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
+                        </p>
+                    </div>
                 </div>
             </body>
         </html>
@@ -248,7 +306,7 @@ class EmailService:
 
         return EmailService._send_email(
             to_email=user_data.get('email', ''),
-            subject='Booking Updated - LeAIrn',
+            subject='Your AI Learning Session Has Been Updated - LeAIrn',
             html_content=html
         )
 
@@ -268,14 +326,32 @@ class EmailService:
         <html>
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #ef4444;">❌ Booking Cancelled</h1>
+                    <h1 style="color: #EF4444;">Your Session Has Been Cancelled</h1>
                     <p>Hi {user_data.get('full_name', 'there')},</p>
-                    <p>Your AI learning session booking has been cancelled:</p>
-                    <div style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0;">
-                        <p style="margin: 5px 0;"><strong>Time:</strong> {slot_data.get('day', '')}, {slot_data.get('date', '')} at {slot_data.get('time', '')}</p>
+                    <p>Your AI learning session with Christopher Buzaid has been cancelled.</p>
+
+                    <div style="background: #fee2e2; border-left: 4px solid #EF4444; padding: 20px; margin: 20px 0;">
+                        <h2 style="margin-top: 0;">Cancelled Session Details</h2>
+                        <p><strong>Date & Time:</strong> {slot_data.get('day', '')}, {slot_data.get('date', '')} at {slot_data.get('time', '')}</p>
+                        <p><strong>Location:</strong> {user_data.get('selected_room', 'N/A')}</p>
                     </div>
-                    <p>If you'd like to reschedule, please visit <a href="https://uleairn.com">uleairn.com</a> to book a new session.</p>
-                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn</p>
+
+                    <h3>Want to Reschedule?</h3>
+                    <p>I'd still love to meet with you! You can book a new session anytime that works for you.</p>
+                    <p style="margin-top: 15px;">
+                        <a href="https://uleairn.com" style="display: inline-block; padding: 12px 24px; background: #6366F1; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                            Book a New Session
+                        </a>
+                    </p>
+
+                    <p style="margin-top: 30px;">If you have any questions, please don't hesitate to reach out.</p>
+                    <p style="color: #6B7280;">- Christopher Buzaid<br>LeAIrn<br><a href="mailto:cjpbuzaid@gmail.com" style="color: #6366F1;">cjpbuzaid@gmail.com</a></p>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.85rem; color: #9CA3AF;">
+                            <strong>🔒 Security Notice:</strong> LeAIrn will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
+                        </p>
+                    </div>
                 </div>
             </body>
         </html>
@@ -283,7 +359,7 @@ class EmailService:
 
         return EmailService._send_email(
             to_email=user_data.get('email', ''),
-            subject='Booking Cancelled - LeAIrn',
+            subject='Your AI Learning Session Has Been Cancelled - LeAIrn',
             html_content=html
         )
 
