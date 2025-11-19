@@ -87,7 +87,8 @@ class SlotService:
 
     def auto_cleanup_and_generate(self) -> bool:
         """
-        Automatic maintenance: Clean up past slots and ensure future slots exist.
+        Automatic maintenance: Clean up past slots ONLY.
+        Does NOT auto-generate - admin must manually add slots.
         Uses Eastern time to determine what's "past".
         
         Returns:
@@ -125,19 +126,9 @@ class SlotService:
             if deleted_count > 0:
                 print(f"AUTO-CLEANUP: Deleted {deleted_count} past time slots (Eastern time)")
 
-            # Check if we need to generate more slots
-            if len(future_slots) < 20:  # Roughly 2 weeks worth
-                print("AUTO-GENERATE: Low on future slots, generating more...")
-                generated_slots = self.generate_slots(weeks_ahead=6)
-
-                added_count = 0
-                for slot in generated_slots:
-                    slot_id = self.db.add_time_slot(slot)
-                    if slot_id:
-                        added_count += 1
-
-                if added_count > 0:
-                    print(f"AUTO-GENERATE: Added {added_count} new slots")
+            # DO NOT auto-generate slots - admin must manually add via dashboard
+            if len(future_slots) < 10:
+                print(f"WARNING: Only {len(future_slots)} future slots remaining. Admin should add more from dashboard.")
 
             return True
 
