@@ -1062,6 +1062,16 @@
         }
 
         function formatSlotId(slotId) {
+            // Handle null, undefined, or non-string values
+            if (!slotId || typeof slotId !== 'string') {
+                return 'Not specified';
+            }
+
+            // If slotId is too short, return as is
+            if (slotId.length < 12) {
+                return slotId;
+            }
+
             const year = slotId.substring(0, 4);
             const month = slotId.substring(4, 6);
             const day = slotId.substring(6, 8);

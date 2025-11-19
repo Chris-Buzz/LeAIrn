@@ -121,13 +121,41 @@ def manage_slots():
 def add_slot():
     """Add a new time slot"""
     try:
+        from datetime import datetime
+        
         data = request.json
-        slot_id = db.add_time_slot(data)
-        if slot_id:
-            return jsonify({'success': True, 'message': 'Slot added', 'id': slot_id})
+        datetime_str = data.get('datetime')
+        
+        if not datetime_str:
+            return jsonify({'success': False, 'message': 'Datetime is required'}), 400
+        
+        # Convert the datetime-local format to ISO format
+        try:
+            # datetime-local format: "2025-11-18T14:30"
+            dt = datetime.fromisoformat(datetime_str)
+            iso_datetime = dt.isoformat()
+        except:
+            iso_datetime = datetime_str
+        
+        # Generate slot ID in format: YYYYMMDDHHMI
+        slot_id = datetime_str.replace('-', '').replace(':', '').replace('T', '')
+        
+        # Prepare slot data
+        slot_data = {
+            'id': slot_id,
+            'datetime': iso_datetime,
+            'booked': False,
+            'booking_id': None,
+            'created_at': datetime.utcnow().isoformat()
+        }
+        
+        result_id = db.add_time_slot(slot_data)
+        if result_id:
+            return jsonify({'success': True, 'message': 'Slot added successfully', 'id': result_id})
         else:
-            return jsonify({'success': False, 'message': 'Failed to add slot'}), 500
+            return jsonify({'success': False, 'message': 'Failed to add slot. Slot may already exist.'}), 500
     except Exception as e:
+        print(f'Error adding slot: {e}')
         return jsonify({'error': str(e)}), 500
 
 
