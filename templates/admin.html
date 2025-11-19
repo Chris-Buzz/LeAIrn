@@ -2123,26 +2123,33 @@
                 return;
             }
 
-            // Parse the datetime input and create a proper slot object
-            const slotDate = new Date(datetimeInput);
-            const year = slotDate.getFullYear();
-            const month = String(slotDate.getMonth() + 1).padStart(2, '0');
-            const date = String(slotDate.getDate()).padStart(2, '0');
-            const hours = String(slotDate.getHours()).padStart(2, '0');
-            const minutes = String(slotDate.getMinutes()).padStart(2, '0');
+            // Parse the datetime input
+            // The datetime-local input format is: YYYY-MM-DDTHH:MM
+            const [datePart, timePart] = datetimeInput.split('T');
+            const [year, month, day] = datePart.split('-');
+            const [hours, minutes] = timePart.split(':');
             
-            const slotId = `${year}${month}${date}${hours}${minutes}`;
+            const slotId = `${year}${month}${day}${hours}${minutes}`;
+            
+            // For display, create a Date object to get day name
+            const slotDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
             const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
             const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
             
             const dayName = dayNames[slotDate.getDay()];
             const monthName = monthNames[slotDate.getMonth()];
-            const dateStr = `${monthName} ${String(slotDate.getDate()).padStart(2, '0')}, ${year}`;
-            const timeStr = slotDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const dateStr = `${monthName} ${day}, ${year}`;
+            
+            // Format time as 12-hour format
+            const hourNum = parseInt(hours);
+            const period = hourNum >= 12 ? 'PM' : 'AM';
+            const display12Hour = hourNum === 0 ? 12 : (hourNum > 12 ? hourNum - 12 : hourNum);
+            const timeStr = `${String(display12Hour).padStart(2, '0')}:${minutes} ${period}`;
 
+            // Send the raw components to the server; server will interpret as Eastern time
             const slotData = {
                 id: slotId,
-                datetime: slotDate.toISOString(),
+                datetime: datetimeInput,  // Send in format YYYY-MM-DDTHH:MM
                 day: dayName,
                 date: dateStr,
                 time: timeStr,
