@@ -47,38 +47,38 @@ class AIService:
             prompt = f"""
 You are an AI assistant helping to summarize educational sessions about AI and technology.
 
-**Session Notes:**
+Session Notes:
 {notes}
 
-**Student Information:**
+Student Information:
 - Name: {student_name}
 - Role: {student_role}
 
-**Task:**
+Task:
 Create a concise, professional summary of this AI learning session that can be emailed to the student. Use the following format:
 
-**Key Topics Covered:**
+Key Topics Covered:
 • [Topic 1]
 • [Topic 2]
 • [Topic 3]
 
-**Main Takeaways:**
+Main Takeaways:
 • [Takeaway 1]
 • [Takeaway 2]
 • [Takeaway 3]
 
-**Tools & Resources Mentioned:**
+Tools & Resources Mentioned:
 • [Resource 1]
 • [Resource 2]
 
-**Next Steps for Learning:**
+Next Steps for Learning:
 • [Action 1]
 • [Action 2]
 
-**Summary:**
+Summary:
 [1-2 sentences wrapping it up in a friendly, encouraging tone]
 
-Keep the entire summary between 150-300 words. Use bullet points throughout - DO NOT write it as paragraphs or a letter.
+Keep the entire summary between 150-300 words. Use bullet points throughout - DO NOT write it as paragraphs or a letter. DO NOT use markdown formatting like asterisks or bold text in your response.
 """
 
             response = model.generate_content(prompt)

@@ -1161,7 +1161,7 @@
                     <td>${department}</td>
                     <td><span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #8B5CF6;">${aiLevel}</span></td>
                     <td title="${primaryUse}">${primaryUse}</td>
-                    <td style="white-space: nowrap;">${formatSlotId(user.selected_slot)}</td>
+                    <td style="white-space: nowrap;">${user.slot_details && user.slot_details.day && user.slot_details.date && user.slot_details.time ? `${user.slot_details.day}, ${user.slot_details.date} at ${user.slot_details.time}` : formatSlotId(user.selected_slot)}</td>
                     <td>${user.selected_room || 'Not specified'}</td>
                     <td>
                         <div style="display: flex; gap: 0.25rem; flex-wrap: nowrap;">

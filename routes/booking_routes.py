@@ -204,6 +204,10 @@ def delete_booking(booking_id):
         slot_id = deleted_user.get('selected_slot')
         slot_details = deleted_user.get('slot_details', {})
 
+        # Fallback to slot_details.id if selected_slot is not available
+        if not slot_id and slot_details:
+            slot_id = slot_details.get('id')
+
         # Delete from Firestore
         success = db.delete_booking(booking_id)
         if not success:
