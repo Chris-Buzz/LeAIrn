@@ -918,9 +918,9 @@ function showViewBookingModal() {
     if (modal) {
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
-        
-        const isAuthenticated = document.documentElement.getAttribute('data-authenticated') === 'true';
-        const userEmail = document.documentElement.getAttribute('data-user-email');
+
+        const isAuthenticated = document.body.dataset.authenticated === 'true';
+        const userEmail = document.body.dataset.userEmail;
         const emailInputSection = document.getElementById('emailInputSection');
         const authenticatedUserSection = document.getElementById('authenticatedUserSection');
         const buttonSection = document.getElementById('buttonSection');
@@ -964,8 +964,8 @@ function closeViewBookingModal() {
 
 // Direct access to View My Booking for authenticated users
 async function openViewMyBookingDirect() {
-    const isAuthenticated = document.documentElement.getAttribute('data-authenticated') === 'true';
-    const userEmail = document.documentElement.getAttribute('data-user-email');
+    const isAuthenticated = document.body.dataset.authenticated === 'true';
+    const userEmail = document.body.dataset.userEmail;
     
     console.log('[DEBUG] openViewMyBookingDirect called');
     console.log('[DEBUG] data-authenticated:', document.documentElement.getAttribute('data-authenticated'));
@@ -993,12 +993,12 @@ let verificationEmail = '';
 
 async function lookupBooking() {
     const resultDiv = document.getElementById('booking-lookup-result');
-    const isAuthenticated = document.documentElement.getAttribute('data-authenticated') === 'true';
+    const isAuthenticated = document.body.dataset.authenticated === 'true';
     let email = null;
 
     if (isAuthenticated) {
         // Use authenticated user's email directly
-        email = document.documentElement.getAttribute('data-user-email');
+        email = document.body.dataset.userEmail;
         if (!email) {
             showNotification('Unable to retrieve your email. Please try again.', 'error');
             return;

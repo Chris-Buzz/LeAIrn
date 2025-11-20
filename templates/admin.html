@@ -1751,7 +1751,7 @@
                         </div>
                         <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
                             <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Booking Time</div>
-                            <div style="font-weight: 600;">${user.slot_details ? `${user.slot_details.day}, ${user.slot_details.date} at ${user.slot_details.time}` : formatSlotId(user.selected_slot)}</div>
+                            <div style="font-weight: 600;">${user.slot_details && user.slot_details.day && user.slot_details.date && user.slot_details.time ? `${user.slot_details.day}, ${user.slot_details.date} at ${user.slot_details.time}` : formatSlotId(user.selected_slot)}</div>
                         </div>
                         <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
                             <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Location</div>
@@ -1939,9 +1939,27 @@
             }
 
             // Separate upcoming and past slots
+            // Use UTC time for accurate comparison regardless of browser timezone
             const now = new Date();
-            const upcoming = slots.filter(s => new Date(s.datetime) > now).sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
-            const past = slots.filter(s => new Date(s.datetime) <= now);
+            const nowUTC = now.getTime(); // Get milliseconds since epoch for accurate comparison
+
+            const upcoming = slots.filter(s => {
+                try {
+                    const slotTime = new Date(s.datetime).getTime();
+                    return slotTime > nowUTC;
+                } catch (e) {
+                    return false;
+                }
+            }).sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+
+            const past = slots.filter(s => {
+                try {
+                    const slotTime = new Date(s.datetime).getTime();
+                    return slotTime <= nowUTC;
+                } catch (e) {
+                    return true; // Treat parse errors as past slots
+                }
+            });
 
             const pastUnbooked = past.filter(s => !s.booked).length;
 
