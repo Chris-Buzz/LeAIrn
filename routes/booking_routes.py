@@ -113,6 +113,7 @@ def request_booking_verification():
             'confidence_level': data.get('confidence_level', 3),
             'personal_comments': (data.get('personal_comments') or '').strip(),
             'selected_slot': selected_slot_data,
+            'slot_details': selected_slot_data,
             'selected_room': data['selected_room'].strip(),
             'timestamp': datetime.now().isoformat(),
             'status': 'confirmed',
