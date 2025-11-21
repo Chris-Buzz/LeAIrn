@@ -112,10 +112,12 @@ def request_booking_verification():
             'learning_goal': (data.get('learning_goal') or '').strip(),
             'confidence_level': data.get('confidence_level', 3),
             'personal_comments': (data.get('personal_comments') or '').strip(),
+            'research_consent': data.get('research_consent'),  # true = consented, false = declined, null = not asked
             'selected_slot': selected_slot_data.get('id'),  # Store the slot ID, not the entire object
             'slot_details': selected_slot_data,
             'selected_room': data['selected_room'].strip(),
             'timestamp': datetime.now().isoformat(),
+            'submission_date': datetime.now().isoformat(),  # For sorting in admin
             'status': 'confirmed',
             'device_id': device_id,
             'client_ip': client_ip
@@ -192,7 +194,7 @@ def delete_booking(booking_id):
     try:
         users = db.get_all_bookings()
         deleted_user = None
-        
+
         for user in users:
             if user.get('id') == booking_id:
                 deleted_user = user
@@ -201,21 +203,29 @@ def delete_booking(booking_id):
         if not deleted_user:
             return jsonify({'success': False, 'message': 'Booking not found'}), 404
 
+        # Extract slot ID - handle both old (object) and new (string) formats
         slot_id = deleted_user.get('selected_slot')
         slot_details = deleted_user.get('slot_details', {})
+
+        # If selected_slot is a dict/object (old format), extract the ID
+        if isinstance(slot_id, dict):
+            slot_id = slot_id.get('id')
 
         # Fallback to slot_details.id if selected_slot is not available
         if not slot_id and slot_details:
             slot_id = slot_details.get('id')
 
+        # Free up the time slot BEFORE deleting the booking
+        if slot_id:
+            print(f"Unbooking slot {slot_id} before deleting booking {booking_id}")
+            db.unbook_slot(slot_id)
+        else:
+            print(f"Warning: No slot ID found for booking {booking_id}, cannot unbook slot")
+
         # Delete from Firestore
         success = db.delete_booking(booking_id)
         if not success:
             return jsonify({'success': False, 'message': 'Failed to delete booking'}), 500
-
-        # Free up the time slot
-        if slot_id:
-            db.unbook_slot(slot_id)
 
         # Send deletion notification email
         try:
@@ -236,7 +246,7 @@ def update_booking(booking_id):
     try:
         data = request.json
         users = db.get_all_bookings()
-        
+
         booking_to_update = None
         for user in users:
             if user.get('id') == booking_id:
@@ -249,32 +259,43 @@ def update_booking(booking_id):
         # Track changes for email notification
         old_slot = booking_to_update.get('slot_details', {})
         old_room = booking_to_update.get('selected_room')
-        
+
         new_slot_id = data.get('selected_slot')
         new_room = data.get('selected_room')
 
+        # Extract old slot ID - handle both old (object) and new (string) formats
+        old_slot_id = booking_to_update.get('selected_slot')
+        if isinstance(old_slot_id, dict):
+            old_slot_id = old_slot_id.get('id')
+
+        # Fallback to slot_details if old_slot_id is still not available
+        if not old_slot_id and old_slot:
+            old_slot_id = old_slot.get('id')
+
         # Handle slot change
-        if new_slot_id and new_slot_id != booking_to_update.get('selected_slot'):
-            old_slot_id = booking_to_update.get('selected_slot')
-            
+        if new_slot_id and new_slot_id != old_slot_id:
+            print(f"Slot change detected: {old_slot_id} -> {new_slot_id}")
+
             # Unbook old slot
             if old_slot_id:
+                print(f"Unbooking old slot {old_slot_id}")
                 db.unbook_slot(old_slot_id)
-            
+
             # Book new slot
             slots = db.get_all_slots()
             new_slot_data = None
-            
+
             for slot in slots:
                 if str(slot.get('id')) == new_slot_id or str(slot.get('doc_id')) == new_slot_id:
                     if slot.get('booked'):
                         return jsonify({'success': False, 'message': 'New slot is already booked'}), 400
                     new_slot_data = slot
                     break
-            
+
             if not new_slot_data:
                 return jsonify({'success': False, 'message': 'New slot not found'}), 404
-            
+
+            print(f"Booking new slot {new_slot_id}")
             db.book_slot(new_slot_id, booking_to_update['email'], new_room or old_room)
 
         # Update booking data
@@ -289,7 +310,7 @@ def update_booking(booking_id):
             for slot in slots:
                 if str(slot.get('id')) == new_slot_id:
                     updates['slot_details'] = slot
-                    updates['selected_slot'] = new_slot_id
+                    updates['selected_slot'] = new_slot_id  # Store as string ID
                     break
 
         success = db.update_booking(booking_id, updates)

@@ -86,6 +86,36 @@ def get_users():
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/api/statistics', methods=['GET'])
+@login_required
+def get_statistics():
+    """Get booking statistics: total bookings and unique clients"""
+    try:
+        # Get all bookings including historical ones
+        all_bookings = db.get_all_bookings()
+
+        # Count total bookings
+        total_bookings = len(all_bookings)
+
+        # Count unique clients based on email (case-insensitive)
+        unique_emails = set()
+        for booking in all_bookings:
+            email = booking.get('email', '').lower().strip()
+            if email:
+                unique_emails.add(email)
+
+        unique_clients = len(unique_emails)
+
+        return jsonify({
+            'success': True,
+            'total_bookings': total_bookings,
+            'unique_clients': unique_clients
+        })
+    except Exception as e:
+        print(f"Error fetching statistics: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_bp.route('/api/booking/<booking_id>/complete', methods=['POST'])
 @login_required
 def mark_booking_complete(booking_id):

@@ -802,13 +802,15 @@
             <div class="stat-card">
                 <div class="stat-header">
                     <div>
-                        <div class="stat-label">Students</div>
-                        <div class="stat-value" id="totalStudents">0</div>
+                        <div class="stat-label">Unique Clients</div>
+                        <div class="stat-value" id="uniqueClients">0</div>
                     </div>
                     <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success);">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 010 7.75"/>
                         </svg>
                     </div>
                 </div>
@@ -998,9 +1000,26 @@
 
                 const users = await response.json();
 
-                // Update stats
-                document.getElementById('totalBookings').textContent = users.length;
-                document.getElementById('totalStudents').textContent = users.filter(u => u.role === 'student').length;
+                // Fetch and update statistics
+                try {
+                    const statsResponse = await fetch('/api/statistics');
+                    if (statsResponse.ok) {
+                        const stats = await statsResponse.json();
+                        document.getElementById('totalBookings').textContent = stats.total_bookings || 0;
+                        document.getElementById('uniqueClients').textContent = stats.unique_clients || 0;
+                    } else {
+                        // Fallback to calculating from users array
+                        document.getElementById('totalBookings').textContent = users.length;
+                        const uniqueEmails = new Set(users.map(u => (u.email || '').toLowerCase().trim()).filter(e => e));
+                        document.getElementById('uniqueClients').textContent = uniqueEmails.size;
+                    }
+                } catch (error) {
+                    console.error('Error fetching statistics:', error);
+                    // Fallback to calculating from users array
+                    document.getElementById('totalBookings').textContent = users.length;
+                    const uniqueEmails = new Set(users.map(u => (u.email || '').toLowerCase().trim()).filter(e => e));
+                    document.getElementById('uniqueClients').textContent = uniqueEmails.size;
+                }
 
                 const now = new Date();
                 const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
@@ -1766,9 +1785,7 @@
                             <div><strong>AI Tools Used:</strong> ${formatAITools(user.ai_tools)}</div>
                             <div><strong>Primary Use:</strong> ${formatPrimaryUse(user.primary_use)}</div>
                             <div><strong>Learning Goals:</strong> ${formatLearningGoals(user.learning_goal)}</div>
-                            ${user.research_participant !== undefined ? `<div><strong>Research Participant:</strong> <span style="color: ${user.research_participant ? 'var(--success)' : 'var(--error)'};">${user.research_participant ? '✓ Yes' : '✗ No'}</span></div>` : ''}
-                            ${user.research_question_response ? `<div><strong>Research Question Agreement:</strong> <span style="color: ${user.research_question_response === 'agreed' ? 'var(--success)' : user.research_question_response === 'disagreed' ? 'var(--error)' : 'var(--text-secondary)'};">${user.research_question_response === 'agreed' ? '✓ Agreed' : user.research_question_response === 'disagreed' ? '✗ Disagreed' : user.research_question_response}</span></div>` : ''}
-                            ${user.coding_setup_response ? `<div><strong>Coding Setup Response:</strong> ${formatCodingSetupResponse(user.coding_setup_response)}</div>` : ''}
+                            ${user.research_consent !== undefined && user.research_consent !== null ? `<div><strong>Research Consent:</strong> <span style="color: ${user.research_consent ? 'var(--success)' : 'var(--error)'}; font-weight: 600;">${user.research_consent ? '✓ Accepted' : '✗ Declined'}</span></div>` : `<div><strong>Research Consent:</strong> <span style="color: var(--text-tertiary);">Not recorded</span></div>`}
                         </div>
                     </div>
 
