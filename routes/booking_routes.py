@@ -112,7 +112,7 @@ def request_booking_verification():
             'learning_goal': (data.get('learning_goal') or '').strip(),
             'confidence_level': data.get('confidence_level', 3),
             'personal_comments': (data.get('personal_comments') or '').strip(),
-            'selected_slot': selected_slot_data,
+            'selected_slot': selected_slot_data.get('id'),  # Store the slot ID, not the entire object
             'slot_details': selected_slot_data,
             'selected_room': data['selected_room'].strip(),
             'timestamp': datetime.now().isoformat(),

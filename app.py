@@ -30,7 +30,6 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV') == 'production'
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
 
 # ============================================================================

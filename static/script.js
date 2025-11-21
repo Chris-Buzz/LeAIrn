@@ -1741,17 +1741,22 @@ async function saveUserBookingEdit(email, bookingId, modal) {
     saveBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem; vertical-align: middle;"><span style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle;"></span>Saving...</span>';
 
     try {
-        const response = await fetch('/api/booking/update-by-email', {
-            method: 'POST',
+        const newRoom = `${newBuilding} - ${newRoomNumber}`;
+        const updateData = {
+            selected_room: newRoom
+        };
+
+        // Only include slot if it's being changed
+        if (newSlotId) {
+            updateData.selected_slot = newSlotId;
+        }
+
+        const response = await fetch(`/api/booking/${bookingId}`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                email: email,
-                selected_slot: newSlotId || undefined,
-                selected_building: newBuilding,
-                room_number: newRoomNumber
-            })
+            body: JSON.stringify(updateData)
         });
 
         const result = await response.json();

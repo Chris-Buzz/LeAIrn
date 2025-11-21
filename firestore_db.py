@@ -11,6 +11,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime
 from typing import List, Dict, Optional
+import pytz
 
 # Global Firestore client
 db = None
@@ -276,13 +277,38 @@ def get_available_slots() -> List[Dict]:
     try:
         # Get all slots and filter in Python (avoids complex Firestore index)
         all_slots = get_all_slots()
-        now = datetime.now().isoformat()
+
+        # Get current time in Eastern timezone
+        eastern = pytz.timezone('America/New_York')
+        now_eastern = datetime.now(eastern)
 
         # Filter for available slots in the future
-        available_slots = [
-            slot for slot in all_slots
-            if not slot.get('booked', False) and slot.get('datetime', '') > now
-        ]
+        available_slots = []
+        for slot in all_slots:
+            # Skip booked slots
+            if slot.get('booked', False):
+                continue
+
+            slot_datetime_str = slot.get('datetime', '')
+            if not slot_datetime_str:
+                continue
+
+            try:
+                # Parse slot datetime and convert to Eastern time for comparison
+                slot_dt = datetime.fromisoformat(slot_datetime_str)
+                if slot_dt.tzinfo is None:
+                    # If no timezone info, assume Eastern
+                    slot_dt = eastern.localize(slot_dt)
+                else:
+                    # Convert to Eastern for comparison
+                    slot_dt = slot_dt.astimezone(eastern)
+
+                # Only include if slot is in the future
+                if slot_dt > now_eastern:
+                    available_slots.append(slot)
+            except Exception as e:
+                print(f"Warning: Could not parse slot datetime {slot_datetime_str}: {e}")
+                continue
 
         # Sort by datetime
         available_slots.sort(key=lambda x: x.get('datetime', ''))
@@ -300,6 +326,7 @@ def add_time_slot(slot_data: Dict) -> Optional[str]:
 
     Args:
         slot_data: Dictionary containing slot information
+                   - datetime: Can be 'YYYY-MM-DDTHH:MM' (interpreted as Eastern) or ISO format
 
     Returns:
         Slot ID, or None if failed
@@ -309,6 +336,23 @@ def add_time_slot(slot_data: Dict) -> Optional[str]:
         return None
 
     try:
+        # Process datetime to ensure it's in ISO format with Eastern timezone info
+        datetime_str = slot_data.get('datetime', '')
+        
+        if datetime_str and 'T' in datetime_str:
+            # If it's in the format 'YYYY-MM-DDTHH:MM', convert to Eastern ISO
+            try:
+                if '+' not in datetime_str and 'Z' not in datetime_str:
+                    # No timezone info, assume it's meant to be Eastern time
+                    # Parse as naive datetime and add Eastern timezone
+                    dt = datetime.fromisoformat(datetime_str)
+                    eastern = pytz.timezone('America/New_York')
+                    dt_eastern = eastern.localize(dt)
+                    # Store as ISO format with timezone
+                    slot_data['datetime'] = dt_eastern.isoformat()
+            except Exception as e:
+                print(f"Warning: Could not process datetime {datetime_str}: {e}")
+        
         # Use the slot 'id' as the document ID for easy lookup
         slot_id = slot_data.get('id')
         if not slot_id:
@@ -444,14 +488,9 @@ def unbook_slot(slot_id: str) -> bool:
         doc_ref.update({
             'booked': False,
             'booked_by': None,
-            'booking_id': None,
-            'room': None,
-            'date': None,
-            'datetime': None,
-            'day': None,
-            'time': None
+            'room': None
         })
-        print(f"OK: Slot unbooked: {slot_id}")
+        print(f"OK: Slot unboked: {slot_id}")
         return True
 
     except Exception as e:
