@@ -91,16 +91,27 @@ def get_users():
 def get_statistics():
     """Get booking statistics: total bookings and unique clients"""
     try:
-        # Get all bookings including historical ones
-        all_bookings = db.get_all_bookings()
+        # Get current/active bookings
+        current_bookings = db.get_all_bookings()
 
-        # Count total bookings
-        total_bookings = len(all_bookings)
+        # Get completed bookings (stored as session overviews)
+        completed_bookings = db.get_all_session_overviews()
+
+        # Total bookings = current + completed
+        total_bookings = len(current_bookings) + len(completed_bookings)
 
         # Count unique clients based on email (case-insensitive)
         unique_emails = set()
-        for booking in all_bookings:
+
+        # Add emails from current bookings
+        for booking in current_bookings:
             email = booking.get('email', '').lower().strip()
+            if email:
+                unique_emails.add(email)
+
+        # Add emails from completed bookings
+        for session in completed_bookings:
+            email = session.get('user_email', '').lower().strip()
             if email:
                 unique_emails.add(email)
 
