@@ -918,9 +918,9 @@ function showViewBookingModal() {
     if (modal) {
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
-
-        const isAuthenticated = document.body.dataset.authenticated === 'true';
-        const userEmail = document.body.dataset.userEmail;
+        
+        const isAuthenticated = document.documentElement.getAttribute('data-authenticated') === 'true';
+        const userEmail = document.documentElement.getAttribute('data-user-email');
         const emailInputSection = document.getElementById('emailInputSection');
         const authenticatedUserSection = document.getElementById('authenticatedUserSection');
         const buttonSection = document.getElementById('buttonSection');
@@ -964,8 +964,8 @@ function closeViewBookingModal() {
 
 // Direct access to View My Booking for authenticated users
 async function openViewMyBookingDirect() {
-    const isAuthenticated = document.body.dataset.authenticated === 'true';
-    const userEmail = document.body.dataset.userEmail;
+    const isAuthenticated = document.documentElement.getAttribute('data-authenticated') === 'true';
+    const userEmail = document.documentElement.getAttribute('data-user-email');
     
     console.log('[DEBUG] openViewMyBookingDirect called');
     console.log('[DEBUG] data-authenticated:', document.documentElement.getAttribute('data-authenticated'));
@@ -993,12 +993,12 @@ let verificationEmail = '';
 
 async function lookupBooking() {
     const resultDiv = document.getElementById('booking-lookup-result');
-    const isAuthenticated = document.body.dataset.authenticated === 'true';
+    const isAuthenticated = document.documentElement.getAttribute('data-authenticated') === 'true';
     let email = null;
 
     if (isAuthenticated) {
         // Use authenticated user's email directly
-        email = document.body.dataset.userEmail;
+        email = document.documentElement.getAttribute('data-user-email');
         if (!email) {
             showNotification('Unable to retrieve your email. Please try again.', 'error');
             return;
@@ -1741,22 +1741,17 @@ async function saveUserBookingEdit(email, bookingId, modal) {
     saveBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem; vertical-align: middle;"><span style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle;"></span>Saving...</span>';
 
     try {
-        const newRoom = `${newBuilding} - ${newRoomNumber}`;
-        const updateData = {
-            selected_room: newRoom
-        };
-
-        // Only include slot if it's being changed
-        if (newSlotId) {
-            updateData.selected_slot = newSlotId;
-        }
-
-        const response = await fetch(`/api/booking/${bookingId}`, {
-            method: 'PUT',
+        const response = await fetch('/api/booking/update-by-email', {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(updateData)
+            body: JSON.stringify({
+                email: email,
+                selected_slot: newSlotId || undefined,
+                selected_building: newBuilding,
+                room_number: newRoomNumber
+            })
         });
 
         const result = await response.json();

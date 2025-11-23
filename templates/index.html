@@ -42,12 +42,15 @@
     {% endif %}
 
     <!-- View Booking Button -->
-    <button onclick="openViewMyBookingDirect()" class="view-booking-btn" title="View Previous Booking">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-        </svg>
-    </button>
+    <div class="view-booking-wrapper">
+        <button onclick="openViewMyBookingDirect()" class="view-booking-btn" title="View, Edit, or Delete Your Booking">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+        </button>
+        <span class="view-booking-label">My Booking</span>
+    </div>
 
     <script>
         // Debug: Log authentication status on page load
@@ -68,6 +71,161 @@
             <polyline points="22,6 12,13 2,6"/>
         </svg>
     </a>
+
+    <!-- AI Tools Button -->
+    <button onclick="toggleAITools()" class="ai-tools-btn" title="AI Tools Guide">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
+        </svg>
+    </button>
+    <span class="ai-tools-label">AI Tools</span>
+
+    <!-- AI Tools Panel -->
+    <div id="aiToolsPanel" class="ai-tools-panel hidden">
+        <div class="ai-tools-header">
+            <h3>AI Tools Quick Guide</h3>
+            <button onclick="toggleAITools()" class="ai-tools-close">&times;</button>
+        </div>
+        <p class="ai-tools-intro">The best AI tools for every task - bookmark this for quick reference!</p>
+
+        <div class="ai-tools-grid">
+            <!-- General Chat & Writing -->
+            <div class="ai-tool-category">
+                <div class="category-header">
+                    <span class="category-icon">💬</span>
+                    <h4>General Chat & Writing</h4>
+                </div>
+                <div class="tool-list">
+                    <div class="tool-item">
+                        <span class="tool-name">ChatGPT</span>
+                        <span class="tool-best">Best for: Versatile conversations, brainstorming</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">Claude</span>
+                        <span class="tool-best">Best for: Long documents, nuanced analysis, coding</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">Gemini</span>
+                        <span class="tool-best">Best for: Google integration, multimodal tasks</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Research -->
+            <div class="ai-tool-category">
+                <div class="category-header">
+                    <span class="category-icon">🔍</span>
+                    <h4>Research & Learning</h4>
+                </div>
+                <div class="tool-list">
+                    <div class="tool-item">
+                        <span class="tool-name">Perplexity</span>
+                        <span class="tool-best">Best for: Real-time web research with citations</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">Elicit</span>
+                        <span class="tool-best">Best for: Academic paper research & summaries</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">NotebookLM</span>
+                        <span class="tool-best">Best for: Analyzing your own documents</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coding -->
+            <div class="ai-tool-category">
+                <div class="category-header">
+                    <span class="category-icon">💻</span>
+                    <h4>Coding & Development</h4>
+                </div>
+                <div class="tool-list">
+                    <div class="tool-item">
+                        <span class="tool-name">GitHub Copilot</span>
+                        <span class="tool-best">Best for: Code autocomplete in your editor</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">Cursor</span>
+                        <span class="tool-best">Best for: AI-first code editor experience</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">Claude Code</span>
+                        <span class="tool-best">Best for: Complex coding projects & debugging</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Excel & Data -->
+            <div class="ai-tool-category">
+                <div class="category-header">
+                    <span class="category-icon">📊</span>
+                    <h4>Excel & Data Analysis</h4>
+                </div>
+                <div class="tool-list">
+                    <div class="tool-item">
+                        <span class="tool-name">Excel Copilot</span>
+                        <span class="tool-best">Best for: Formulas, pivot tables, analysis</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">ChatGPT + Code Interpreter</span>
+                        <span class="tool-best">Best for: Data cleaning, visualizations</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">Julius AI</span>
+                        <span class="tool-best">Best for: Quick data analysis & charts</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Creative & Images -->
+            <div class="ai-tool-category">
+                <div class="category-header">
+                    <span class="category-icon">🎨</span>
+                    <h4>Images & Creative</h4>
+                </div>
+                <div class="tool-list">
+                    <div class="tool-item">
+                        <span class="tool-name">Midjourney</span>
+                        <span class="tool-best">Best for: Artistic, high-quality images</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">DALL-E 3</span>
+                        <span class="tool-best">Best for: Quick image generation via ChatGPT</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">Canva AI</span>
+                        <span class="tool-best">Best for: Design templates, presentations</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Productivity -->
+            <div class="ai-tool-category">
+                <div class="category-header">
+                    <span class="category-icon">⚡</span>
+                    <h4>Productivity & Workflow</h4>
+                </div>
+                <div class="tool-list">
+                    <div class="tool-item">
+                        <span class="tool-name">Notion AI</span>
+                        <span class="tool-best">Best for: Notes, docs, project management</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">Otter.ai</span>
+                        <span class="tool-best">Best for: Meeting transcription & summaries</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">Zapier AI</span>
+                        <span class="tool-best">Best for: Automating workflows between apps</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ai-tools-footer">
+            <p>Want to learn how to use these effectively? <a href="#" onclick="toggleAITools(); return false;">Book a session!</a></p>
+        </div>
+    </div>
 
     <!-- AI Built Popup - Left Side -->
     <div class="ai-popup" id="aiBanner">
@@ -847,6 +1005,25 @@
         // Logout function
         function logout() {
             window.location.href = '/logout';
+        }
+
+        // Toggle AI Tools Panel
+        function toggleAITools() {
+            const panel = document.getElementById('aiToolsPanel');
+            const btn = document.querySelector('.ai-tools-btn');
+            const label = document.querySelector('.ai-tools-label');
+
+            if (panel.classList.contains('visible')) {
+                panel.classList.remove('visible');
+                panel.classList.add('hidden');
+                btn.style.display = 'flex';
+                label.style.display = 'block';
+            } else {
+                panel.classList.remove('hidden');
+                panel.classList.add('visible');
+                btn.style.display = 'none';
+                label.style.display = 'none';
+            }
         }
 
         // Authentication check - runs when DOM is fully loaded

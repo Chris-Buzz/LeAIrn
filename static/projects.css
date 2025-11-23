@@ -1337,3 +1337,127 @@ body:hover .cursor-glow {
         border-radius: 0.75rem;
     }
 }
+
+/* ===== CLIENT PROJECTS SECTION ===== */
+.client-projects-section {
+    margin-top: 5rem;
+    padding-top: 4rem;
+    border-top: 1px solid var(--border);
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    animation: fadeInDown 0.8s ease;
+}
+
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff 0%, var(--primary-light) 50%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+}
+
+.section-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.125rem;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.8;
+}
+
+/* Client project cards */
+.client-grid {
+    margin-top: 2rem;
+}
+
+.client-card {
+    border: 2px solid rgba(16, 185, 129, 0.2);
+}
+
+.client-card:hover {
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+.client-placeholder {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(99, 102, 241, 0.1));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 220px;
+}
+
+.client-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding: 0.6rem 1rem;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05));
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 2rem;
+    font-size: 0.8rem;
+    color: #10B981;
+    font-weight: 600;
+}
+
+.client-badge svg {
+    color: #10B981;
+}
+
+/* Your project placeholder */
+.placeholder-card {
+    border: 2px dashed var(--border);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.03), rgba(167, 139, 250, 0.03));
+}
+
+.placeholder-card:hover {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(167, 139, 250, 0.08));
+}
+
+.your-project-placeholder {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(167, 139, 250, 0.1));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 220px;
+    gap: 0.75rem;
+}
+
+.placeholder-text {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.cta-link {
+    background: linear-gradient(135deg, var(--primary), var(--accent)) !important;
+    border-color: var(--primary-light) !important;
+}
+
+.cta-link:hover {
+    box-shadow: 0 16px 40px rgba(99, 102, 241, 0.5) !important;
+}
+
+/* Responsive client projects */
+@media (max-width: 768px) {
+    .client-projects-section {
+        margin-top: 3rem;
+        padding-top: 2.5rem;
+    }
+
+    .section-title {
+        font-size: 2rem;
+    }
+
+    .section-subtitle {
+        font-size: 1rem;
+    }
+}

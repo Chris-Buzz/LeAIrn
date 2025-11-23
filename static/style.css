@@ -323,11 +323,19 @@ body {
     font-style: italic;
 }
 
-/* View Booking Button */
-.view-booking-btn {
+/* View Booking Button Wrapper */
+.view-booking-wrapper {
     position: fixed;
     bottom: 2rem;
     right: 9rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    z-index: 1000;
+}
+
+.view-booking-btn {
     background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
     color: white;
     border: none;
@@ -342,12 +350,25 @@ body {
         0 8px 20px rgba(99, 102, 241, 0.5),
         0 0 0 0 rgba(99, 102, 241, 0.4);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 1000;
     border: 3px solid rgba(255, 255, 255, 0.2);
+    animation: booking-btn-pulse 2s ease-in-out infinite;
+}
+
+@keyframes booking-btn-pulse {
+    0%, 100% {
+        box-shadow:
+            0 8px 20px rgba(99, 102, 241, 0.5),
+            0 0 0 0 rgba(99, 102, 241, 0.4);
+    }
+    50% {
+        box-shadow:
+            0 8px 20px rgba(99, 102, 241, 0.5),
+            0 0 0 8px rgba(99, 102, 241, 0.15);
+    }
 }
 
 .view-booking-btn::before {
-    content: 'View Previous Booking';
+    content: 'View, Edit, or Delete Booking';
     position: absolute;
     right: 75px;
     background: var(--surface);
@@ -375,6 +396,7 @@ body {
     box-shadow:
         0 15px 35px rgba(99, 102, 241, 0.6),
         0 0 0 8px rgba(99, 102, 241, 0.2);
+    animation: none;
 }
 
 .view-booking-btn:active {
@@ -386,6 +408,30 @@ body {
     height: 28px;
     stroke-width: 2.5;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.view-booking-label {
+    background: var(--surface);
+    color: var(--primary);
+    padding: 0.35rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    box-shadow: var(--shadow);
+    border: 2px solid var(--primary);
+    white-space: nowrap;
+    animation: label-bounce 2s ease-in-out infinite;
+}
+
+@keyframes label-bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-3px);
+    }
 }
 
 /* Email Contact Button */
@@ -451,6 +497,261 @@ body {
     height: 28px;
     stroke-width: 2.5;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* AI Tools Button */
+.ai-tools-btn {
+    position: fixed;
+    bottom: 2rem;
+    left: 2rem;
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow:
+        0 8px 20px rgba(16, 185, 129, 0.5),
+        0 0 0 0 rgba(16, 185, 129, 0.4);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    animation: ai-tools-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ai-tools-pulse {
+    0%, 100% {
+        box-shadow:
+            0 8px 20px rgba(16, 185, 129, 0.5),
+            0 0 0 0 rgba(16, 185, 129, 0.4);
+    }
+    50% {
+        box-shadow:
+            0 8px 20px rgba(16, 185, 129, 0.5),
+            0 0 0 8px rgba(16, 185, 129, 0.15);
+    }
+}
+
+.ai-tools-btn:hover {
+    transform: scale(1.15) rotate(-5deg);
+    box-shadow:
+        0 15px 35px rgba(16, 185, 129, 0.6),
+        0 0 0 8px rgba(16, 185, 129, 0.2);
+    animation: none;
+}
+
+.ai-tools-btn:active {
+    transform: scale(1.05) rotate(3deg);
+}
+
+.ai-tools-btn svg {
+    width: 28px;
+    height: 28px;
+    stroke-width: 2.5;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.ai-tools-label {
+    position: fixed;
+    bottom: 7rem;
+    left: 2rem;
+    background: var(--surface);
+    color: #10B981;
+    padding: 0.35rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    box-shadow: var(--shadow);
+    border: 2px solid #10B981;
+    white-space: nowrap;
+    z-index: 1000;
+    animation: label-bounce 2s ease-in-out infinite;
+}
+
+/* AI Tools Panel */
+.ai-tools-panel {
+    position: fixed;
+    bottom: 2rem;
+    left: 2rem;
+    width: 420px;
+    max-width: calc(100vw - 4rem);
+    max-height: calc(100vh - 4rem);
+    background: var(--surface);
+    border-radius: 1.5rem;
+    box-shadow: var(--shadow-lg), 0 0 0 1px var(--border);
+    z-index: 1001;
+    overflow: hidden;
+    transform: translateY(20px) scale(0.95);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-tools-panel.visible {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    visibility: visible;
+}
+
+.ai-tools-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);
+    border-bottom: 1px solid var(--border);
+}
+
+.ai-tools-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.ai-tools-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s;
+}
+
+.ai-tools-close:hover {
+    background: var(--bg);
+    color: var(--text-primary);
+}
+
+.ai-tools-intro {
+    padding: 1rem 1.5rem;
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+}
+
+.ai-tools-grid {
+    padding: 1rem 1.5rem;
+    max-height: 50vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.ai-tool-category {
+    background: var(--bg);
+    border-radius: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.category-icon {
+    font-size: 1.25rem;
+}
+
+.category-header h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.tool-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.tool-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--surface);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+}
+
+.tool-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.tool-best {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.ai-tools-footer {
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+    border-top: 1px solid var(--border);
+    text-align: center;
+}
+
+.ai-tools-footer p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.ai-tools-footer a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.ai-tools-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Mobile responsive for AI Tools */
+@media (max-width: 480px) {
+    .ai-tools-panel {
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+        width: auto;
+        max-width: none;
+    }
+
+    .ai-tools-btn {
+        bottom: 1rem;
+        left: 1rem;
+        width: 56px;
+        height: 56px;
+    }
+
+    .ai-tools-label {
+        bottom: 5rem;
+        left: 1rem;
+    }
+
+    .ai-tools-grid {
+        max-height: 40vh;
+    }
 }
 
 /* Theme Toggle */
