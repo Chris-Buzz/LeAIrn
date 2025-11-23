@@ -333,26 +333,27 @@ body {
     font-style: italic;
 }
 
-/* Fixed Action Buttons - Clean Professional Style */
+/* Fixed Action Buttons - Pill Style with Labels */
 .view-booking-btn,
 .email-contact-btn,
 .ai-tools-btn {
     position: fixed;
     bottom: 1.5rem;
-    background: var(--surface);
-    color: var(--primary);
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    width: 48px;
-    height: 48px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 0.5rem;
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 2rem;
+    padding: 0.65rem 1rem;
     cursor: pointer;
     box-shadow: var(--shadow);
     transition: all 0.25s ease;
     z-index: 1000;
     text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 500;
 }
 
 .view-booking-btn:hover,
@@ -360,7 +361,8 @@ body {
 .ai-tools-btn:hover {
     transform: translateY(-2px);
     border-color: var(--primary);
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15);
+    color: var(--primary);
 }
 
 .view-booking-btn:active,
@@ -372,14 +374,16 @@ body {
 .view-booking-btn svg,
 .email-contact-btn svg,
 .ai-tools-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     stroke-width: 2;
+    color: var(--primary);
+    flex-shrink: 0;
 }
 
 /* Position each button */
 .view-booking-btn {
-    right: 5rem;
+    right: 8.5rem;
 }
 
 .email-contact-btn {
@@ -390,50 +394,35 @@ body {
     left: 1.5rem;
 }
 
-/* Tooltips on hover */
-.view-booking-btn::before,
-.email-contact-btn::before,
-.ai-tools-btn::before {
-    position: absolute;
-    background: var(--surface);
-    color: var(--text-primary);
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.5rem;
-    font-size: 0.8rem;
-    font-weight: 500;
-    white-space: nowrap;
-    opacity: 0;
-    transition: all 0.2s ease;
-    pointer-events: none;
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border);
-}
+/* Mobile responsive for action buttons */
+@media (max-width: 600px) {
+    .view-booking-btn,
+    .email-contact-btn,
+    .ai-tools-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.7rem;
+        gap: 0.35rem;
+        bottom: 1rem;
+    }
 
-.view-booking-btn::before {
-    content: 'My Booking';
-    bottom: 58px;
-    right: 50%;
-    transform: translateX(50%);
-}
+    .view-booking-btn {
+        right: 6rem;
+    }
 
-.email-contact-btn::before {
-    content: 'Contact';
-    bottom: 58px;
-    right: 50%;
-    transform: translateX(50%);
-}
+    .email-contact-btn {
+        right: 1rem;
+    }
 
-.ai-tools-btn::before {
-    content: 'AI Tools';
-    bottom: 58px;
-    left: 50%;
-    transform: translateX(-50%);
-}
+    .ai-tools-btn {
+        left: 1rem;
+    }
 
-.view-booking-btn:hover::before,
-.email-contact-btn:hover::before,
-.ai-tools-btn:hover::before {
-    opacity: 1;
+    .view-booking-btn svg,
+    .email-contact-btn svg,
+    .ai-tools-btn svg {
+        width: 14px;
+        height: 14px;
+    }
 }
 
 /* AI Tools Panel */
@@ -595,39 +584,12 @@ body {
     text-decoration: underline;
 }
 
-/* Mobile responsive for action buttons */
+/* AI Tools Panel Mobile */
 @media (max-width: 600px) {
-    .view-booking-btn,
-    .email-contact-btn,
-    .ai-tools-btn {
-        width: 44px;
-        height: 44px;
-        bottom: 1rem;
-    }
-
-    .view-booking-btn {
-        right: 4rem;
-    }
-
-    .email-contact-btn {
-        right: 1rem;
-    }
-
-    .ai-tools-btn {
-        left: 1rem;
-    }
-
-    .view-booking-btn svg,
-    .email-contact-btn svg,
-    .ai-tools-btn svg {
-        width: 18px;
-        height: 18px;
-    }
-
     .ai-tools-panel {
         left: 1rem;
         right: 1rem;
-        bottom: 1rem;
+        bottom: 4rem;
         width: auto;
         max-width: none;
         max-height: 70vh;
