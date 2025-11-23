@@ -42,15 +42,12 @@
     {% endif %}
 
     <!-- View Booking Button -->
-    <div class="view-booking-wrapper">
-        <button onclick="openViewMyBookingDirect()" class="view-booking-btn" title="View, Edit, or Delete Your Booking">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-        </button>
-        <span class="view-booking-label">My Booking</span>
-    </div>
+    <button onclick="openViewMyBookingDirect()" class="view-booking-btn" title="View, Edit, or Delete Your Booking">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+    </button>
 
     <script>
         // Debug: Log authentication status on page load
@@ -73,12 +70,11 @@
     </a>
 
     <!-- AI Tools Button -->
-    <button onclick="toggleAITools()" class="ai-tools-btn" title="AI Tools Guide">
+    <button onclick="toggleAITools()" class="ai-tools-btn" title="AI Tools Quick Guide">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
         </svg>
     </button>
-    <span class="ai-tools-label">AI Tools</span>
 
     <!-- AI Tools Panel -->
     <div id="aiToolsPanel" class="ai-tools-panel hidden">
@@ -1011,18 +1007,15 @@
         function toggleAITools() {
             const panel = document.getElementById('aiToolsPanel');
             const btn = document.querySelector('.ai-tools-btn');
-            const label = document.querySelector('.ai-tools-label');
 
             if (panel.classList.contains('visible')) {
                 panel.classList.remove('visible');
                 panel.classList.add('hidden');
                 btn.style.display = 'flex';
-                label.style.display = 'block';
             } else {
                 panel.classList.remove('hidden');
                 panel.classList.add('visible');
                 btn.style.display = 'none';
-                label.style.display = 'none';
             }
         }
 

@@ -26,6 +26,16 @@
     box-sizing: border-box;
 }
 
+/* Hide all scrollbars globally */
+* {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+    display: none;
+}
+
 html {
     background: #000000;
 }
