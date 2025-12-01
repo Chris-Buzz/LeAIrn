@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free AI Tools for Students - LeAIrn</title>
+    <link rel="icon" type="image/png" href="/static/icon.png">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .tools-page {
+            min-height: 100vh;
+            background: var(--bg);
+            padding: 2rem 1rem;
+        }
+
+        .tools-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .tools-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .tools-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tools-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .edu-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border: 2px solid var(--primary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-top: 1rem;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 1.5rem;
+            left: 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 0.75rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .back-btn:hover {
+            border-color: var(--primary);
+            transform: translateX(-4px);
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .tool-card {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            transition: all 0.3s;
+        }
+
+        .tool-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
+        }
+
+        .tool-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .tool-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .tool-badge {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);
+            border: 1.5px solid #10b981;
+            color: #10b981;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .tool-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 1rem 0 0.5rem 0;
+        }
+
+        .tool-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .tool-features {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0;
+        }
+
+        .tool-features li {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .tool-features li::before {
+            content: "✓";
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .tool-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+
+        .tool-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .category-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 3rem 0 1.5rem 0;
+            padding-bottom: 0.75rem;
+            border-bottom: 3px solid var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="tools-page">
+        <a href="/" class="back-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Back to Home
+        </a>
+
+        <div class="tools-container">
+            <div class="tools-header">
+                <h1 class="tools-title">Free AI Tools for Students</h1>
+                <p class="tools-subtitle">Powerful AI tools available free with your .edu email</p>
+                <div class="edu-badge">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                    </svg>
+                    .edu Email Required
+                </div>
+            </div>
+
+            <h2 class="category-title">💬 AI Assistants & Chat</h2>
+            <div class="tools-grid">
+                <!-- ChatGPT Plus -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">🤖</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">ChatGPT Plus (OpenAI)</h3>
+                    <p class="tool-description">Access GPT-4, DALL-E 3, and advanced features completely free with your edu email.</p>
+                    <ul class="tool-features">
+                        <li>GPT-4 access (normally $20/month)</li>
+                        <li>DALL-E 3 image generation</li>
+                        <li>Browse the web with real-time data</li>
+                        <li>Advanced data analysis</li>
+                    </ul>
+                    <a href="https://openai.com/chatgpt/education" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Claude Pro -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">🧠</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">Claude Pro (Anthropic)</h3>
+                    <p class="tool-description">Advanced AI assistant with massive context windows and superior reasoning abilities.</p>
+                    <ul class="tool-features">
+                        <li>Claude 3.5 Sonnet access</li>
+                        <li>5x more usage than free tier</li>
+                        <li>Priority access during high traffic</li>
+                        <li>200K token context window</li>
+                    </ul>
+                    <a href="https://claude.ai/education" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Perplexity Pro -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">🔍</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">Perplexity Pro</h3>
+                    <p class="tool-description">AI-powered search engine with citations and real-time web access.</p>
+                    <ul class="tool-features">
+                        <li>Unlimited Pro searches</li>
+                        <li>GPT-4 and Claude access</li>
+                        <li>Academic citations</li>
+                        <li>File analysis (PDFs, images)</li>
+                    </ul>
+                    <a href="https://www.perplexity.ai/pro?education" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <h2 class="category-title">💻 Code & Development</h2>
+            <div class="tools-grid">
+                <!-- GitHub Copilot -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">🐙</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">GitHub Copilot</h3>
+                    <p class="tool-description">AI pair programmer that writes code with you in real-time.</p>
+                    <ul class="tool-features">
+                        <li>Code completion & suggestions</li>
+                        <li>Works in VS Code, JetBrains, etc.</li>
+                        <li>Multiple language support</li>
+                        <li>Context-aware recommendations</li>
+                    </ul>
+                    <a href="https://education.github.com/pack" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Cursor Pro -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">⚡</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">Cursor Pro</h3>
+                    <p class="tool-description">AI-first code editor with GPT-4 integration built-in.</p>
+                    <ul class="tool-features">
+                        <li>Write code with AI</li>
+                        <li>Refactor entire codebases</li>
+                        <li>Fix bugs automatically</li>
+                        <li>Built on VS Code</li>
+                    </ul>
+                    <a href="https://cursor.sh/students" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Replit Core -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">🔨</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">Replit Core</h3>
+                    <p class="tool-description">Cloud development environment with AI assistant.</p>
+                    <ul class="tool-features">
+                        <li>Code in browser</li>
+                        <li>AI code generation</li>
+                        <li>Instant deployment</li>
+                        <li>Collaborative coding</li>
+                    </ul>
+                    <a href="https://replit.com/site/github-students" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <h2 class="category-title">🎨 Design & Creative</h2>
+            <div class="tools-grid">
+                <!-- Canva Pro -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">🎨</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">Canva Pro</h3>
+                    <p class="tool-description">Professional design platform with AI-powered features.</p>
+                    <ul class="tool-features">
+                        <li>AI image generation (Magic Media)</li>
+                        <li>Background remover</li>
+                        <li>100GB cloud storage</li>
+                        <li>Premium templates & assets</li>
+                    </ul>
+                    <a href="https://www.canva.com/education/" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Adobe Creative Cloud -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">🌈</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">Adobe Creative Cloud</h3>
+                    <p class="tool-description">Industry-standard creative tools with AI features.</p>
+                    <ul class="tool-features">
+                        <li>Photoshop with AI Firefly</li>
+                        <li>Illustrator, Premiere Pro</li>
+                        <li>Adobe Sensei AI</li>
+                        <li>100GB cloud storage</li>
+                    </ul>
+                    <a href="https://www.adobe.com/creativecloud/buy/students.html" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Figma Education -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">✏️</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">Figma Education</h3>
+                    <p class="tool-description">Professional UI/UX design tool with AI plugins.</p>
+                    <ul class="tool-features">
+                        <li>Unlimited projects</li>
+                        <li>Advanced prototyping</li>
+                        <li>AI design assistants</li>
+                        <li>Team collaboration</li>
+                    </ul>
+                    <a href="https://www.figma.com/education/" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <h2 class="category-title">📚 Research & Writing</h2>
+            <div class="tools-grid">
+                <!-- Grammarly Premium -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">✍️</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">Grammarly Premium</h3>
+                    <p class="tool-description">AI writing assistant with advanced grammar and style checking.</p>
+                    <ul class="tool-features">
+                        <li>Advanced grammar checking</li>
+                        <li>Plagiarism detection</li>
+                        <li>Tone suggestions</li>
+                        <li>Writing style improvements</li>
+                    </ul>
+                    <a href="https://www.grammarly.com/edu" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Notion AI -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">📝</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">Notion AI</h3>
+                    <p class="tool-description">AI-powered note-taking and knowledge management.</p>
+                    <ul class="tool-features">
+                        <li>Unlimited AI responses</li>
+                        <li>Summarize notes</li>
+                        <li>Generate content</li>
+                        <li>Unlimited pages & blocks</li>
+                    </ul>
+                    <a href="https://www.notion.so/product/notion-for-education" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Scholarcy -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">📄</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">Scholarcy</h3>
+                    <p class="tool-description">AI research assistant that summarizes academic papers.</p>
+                    <ul class="tool-features">
+                        <li>Summarize research papers</li>
+                        <li>Extract key findings</li>
+                        <li>Generate flashcards</li>
+                        <li>Citation management</li>
+                    </ul>
+                    <a href="https://www.scholarcy.com/pricing/" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <h2 class="category-title">📊 Data & Analytics</h2>
+            <div class="tools-grid">
+                <!-- Microsoft 365 -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">💼</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">Microsoft 365 with Copilot</h3>
+                    <p class="tool-description">Complete office suite with AI Copilot integration.</p>
+                    <ul class="tool-features">
+                        <li>Word, Excel, PowerPoint</li>
+                        <li>AI Copilot features</li>
+                        <li>1TB OneDrive storage</li>
+                        <li>Teams collaboration</li>
+                    </ul>
+                    <a href="https://www.microsoft.com/en-us/education/products/office" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Google Workspace -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">📈</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">Google Workspace Education</h3>
+                    <p class="tool-description">Cloud productivity suite with AI features.</p>
+                    <ul class="tool-features">
+                        <li>Gmail, Docs, Sheets, Slides</li>
+                        <li>AI-powered Smart Compose</li>
+                        <li>Unlimited storage</li>
+                        <li>Google Meet recording</li>
+                    </ul>
+                    <a href="https://edu.google.com/products/workspace-for-education/" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Tableau -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <div class="tool-icon">📊</div>
+                        <div class="tool-badge">FREE</div>
+                    </div>
+                    <h3 class="tool-name">Tableau for Students</h3>
+                    <p class="tool-description">Professional data visualization with AI insights.</p>
+                    <ul class="tool-features">
+                        <li>Advanced data visualization</li>
+                        <li>AI-powered analytics</li>
+                        <li>Interactive dashboards</li>
+                        <li>One-year renewable license</li>
+                    </ul>
+                    <a href="https://www.tableau.com/academic/students" target="_blank" class="tool-link">
+                        Get Free Access
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Call to Action -->
+            <div style="text-align: center; margin: 4rem 0; padding: 3rem 2rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border: 2px solid var(--primary); border-radius: 1rem;">
+                <h2 style="font-size: 2rem; margin-bottom: 1rem; color: var(--text-primary);">Need Help Getting Started?</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 1.1rem;">Book a LeAIrn session and I'll help you set up these tools and create amazing projects!</p>
+                <a href="/" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 1rem 2rem; background: var(--primary); color: white; border-radius: 0.75rem; text-decoration: none; font-weight: 600; font-size: 1.1rem; transition: all 0.3s;">
+                    Schedule Your Session
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme toggle to match main site
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+</body>
+</html>

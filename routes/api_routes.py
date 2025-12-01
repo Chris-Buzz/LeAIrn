@@ -57,6 +57,12 @@ def projects():
     return render_template('projects.html')
 
 
+@api_bp.route('/ai-tools')
+def ai_tools():
+    """Free AI Tools for Students page"""
+    return render_template('ai_tools.html')
+
+
 @api_bp.route('/media/<path:filename>')
 def serve_media(filename):
     """Serve media files (images, GIFs) from the media directory"""
