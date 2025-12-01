@@ -1435,7 +1435,160 @@ def store_confirmed_booking(email: str, booking_data: dict, slot_data: dict) -> 
         return False
 
 
+# ============================================================================
+# TUTOR MANAGEMENT
+# ============================================================================
+
+def get_all_tutors() -> List[Dict]:
+    """Get all tutors"""
+    db = get_firestore_client()
+    if db is None:
+        return []
+
+    try:
+        tutors_ref = db.collection('tutors')
+        docs = tutors_ref.stream()
+
+        tutors = []
+        for doc in docs:
+            tutor_data = doc.to_dict()
+            tutor_data['id'] = doc.id
+            tutors.append(tutor_data)
+
+        return tutors
+    except Exception as e:
+        print(f"Error getting tutors: {e}")
+        return []
+
+
+def get_tutor_by_id(tutor_id: str) -> Optional[Dict]:
+    """Get a specific tutor by ID"""
+    db = get_firestore_client()
+    if db is None:
+        return None
+
+    try:
+        doc_ref = db.collection('tutors').document(tutor_id)
+        doc = doc_ref.get()
+
+        if doc.exists:
+            tutor_data = doc.to_dict()
+            tutor_data['id'] = doc.id
+            return tutor_data
+        return None
+    except Exception as e:
+        print(f"Error getting tutor: {e}")
+        return None
+
+
+def get_tutor_by_username(username: str) -> Optional[Dict]:
+    """Get a tutor by their admin username"""
+    db = get_firestore_client()
+    if db is None:
+        return None
+
+    try:
+        tutors_ref = db.collection('tutors')
+        query = tutors_ref.where('username', '==', username).limit(1)
+        docs = list(query.stream())
+
+        if docs:
+            tutor_data = docs[0].to_dict()
+            tutor_data['id'] = docs[0].id
+            return tutor_data
+        return None
+    except Exception as e:
+        print(f"Error getting tutor by username: {e}")
+        return None
+
+
+def add_tutor(tutor_data: Dict) -> Optional[str]:
+    """Add a new tutor"""
+    db = get_firestore_client()
+    if db is None:
+        return None
+
+    try:
+        tutors_ref = db.collection('tutors')
+        doc_ref = tutors_ref.document(tutor_data.get('id', None))
+        doc_ref.set(tutor_data)
+        return doc_ref.id
+    except Exception as e:
+        print(f"Error adding tutor: {e}")
+        return None
+
+
+def update_tutor(tutor_id: str, updates: Dict) -> bool:
+    """Update tutor information"""
+    db = get_firestore_client()
+    if db is None:
+        return False
+
+    try:
+        doc_ref = db.collection('tutors').document(tutor_id)
+        doc_ref.update(updates)
+        return True
+    except Exception as e:
+        print(f"Error updating tutor: {e}")
+        return False
+
+
+def initialize_tutors():
+    """Initialize default tutors if they don't exist"""
+    db = get_firestore_client()
+    if db is None:
+        return
+
+    from datetime import timezone
+    now_utc = datetime.now(timezone.utc).isoformat()
+
+    tutors = [
+        {
+            'id': 'christopher',
+            'username': 'christopher',
+            'full_name': 'Christopher Buzaid',
+            'email': 'cbuzaid@monmouth.edu',
+            'role': 'super_admin',  # Can see all tutors
+            'max_slots_per_week': 999,  # Unlimited for super admin
+            'active': True,
+            'created_at': now_utc
+        },
+        {
+            'id': 'danny',
+            'username': 'danny',
+            'full_name': 'Danny',
+            'email': 'danny@monmouth.edu',  # Update with real email
+            'role': 'tutor_admin',  # Can only see own slots
+            'max_slots_per_week': 10,
+            'active': True,
+            'created_at': now_utc
+        },
+        {
+            'id': 'kiumbura',
+            'username': 'kiumbura',
+            'full_name': 'Kiumbura',
+            'email': 'kiumbura@monmouth.edu',  # Update with real email
+            'role': 'tutor_admin',  # Can only see own slots
+            'max_slots_per_week': 10,
+            'active': True,
+            'created_at': now_utc
+        }
+    ]
+
+    for tutor in tutors:
+        existing = get_tutor_by_id(tutor['id'])
+        if not existing:
+            print(f"Creating tutor: {tutor['full_name']}")
+            add_tutor(tutor)
+        else:
+            print(f"Tutor already exists: {tutor['full_name']}")
+
+
 if __name__ == "__main__":
     # Test connection
     print("Testing Firestore connection...")
     initialize_firestore()
+
+    # Initialize tutors
+    print("\nInitializing tutors...")
+    initialize_tutors()

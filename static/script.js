@@ -918,23 +918,30 @@ function showViewBookingModal() {
     if (modal) {
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
-        
-        const isAuthenticated = document.documentElement.getAttribute('data-authenticated') === 'true';
-        const userEmail = document.documentElement.getAttribute('data-user-email');
+
+        const isAuthenticated = document.body.getAttribute('data-authenticated') === 'true';
+        const userEmail = document.body.getAttribute('data-user-email');
         const emailInputSection = document.getElementById('emailInputSection');
         const authenticatedUserSection = document.getElementById('authenticatedUserSection');
         const buttonSection = document.getElementById('buttonSection');
         const viewBookingButton = document.getElementById('viewBookingButton');
         const resultDiv = document.getElementById('booking-lookup-result');
-        
+        const subtitleElement = document.getElementById('viewBookingSubtitle');
+
         console.log('[showViewBookingModal] isAuthenticated:', isAuthenticated, 'userEmail:', userEmail);
-        
+
+        // Reset result div
         if (resultDiv) {
             resultDiv.style.display = 'none';
+            resultDiv.innerHTML = '';
         }
 
         if (isAuthenticated && userEmail) {
             console.log('[showViewBookingModal] Showing authenticated section');
+            // Update subtitle for authenticated users
+            if (subtitleElement) {
+                subtitleElement.textContent = 'Viewing booking for your signed-in account';
+            }
             // Hide email input for authenticated users
             if (emailInputSection) emailInputSection.style.display = 'none';
             if (authenticatedUserSection) {
@@ -945,11 +952,16 @@ function showViewBookingModal() {
             if (buttonSection) buttonSection.style.display = 'none';
         } else {
             console.log('[showViewBookingModal] Showing email input section');
+            // Update subtitle for non-authenticated users
+            if (subtitleElement) {
+                subtitleElement.textContent = 'Enter your email to view your upcoming booking';
+            }
             // Show email input for non-authenticated users
             if (emailInputSection) emailInputSection.style.display = 'block';
             if (authenticatedUserSection) authenticatedUserSection.style.display = 'none';
             if (buttonSection) buttonSection.style.display = 'flex';
-            document.getElementById('lookup_email').value = '';
+            const emailInput = document.getElementById('lookup_email');
+            if (emailInput) emailInput.value = '';
         }
     }
 }
@@ -964,11 +976,11 @@ function closeViewBookingModal() {
 
 // Direct access to View My Booking for authenticated users
 async function openViewMyBookingDirect() {
-    const isAuthenticated = document.documentElement.getAttribute('data-authenticated') === 'true';
-    const userEmail = document.documentElement.getAttribute('data-user-email');
-    
+    const isAuthenticated = document.body.getAttribute('data-authenticated') === 'true';
+    const userEmail = document.body.getAttribute('data-user-email');
+
     console.log('[DEBUG] openViewMyBookingDirect called');
-    console.log('[DEBUG] data-authenticated:', document.documentElement.getAttribute('data-authenticated'));
+    console.log('[DEBUG] data-authenticated:', document.body.getAttribute('data-authenticated'));
     console.log('[DEBUG] data-user-email:', userEmail);
     console.log('[DEBUG] isAuthenticated:', isAuthenticated);
     
@@ -993,12 +1005,12 @@ let verificationEmail = '';
 
 async function lookupBooking() {
     const resultDiv = document.getElementById('booking-lookup-result');
-    const isAuthenticated = document.documentElement.getAttribute('data-authenticated') === 'true';
+    const isAuthenticated = document.body.getAttribute('data-authenticated') === 'true';
     let email = null;
 
     if (isAuthenticated) {
         // Use authenticated user's email directly
-        email = document.documentElement.getAttribute('data-user-email');
+        email = document.body.getAttribute('data-user-email');
         if (!email) {
             showNotification('Unable to retrieve your email. Please try again.', 'error');
             return;
@@ -1074,12 +1086,17 @@ async function lookupBooking() {
                             <p>A confirmation email was sent to <strong>${booking.email}</strong></p>
                         </div>
 
-                        <div style="display: flex; gap: 0.75rem;">
-                            <button onclick="showEditBookingForm('${booking.id}', '${JSON.stringify(booking).replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
-                                Edit Booking
-                            </button>
-                            <button onclick="confirmDeleteSpecificBooking('${booking.id}', '${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}')" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
-                                Delete Booking
+                        <div style="display: grid; gap: 0.75rem;">
+                            <div style="display: flex; gap: 0.75rem;">
+                                <button onclick="showEditBookingForm('${booking.id}', '${JSON.stringify(booking).replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                    Edit Booking
+                                </button>
+                                <button onclick="confirmDeleteSpecificBooking('${booking.id}', '${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}')" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                    Delete Booking
+                                </button>
+                            </div>
+                            <button onclick="closeViewBookingModal()" style="width: 100%; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                Close
                             </button>
                         </div>
                     </div>
@@ -1095,6 +1112,9 @@ async function lookupBooking() {
                         <h3 style="margin-bottom: 0.5rem;">No Booking Found</h3>
                         <p style="color: var(--text-secondary);">You don't have any bookings yet.</p>
                         <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">Click "Book a Session" to schedule your first AI learning experience!</p>
+                        <button onclick="closeViewBookingModal()" style="margin-top: 1.5rem; width: 100%; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                            Close
+                        </button>
                     </div>
                 `;
             }

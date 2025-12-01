@@ -42,19 +42,18 @@
     {% endif %}
 
     <!-- View Booking Button -->
-    <button onclick="openViewMyBookingDirect()" class="view-booking-btn" title="View, Edit, or Delete Your Booking">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <button onclick="openViewMyBookingDirect()" class="view-booking-btn" title="View Previous Booking">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
             <circle cx="12" cy="12" r="3"></circle>
         </svg>
-        <span>My Booking</span>
     </button>
 
     <script>
         // Debug: Log authentication status on page load
         document.addEventListener('DOMContentLoaded', function() {
-            const auth = document.documentElement.getAttribute('data-authenticated');
-            const email = document.documentElement.getAttribute('data-user-email');
+            const auth = document.body.getAttribute('data-authenticated');
+            const email = document.body.getAttribute('data-user-email');
             console.log('[PAGE_LOAD] Authentication Status:');
             console.log('  data-authenticated:', auth);
             console.log('  data-user-email:', email);
@@ -64,167 +63,11 @@
 
     <!-- Email Contact Button -->
     <a href="#" onclick="openContactForm(); return false;" class="email-contact-btn" title="Email Christopher">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
             <polyline points="22,6 12,13 2,6"/>
         </svg>
-        <span>Contact</span>
     </a>
-
-    <!-- AI Tools Button -->
-    <button onclick="toggleAITools()" class="ai-tools-btn" title="AI Tools Quick Guide">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
-        </svg>
-        <span>AI Tools</span>
-    </button>
-
-    <!-- AI Tools Panel -->
-    <div id="aiToolsPanel" class="ai-tools-panel hidden">
-        <div class="ai-tools-header">
-            <h3>AI Tools Quick Guide</h3>
-            <button onclick="toggleAITools()" class="ai-tools-close">&times;</button>
-        </div>
-        <p class="ai-tools-intro">The best AI tools for every task - bookmark this for quick reference!</p>
-
-        <div class="ai-tools-grid">
-            <!-- General Chat & Writing -->
-            <div class="ai-tool-category">
-                <div class="category-header">
-                    <span class="category-icon">💬</span>
-                    <h4>General Chat & Writing</h4>
-                </div>
-                <div class="tool-list">
-                    <a href="https://chat.openai.com" target="_blank" class="tool-item">
-                        <span class="tool-name">ChatGPT</span>
-                        <span class="tool-best">Best for: Versatile conversations, brainstorming</span>
-                    </a>
-                    <a href="https://claude.ai" target="_blank" class="tool-item">
-                        <span class="tool-name">Claude</span>
-                        <span class="tool-best">Best for: Long documents, nuanced analysis, coding</span>
-                    </a>
-                    <a href="https://gemini.google.com" target="_blank" class="tool-item">
-                        <span class="tool-name">Gemini</span>
-                        <span class="tool-best">Best for: Google integration, multimodal tasks</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Research -->
-            <div class="ai-tool-category">
-                <div class="category-header">
-                    <span class="category-icon">🔍</span>
-                    <h4>Research & Learning</h4>
-                </div>
-                <div class="tool-list">
-                    <a href="https://perplexity.ai" target="_blank" class="tool-item">
-                        <span class="tool-name">Perplexity</span>
-                        <span class="tool-best">Best for: Real-time web research with citations</span>
-                    </a>
-                    <a href="https://elicit.com" target="_blank" class="tool-item">
-                        <span class="tool-name">Elicit</span>
-                        <span class="tool-best">Best for: Academic paper research & summaries</span>
-                    </a>
-                    <a href="https://notebooklm.google.com" target="_blank" class="tool-item">
-                        <span class="tool-name">NotebookLM</span>
-                        <span class="tool-best">Best for: Analyzing your own documents</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Coding -->
-            <div class="ai-tool-category">
-                <div class="category-header">
-                    <span class="category-icon">💻</span>
-                    <h4>Coding & Development</h4>
-                </div>
-                <div class="tool-list">
-                    <a href="https://github.com/features/copilot" target="_blank" class="tool-item">
-                        <span class="tool-name">GitHub Copilot</span>
-                        <span class="tool-best">Best for: Code autocomplete in your editor</span>
-                    </a>
-                    <a href="https://cursor.com" target="_blank" class="tool-item">
-                        <span class="tool-name">Cursor</span>
-                        <span class="tool-best">Best for: AI-first code editor experience</span>
-                    </a>
-                    <a href="https://claude.ai/download" target="_blank" class="tool-item">
-                        <span class="tool-name">Claude Code</span>
-                        <span class="tool-best">Best for: Complex coding projects & debugging</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Excel & Data -->
-            <div class="ai-tool-category">
-                <div class="category-header">
-                    <span class="category-icon">📊</span>
-                    <h4>Excel & Data Analysis</h4>
-                </div>
-                <div class="tool-list">
-                    <a href="https://www.microsoft.com/en-us/microsoft-365/copilot" target="_blank" class="tool-item">
-                        <span class="tool-name">Excel Copilot</span>
-                        <span class="tool-best">Best for: Formulas, pivot tables, analysis</span>
-                    </a>
-                    <a href="https://chat.openai.com" target="_blank" class="tool-item">
-                        <span class="tool-name">ChatGPT Code Interpreter</span>
-                        <span class="tool-best">Best for: Data cleaning, visualizations</span>
-                    </a>
-                    <a href="https://julius.ai" target="_blank" class="tool-item">
-                        <span class="tool-name">Julius AI</span>
-                        <span class="tool-best">Best for: Quick data analysis & charts</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Creative & Images -->
-            <div class="ai-tool-category">
-                <div class="category-header">
-                    <span class="category-icon">🎨</span>
-                    <h4>Images & Creative</h4>
-                </div>
-                <div class="tool-list">
-                    <a href="https://midjourney.com" target="_blank" class="tool-item">
-                        <span class="tool-name">Midjourney</span>
-                        <span class="tool-best">Best for: Artistic, high-quality images</span>
-                    </a>
-                    <a href="https://chat.openai.com" target="_blank" class="tool-item">
-                        <span class="tool-name">DALL-E 3</span>
-                        <span class="tool-best">Best for: Quick image generation via ChatGPT</span>
-                    </a>
-                    <a href="https://canva.com" target="_blank" class="tool-item">
-                        <span class="tool-name">Canva AI</span>
-                        <span class="tool-best">Best for: Design templates, presentations</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Productivity -->
-            <div class="ai-tool-category">
-                <div class="category-header">
-                    <span class="category-icon">⚡</span>
-                    <h4>Productivity & Workflow</h4>
-                </div>
-                <div class="tool-list">
-                    <a href="https://notion.so" target="_blank" class="tool-item">
-                        <span class="tool-name">Notion AI</span>
-                        <span class="tool-best">Best for: Notes, docs, project management</span>
-                    </a>
-                    <a href="https://otter.ai" target="_blank" class="tool-item">
-                        <span class="tool-name">Otter.ai</span>
-                        <span class="tool-best">Best for: Meeting transcription & summaries</span>
-                    </a>
-                    <a href="https://zapier.com" target="_blank" class="tool-item">
-                        <span class="tool-name">Zapier AI</span>
-                        <span class="tool-best">Best for: Automating workflows between apps</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="ai-tools-footer">
-            <p>Want to learn how to use these effectively? <a href="#" onclick="toggleAITools(); return false;">Book a session!</a></p>
-        </div>
-    </div>
 
     <!-- AI Built Popup - Left Side -->
     <div class="ai-popup" id="aiBanner">
@@ -912,26 +755,26 @@
             <button onclick="closeViewBookingModal()" style="position: absolute; top: 1rem; right: 1rem; background: var(--bg); border: 2px solid var(--border); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 1.5rem; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.3s; z-index: 10;">×</button>
             <div class="welcome-modal-header">
                 <h1>View My Booking</h1>
-                <p class="welcome-subtitle" id="viewBookingSubtitle">Enter your email to view your upcoming booking</p>
+                <p class="welcome-subtitle" id="viewBookingSubtitle">Loading your booking details...</p>
             </div>
 
             <div class="welcome-modal-body" style="padding: 2rem;">
                 <!-- Email input (hidden for authenticated users) -->
-                <div id="emailInputSection" style="margin-bottom: 1.5rem;">
+                <div id="emailInputSection" style="margin-bottom: 1.5rem; display: none;">
                     <label for="lookup_email" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Email Address</label>
                     <input type="email" id="lookup_email" placeholder="john@example.com" style="width: 100%; padding: 1rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1rem; background: var(--bg); color: var(--text-primary);" required>
                 </div>
 
-                <!-- Authenticated user display (hidden initially) -->
+                <!-- Authenticated user display (shown for authenticated users) -->
                 <div id="authenticatedUserSection" style="margin-bottom: 1.5rem; display: none;">
-                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 0.5rem;">Loading your booking for:</p>
-                    <div style="background: var(--bg); border: 2px solid var(--border); border-radius: 0.75rem; padding: 1rem; color: var(--primary); font-weight: 600;">
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 0.5rem;">Signed in as:</p>
+                    <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border: 2px solid var(--primary); border-radius: 0.75rem; padding: 1rem; color: var(--primary); font-weight: 600;">
                         <span id="authenticatedUserEmail"></span>
                     </div>
                 </div>
 
                 <!-- Button section - hidden for authenticated users, shown for non-authenticated -->
-                <div id="buttonSection" style="display: flex; gap: 1rem;">
+                <div id="buttonSection" style="display: flex; gap: 1rem; margin-bottom: 1rem;">
                     <button onclick="closeViewBookingModal()" style="flex: 1; padding: 1rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s;">
                         Cancel
                     </button>
@@ -1004,22 +847,6 @@
         // Logout function
         function logout() {
             window.location.href = '/logout';
-        }
-
-        // Toggle AI Tools Panel
-        function toggleAITools() {
-            const panel = document.getElementById('aiToolsPanel');
-            const btn = document.querySelector('.ai-tools-btn');
-
-            if (panel.classList.contains('visible')) {
-                panel.classList.remove('visible');
-                panel.classList.add('hidden');
-                btn.style.display = 'flex';
-            } else {
-                panel.classList.remove('hidden');
-                panel.classList.add('visible');
-                btn.style.display = 'none';
-            }
         }
 
         // Authentication check - runs when DOM is fully loaded

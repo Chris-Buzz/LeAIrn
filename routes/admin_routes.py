@@ -48,22 +48,33 @@ def admin_login():
         # Check credentials
         if username in ADMIN_ACCOUNTS and ADMIN_ACCOUNTS[username] == password:
             db.reset_admin_login_attempts(client_ip)
+
+            # Get tutor information
+            tutor = db.get_tutor_by_username(username)
+
             session['logged_in'] = True
             session['admin_username'] = username
-            print(f"[OK] Login successful for: {username}")
+            session['tutor_id'] = tutor['id'] if tutor else None
+            session['tutor_role'] = tutor['role'] if tutor else 'admin'
+            session['tutor_name'] = tutor['full_name'] if tutor else username
+
+            print(f"[OK] Login successful for: {username} (Role: {session.get('tutor_role')})")
             return jsonify({'success': True})
 
         print(f"[ERROR] Login failed for: {username}")
         return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
-        
+
     return render_template('admin_login.html')
 
 
 @admin_bp.route('/admin/logout')
 def admin_logout():
-    """Admin logout"""
+    """Admin logout - clear all admin session data"""
     session.pop('logged_in', None)
     session.pop('admin_username', None)
+    session.pop('tutor_id', None)
+    session.pop('tutor_role', None)
+    session.pop('tutor_name', None)
     return redirect(url_for('admin.admin_login'))
 
 
@@ -77,10 +88,27 @@ def admin():
 @admin_bp.route('/api/users', methods=['GET'])
 @login_required
 def get_users():
-    """Get all bookings for admin dashboard (including past bookings)"""
+    """Get all bookings for admin dashboard (filtered by tutor if not super_admin)"""
     try:
-        users = db.get_all_bookings()
-        return jsonify(users)
+        tutor_role = session.get('tutor_role', 'admin')
+        tutor_id = session.get('tutor_id')
+
+        all_users = db.get_all_bookings()
+
+        # If super_admin, return all bookings
+        if tutor_role == 'super_admin':
+            return jsonify(all_users)
+
+        # If tutor_admin, only return their bookings
+        if tutor_role == 'tutor_admin' and tutor_id:
+            filtered_users = [
+                user for user in all_users
+                if user.get('tutor_id') == tutor_id
+            ]
+            return jsonify(filtered_users)
+
+        # Default: return all (for legacy admin accounts)
+        return jsonify(all_users)
     except Exception as e:
         print(f"Error fetching users: {e}")
         return jsonify({'error': str(e)}), 500

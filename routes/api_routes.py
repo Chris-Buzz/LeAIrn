@@ -109,13 +109,17 @@ def get_slots():
 @api_bp.route('/api/slots/manage', methods=['GET'])
 @login_required
 def manage_slots():
-    """Get all slots for admin management (only future slots in Eastern time)"""
+    """Get slots for admin management (filtered by tutor, only future slots in Eastern time)"""
     try:
         from utils.datetime_utils import get_eastern_now, get_eastern_datetime
-        
+        from flask import session
+
+        tutor_role = session.get('tutor_role', 'admin')
+        tutor_id = session.get('tutor_id')
+
         all_slots = db.get_all_slots()
         now_eastern = get_eastern_now()
-        
+
         # Filter to only show future slots in Eastern time
         future_slots = []
         for slot in all_slots:
@@ -123,11 +127,19 @@ def manage_slots():
             try:
                 slot_datetime_eastern = get_eastern_datetime(slot_datetime_str)
                 if slot_datetime_eastern and slot_datetime_eastern > now_eastern:
-                    future_slots.append(slot)
+                    # Filter by tutor if not super_admin
+                    if tutor_role == 'super_admin':
+                        future_slots.append(slot)
+                    elif tutor_role == 'tutor_admin' and tutor_id:
+                        if slot.get('tutor_id') == tutor_id:
+                            future_slots.append(slot)
+                    else:
+                        # Legacy admin - show all
+                        future_slots.append(slot)
             except:
                 # If can't parse datetime, skip this slot
                 pass
-        
+
         return jsonify(future_slots)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -136,16 +148,21 @@ def manage_slots():
 @api_bp.route('/api/slots/add', methods=['POST'])
 @login_required
 def add_slot():
-    """Add a new time slot"""
+    """Add a new time slot with tutor assignment"""
     try:
-        from datetime import datetime
-        
+        from datetime import datetime, timezone
+        from flask import session
+
         data = request.json
         datetime_str = data.get('datetime')
-        
+
         if not datetime_str:
             return jsonify({'success': False, 'message': 'Datetime is required'}), 400
-        
+
+        # Get tutor information from session
+        tutor_id = session.get('tutor_id')
+        tutor_name = session.get('tutor_name', 'Unknown')
+
         # Convert the datetime-local format to ISO format and parse it
         try:
             # datetime-local format: "2025-11-18T14:30"
@@ -154,15 +171,16 @@ def add_slot():
         except:
             iso_datetime = datetime_str
             dt = datetime.fromisoformat(datetime_str)
-        
-        # Generate slot ID in format: YYYYMMDDHHMI
-        slot_id = datetime_str.replace('-', '').replace(':', '').replace('T', '')
-        
+
+        # Generate slot ID in format: YYYYMMDDHHMI_tutorID
+        base_slot_id = datetime_str.replace('-', '').replace(':', '').replace('T', '')
+        slot_id = f"{base_slot_id}_{tutor_id}" if tutor_id else base_slot_id
+
         # Format date components for display
         day_name = dt.strftime('%A')  # e.g., "Friday"
         date_str = dt.strftime('%B %d, %Y')  # e.g., "December 05, 2025"
         time_str = dt.strftime('%I:%M %p')  # e.g., "01:00 PM"
-        
+
         # Prepare slot data
         slot_data = {
             'id': slot_id,
@@ -174,9 +192,11 @@ def add_slot():
             'booking_id': None,
             'booked_by': None,
             'room': None,
-            'created_at': datetime.utcnow().isoformat()
+            'tutor_id': tutor_id,
+            'tutor_name': tutor_name,
+            'created_at': datetime.now(timezone.utc).isoformat()
         }
-        
+
         result_id = db.add_time_slot(slot_data)
         if result_id:
             return jsonify({'success': True, 'message': 'Slot added successfully', 'id': result_id})

@@ -99,6 +99,10 @@ def request_booking_verification():
                 'message': 'Invalid time slot'
             }), 400
 
+        # Get tutor information from the selected slot
+        tutor_id = selected_slot_data.get('tutor_id')
+        tutor_name = selected_slot_data.get('tutor_name', 'Christopher Buzaid')  # Default to Christopher
+
         # Create booking data (safely handle None values)
         booking_data = {
             'full_name': data['full_name'].strip(),
@@ -116,6 +120,8 @@ def request_booking_verification():
             'selected_slot': selected_slot_data.get('id'),  # Store the slot ID, not the entire object
             'slot_details': selected_slot_data,
             'selected_room': data['selected_room'].strip(),
+            'tutor_id': tutor_id,  # Assign tutor from slot
+            'tutor_name': tutor_name,  # Store tutor name for display
             'timestamp': datetime.now().isoformat(),
             'submission_date': datetime.now().isoformat(),  # For sorting in admin
             'status': 'confirmed',
