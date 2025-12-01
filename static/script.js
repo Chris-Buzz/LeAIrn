@@ -1088,10 +1088,10 @@ async function lookupBooking() {
 
                         <div style="display: grid; gap: 0.75rem;">
                             <div style="display: flex; gap: 0.75rem;">
-                                <button onclick="showEditBookingForm('${booking.id}', '${JSON.stringify(booking).replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                <button onclick='showEditBookingFormById()' style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
                                     Edit Booking
                                 </button>
-                                <button onclick="confirmDeleteSpecificBooking('${booking.id}', '${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}')" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                <button onclick='confirmDeleteSpecificBooking("${booking.id}", "${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}")' style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
                                     Delete Booking
                                 </button>
                             </div>
@@ -1624,6 +1624,39 @@ function confirmDeleteSpecificBooking(bookingId, bookingDetails) {
             deleteBtn.innerHTML = originalBtnText;
         }
     };
+}
+
+// Show edit booking form by ID (for authenticated users)
+async function showEditBookingFormById() {
+    try {
+        // Fetch the current booking data
+        const response = await fetch('/api/user-booking', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            showNotification('Failed to load booking data', 'error');
+            return;
+        }
+
+        const result = await response.json();
+        if (!result.success || !result.booking) {
+            showNotification('Booking not found', 'error');
+            return;
+        }
+
+        const booking = result.booking;
+
+        // Call the existing edit form with proper parameters
+        const bookingStr = JSON.stringify(booking).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        showEditBookingForm(booking.email, bookingStr);
+    } catch (error) {
+        console.error('Error loading booking:', error);
+        showNotification('Failed to load booking data', 'error');
+    }
 }
 
 // Show edit booking form

@@ -23,40 +23,79 @@
 
         .tools-header {
             text-align: center;
-            margin-bottom: 4rem;
-            padding: 3rem 1rem;
+            margin-bottom: 3rem;
+            padding: 2rem 1rem;
         }
 
         .tools-title {
-            font-size: 2.75rem;
+            font-size: 2.5rem;
             font-weight: 700;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
             color: var(--text-primary);
             letter-spacing: -0.02em;
         }
 
         .tools-subtitle {
-            font-size: 1.125rem;
+            font-size: 1.0625rem;
             color: var(--text-secondary);
             margin-bottom: 1.5rem;
-            max-width: 650px;
+            max-width: 700px;
             margin-left: auto;
             margin-right: auto;
             line-height: 1.6;
         }
 
-        .edu-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.625rem;
+        .badge-legend {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+            padding: 1.25rem;
             background: var(--surface);
             border: 1px solid var(--border);
-            padding: 0.625rem 1.25rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-top: 1.5rem;
+            border-radius: 0.75rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .badge-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
             font-size: 0.875rem;
+        }
+
+        .badge-legend-badge {
+            padding: 0.25rem 0.625rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-legend-badge.free {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgb(34, 197, 94);
+            color: rgb(34, 197, 94);
+        }
+
+        .badge-legend-badge.edu-free {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgb(99, 102, 241);
+            color: rgb(99, 102, 241);
+        }
+
+        .badge-legend-badge.trial {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgb(251, 191, 36);
+            color: rgb(251, 191, 36);
+        }
+
+        .badge-legend-text {
+            color: var(--text-secondary);
         }
 
         .back-btn {
@@ -84,34 +123,40 @@
         }
 
         .use-case-section {
-            margin-bottom: 4rem;
+            margin-bottom: 3.5rem;
         }
 
         .use-case-header {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
             padding-bottom: 0.75rem;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 2px solid var(--border);
         }
 
         .use-case-title {
-            font-size: 1.5rem;
+            font-size: 1.375rem;
             font-weight: 600;
             color: var(--text-primary);
-            margin: 0 0 0.5rem 0;
+            margin: 0 0 0.375rem 0;
             letter-spacing: -0.01em;
         }
 
         .use-case-description {
             color: var(--text-secondary);
-            margin-bottom: 2rem;
             font-size: 0.9375rem;
-            line-height: 1.6;
+            line-height: 1.5;
+            margin: 0;
         }
 
         .tools-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.25rem;
+        }
+
+        @media (min-width: 1200px) {
+            .tools-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
 
         .tool-card {
@@ -120,56 +165,58 @@
             border-radius: 0.75rem;
             padding: 1.5rem;
             transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
         }
 
         .tool-card:hover {
             border-color: var(--text-tertiary);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
         }
 
         .tool-header {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
             margin-bottom: 1rem;
-        }
-
-        .tool-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-        }
-
-        .tool-badge {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            padding: 0.25rem 0.75rem;
-            border-radius: 0.375rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .tool-badge.pro {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            border-color: var(--primary);
-            color: var(--primary);
         }
 
         .tool-name {
             font-size: 1.125rem;
             font-weight: 600;
             color: var(--text-primary);
-            margin: 0 0 0.5rem 0;
+            margin: 0;
             letter-spacing: -0.01em;
+        }
+
+        .tool-badge {
+            padding: 0.25rem 0.625rem;
+            border-radius: 0.375rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+            margin-left: 0.5rem;
+        }
+
+        .tool-badge.free {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgb(34, 197, 94);
+            color: rgb(34, 197, 94);
+        }
+
+        .tool-badge.edu-free {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgb(99, 102, 241);
+            color: rgb(99, 102, 241);
+        }
+
+        .tool-badge.trial {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgb(251, 191, 36);
+            color: rgb(251, 191, 36);
         }
 
         .tool-description {
@@ -177,12 +224,13 @@
             line-height: 1.6;
             margin-bottom: 1rem;
             font-size: 0.9375rem;
+            flex-grow: 1;
         }
 
         .tool-features {
             list-style: none;
             padding: 0;
-            margin: 1rem 0;
+            margin: 0 0 1rem 0;
         }
 
         .tool-features li {
@@ -190,49 +238,51 @@
             align-items: flex-start;
             gap: 0.5rem;
             color: var(--text-secondary);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.375rem;
             font-size: 0.875rem;
             line-height: 1.5;
         }
 
         .tool-features li::before {
             content: "•";
-            color: var(--text-tertiary);
-            font-weight: 600;
+            color: var(--primary);
+            font-weight: 700;
             flex-shrink: 0;
         }
 
         .tool-link {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
-            padding: 0.625rem 1.25rem;
+            padding: 0.75rem 1.25rem;
             background: var(--primary);
             color: white;
             border-radius: 0.5rem;
             text-decoration: none;
             font-weight: 500;
             transition: all 0.2s;
-            margin-top: 1rem;
             font-size: 0.875rem;
+            margin-top: auto;
         }
 
         .tool-link:hover {
             opacity: 0.9;
+            transform: translateY(-1px);
         }
 
         .cta-section {
             text-align: center;
-            margin: 5rem 0 2rem 0;
-            padding: 3rem 2rem;
+            margin: 4rem 0 2rem 0;
+            padding: 2.5rem 2rem;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 0.75rem;
         }
 
         .cta-section h2 {
-            font-size: 1.75rem;
-            margin-bottom: 1rem;
+            font-size: 1.625rem;
+            margin-bottom: 0.75rem;
             color: var(--text-primary);
             font-weight: 600;
             letter-spacing: -0.01em;
@@ -240,7 +290,7 @@
 
         .cta-section p {
             color: var(--text-secondary);
-            margin-bottom: 2rem;
+            margin-bottom: 1.75rem;
             font-size: 1rem;
             max-width: 600px;
             margin-left: auto;
@@ -264,6 +314,7 @@
 
         .cta-button:hover {
             opacity: 0.9;
+            transform: translateY(-1px);
         }
 
         @media (max-width: 768px) {
@@ -277,6 +328,16 @@
 
             .use-case-title {
                 font-size: 1.25rem;
+            }
+
+            .badge-legend {
+                gap: 1rem;
+            }
+
+            .badge-legend-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.25rem;
             }
         }
     </style>
@@ -293,13 +354,21 @@
         <div class="tools-container">
             <div class="tools-header">
                 <h1 class="tools-title">Free AI Tools for Students</h1>
-                <p class="tools-subtitle">Access powerful AI tools at no cost. Some require a .edu email, others are completely free for everyone.</p>
-                <div class="edu-badge">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-                    </svg>
-                    Student & Faculty Discounts Available
+                <p class="tools-subtitle">Access powerful AI tools at no cost. Some require a university email, others are completely free for everyone.</p>
+
+                <div class="badge-legend">
+                    <div class="badge-legend-item">
+                        <span class="badge-legend-badge free">FREE</span>
+                        <span class="badge-legend-text">Free for everyone</span>
+                    </div>
+                    <div class="badge-legend-item">
+                        <span class="badge-legend-badge edu-free">EDU FREE</span>
+                        <span class="badge-legend-text">Free with .edu email</span>
+                    </div>
+                    <div class="badge-legend-item">
+                        <span class="badge-legend-badge trial">FREE TRIAL</span>
+                        <span class="badge-legend-text">Limited free trial</span>
+                    </div>
                 </div>
             </div>
 
@@ -314,15 +383,14 @@
                     <!-- ChatGPT -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">🤖</div>
-                            <div class="tool-badge">FREE</div>
+                            <h3 class="tool-name">ChatGPT</h3>
+                            <div class="tool-badge free">FREE</div>
                         </div>
-                        <h3 class="tool-name">ChatGPT</h3>
                         <p class="tool-description">OpenAI's popular AI assistant with GPT-4o mini. Fast responses for general questions and problem-solving.</p>
                         <ul class="tool-features">
                             <li>GPT-4o mini model access</li>
                             <li>Text generation & conversation</li>
-                            <li>No credit card required</li>
+                            <li>No account required</li>
                         </ul>
                         <a href="https://chat.openai.com" target="_blank" class="tool-link">
                             Try ChatGPT
@@ -337,10 +405,9 @@
                     <!-- Claude -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">🧠</div>
-                            <div class="tool-badge">FREE</div>
+                            <h3 class="tool-name">Claude</h3>
+                            <div class="tool-badge free">FREE</div>
                         </div>
-                        <h3 class="tool-name">Claude</h3>
                         <p class="tool-description">Anthropic's advanced AI with excellent reasoning. Great for complex analysis and detailed conversations.</p>
                         <ul class="tool-features">
                             <li>Claude 3.5 Sonnet access</li>
@@ -360,11 +427,10 @@
                     <!-- Gemini -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">✨</div>
-                            <div class="tool-badge pro">PRO FREE</div>
+                            <h3 class="tool-name">Gemini Advanced</h3>
+                            <div class="tool-badge edu-free">EDU FREE</div>
                         </div>
-                        <h3 class="tool-name">Google Gemini Advanced</h3>
-                        <p class="tool-description">Google's most capable AI. Free access with Google One AI Premium trial.</p>
+                        <p class="tool-description">Google's most capable AI. Free premium access with Google One AI Premium through Google Workspace for Education.</p>
                         <ul class="tool-features">
                             <li>Gemini Ultra 1.5 access</li>
                             <li>Deep Google integration</li>
@@ -383,15 +449,14 @@
                     <!-- Grok -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">🚀</div>
-                            <div class="tool-badge">FREE</div>
+                            <h3 class="tool-name">Grok</h3>
+                            <div class="tool-badge free">FREE</div>
                         </div>
-                        <h3 class="tool-name">Grok</h3>
                         <p class="tool-description">X's AI assistant with real-time access to information and unique personality.</p>
                         <ul class="tool-features">
                             <li>Real-time X (Twitter) access</li>
                             <li>Up-to-date information</li>
-                            <li>Conversational & witty</li>
+                            <li>Conversational interface</li>
                         </ul>
                         <a href="https://x.com/i/grok" target="_blank" class="tool-link">
                             Try Grok
@@ -416,10 +481,9 @@
                     <!-- Claude -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">🧠</div>
-                            <div class="tool-badge">FREE</div>
+                            <h3 class="tool-name">Claude</h3>
+                            <div class="tool-badge free">FREE</div>
                         </div>
-                        <h3 class="tool-name">Claude</h3>
                         <p class="tool-description">Excellent for coding with strong reasoning and large context. Can handle entire codebases.</p>
                         <ul class="tool-features">
                             <li>200K token context</li>
@@ -439,10 +503,9 @@
                     <!-- Cursor -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">⚡</div>
-                            <div class="tool-badge">FREE</div>
+                            <h3 class="tool-name">Cursor</h3>
+                            <div class="tool-badge free">FREE</div>
                         </div>
-                        <h3 class="tool-name">Cursor</h3>
                         <p class="tool-description">AI-first code editor built on VS Code. Write code with AI assistance built directly into your editor.</p>
                         <ul class="tool-features">
                             <li>Built on VS Code</li>
@@ -462,11 +525,10 @@
                     <!-- GitHub Copilot -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">🐙</div>
-                            <div class="tool-badge pro">PRO FREE</div>
+                            <h3 class="tool-name">GitHub Copilot</h3>
+                            <div class="tool-badge edu-free">EDU FREE</div>
                         </div>
-                        <h3 class="tool-name">GitHub Copilot</h3>
-                        <p class="tool-description">AI pair programmer from GitHub. Free for students through GitHub Education Pack.</p>
+                        <p class="tool-description">AI pair programmer from GitHub. Free for students through GitHub Student Developer Pack.</p>
                         <ul class="tool-features">
                             <li>Real-time code suggestions</li>
                             <li>Works in VS Code & more</li>
@@ -495,10 +557,9 @@
                     <!-- Lovable -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">💜</div>
-                            <div class="tool-badge">FREE</div>
+                            <h3 class="tool-name">Lovable</h3>
+                            <div class="tool-badge free">FREE</div>
                         </div>
-                        <h3 class="tool-name">Lovable</h3>
                         <p class="tool-description">Build full-stack applications with AI. Describe what you want and watch it build your app.</p>
                         <ul class="tool-features">
                             <li>Full-stack app generation</li>
@@ -518,10 +579,9 @@
                     <!-- v0 -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">🎨</div>
-                            <div class="tool-badge">FREE</div>
+                            <h3 class="tool-name">v0 by Vercel</h3>
+                            <div class="tool-badge free">FREE</div>
                         </div>
-                        <h3 class="tool-name">v0 by Vercel</h3>
                         <p class="tool-description">Generate UI components with AI. Create React components from text descriptions.</p>
                         <ul class="tool-features">
                             <li>React component generation</li>
@@ -541,10 +601,9 @@
                     <!-- Google AI Studio -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">🔬</div>
-                            <div class="tool-badge">FREE</div>
+                            <h3 class="tool-name">Google AI Studio</h3>
+                            <div class="tool-badge free">FREE</div>
                         </div>
-                        <h3 class="tool-name">Google AI Studio</h3>
                         <p class="tool-description">Experiment with Google's AI models. Build and test AI applications with Gemini API.</p>
                         <ul class="tool-features">
                             <li>Free Gemini API access</li>
@@ -574,10 +633,9 @@
                     <!-- Claude -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">🧠</div>
-                            <div class="tool-badge">FREE</div>
+                            <h3 class="tool-name">Claude</h3>
+                            <div class="tool-badge free">FREE</div>
                         </div>
-                        <h3 class="tool-name">Claude</h3>
                         <p class="tool-description">Excellent for long-form writing with nuanced understanding and clear communication style.</p>
                         <ul class="tool-features">
                             <li>Long-form content</li>
@@ -597,10 +655,9 @@
                     <!-- ChatGPT -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">🤖</div>
-                            <div class="tool-badge">FREE</div>
+                            <h3 class="tool-name">ChatGPT</h3>
+                            <div class="tool-badge free">FREE</div>
                         </div>
-                        <h3 class="tool-name">ChatGPT</h3>
                         <p class="tool-description">Versatile writing assistant for various content types from emails to essays.</p>
                         <ul class="tool-features">
                             <li>Multiple writing styles</li>
@@ -620,10 +677,9 @@
                     <!-- Jasper -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">✍️</div>
-                            <div class="tool-badge">FREE TRIAL</div>
+                            <h3 class="tool-name">Jasper</h3>
+                            <div class="tool-badge trial">FREE TRIAL</div>
                         </div>
-                        <h3 class="tool-name">Jasper</h3>
                         <p class="tool-description">Professional AI writing assistant with templates for marketing, blog posts, and more.</p>
                         <ul class="tool-features">
                             <li>Marketing content</li>
@@ -653,10 +709,9 @@
                     <!-- Perplexity -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">🔎</div>
-                            <div class="tool-badge pro">PRO FREE</div>
+                            <h3 class="tool-name">Perplexity Pro</h3>
+                            <div class="tool-badge edu-free">EDU FREE</div>
                         </div>
-                        <h3 class="tool-name">Perplexity Pro</h3>
                         <p class="tool-description">AI search engine with citations. Free Pro access for students with .edu email.</p>
                         <ul class="tool-features">
                             <li>Unlimited Pro searches</li>
@@ -677,10 +732,9 @@
                     <!-- Elicit -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">🎓</div>
-                            <div class="tool-badge">FREE</div>
+                            <h3 class="tool-name">Elicit</h3>
+                            <div class="tool-badge free">FREE</div>
                         </div>
-                        <h3 class="tool-name">Elicit</h3>
                         <p class="tool-description">AI research assistant that finds, summarizes, and analyzes academic papers.</p>
                         <ul class="tool-features">
                             <li>Find relevant papers</li>
@@ -710,10 +764,9 @@
                     <!-- NotebookLM -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">📓</div>
-                            <div class="tool-badge">FREE</div>
+                            <h3 class="tool-name">NotebookLM</h3>
+                            <div class="tool-badge free">FREE</div>
                         </div>
-                        <h3 class="tool-name">NotebookLM</h3>
                         <p class="tool-description">Google's AI notebook that helps you understand and synthesize information from your documents.</p>
                         <ul class="tool-features">
                             <li>Upload PDFs, docs, notes</li>
@@ -734,10 +787,9 @@
                     <!-- Quizlet -->
                     <div class="tool-card">
                         <div class="tool-header">
-                            <div class="tool-icon">🎯</div>
-                            <div class="tool-badge">FREE</div>
+                            <h3 class="tool-name">Quizlet</h3>
+                            <div class="tool-badge free">FREE</div>
                         </div>
-                        <h3 class="tool-name">Quizlet</h3>
                         <p class="tool-description">Create AI-powered flashcards. Access millions of existing study sets.</p>
                         <ul class="tool-features">
                             <li>AI-generated flashcards</li>
@@ -746,52 +798,6 @@
                         </ul>
                         <a href="https://quizlet.com" target="_blank" class="tool-link">
                             Try Quizlet
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                                <polyline points="15 3 21 3 21 9"/>
-                                <line x1="10" y1="14" x2="21" y2="3"/>
-                            </svg>
-                        </a>
-                    </div>
-
-                    <!-- Khan Academy -->
-                    <div class="tool-card">
-                        <div class="tool-header">
-                            <div class="tool-icon">🎓</div>
-                            <div class="tool-badge">FREE</div>
-                        </div>
-                        <h3 class="tool-name">Khan Academy</h3>
-                        <p class="tool-description">Free education platform with AI tutoring for math, science, and more.</p>
-                        <ul class="tool-features">
-                            <li>AI-powered tutoring</li>
-                            <li>Personalized practice</li>
-                            <li>Video lessons</li>
-                        </ul>
-                        <a href="https://www.khanacademy.org" target="_blank" class="tool-link">
-                            Try Khan Academy
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                                <polyline points="15 3 21 3 21 9"/>
-                                <line x1="10" y1="14" x2="21" y2="3"/>
-                            </svg>
-                        </a>
-                    </div>
-
-                    <!-- Wolfram Alpha -->
-                    <div class="tool-card">
-                        <div class="tool-header">
-                            <div class="tool-icon">🧮</div>
-                            <div class="tool-badge">FREE</div>
-                        </div>
-                        <h3 class="tool-name">Wolfram Alpha</h3>
-                        <p class="tool-description">Computational intelligence for math, science, and engineering problems.</p>
-                        <ul class="tool-features">
-                            <li>Solve math problems</li>
-                            <li>Step-by-step solutions</li>
-                            <li>Science & engineering</li>
-                        </ul>
-                        <a href="https://www.wolframalpha.com" target="_blank" class="tool-link">
-                            Try Wolfram Alpha
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
                                 <polyline points="15 3 21 3 21 9"/>
