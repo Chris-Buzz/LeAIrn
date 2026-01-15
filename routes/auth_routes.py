@@ -7,6 +7,7 @@ from flask import Blueprint, request, session, redirect, url_for, jsonify, rende
 from services.auth_service import AuthService
 import firestore_db as db
 import random
+import os
 from datetime import datetime, timedelta
 
 auth_bp = Blueprint('auth', __name__)
@@ -35,11 +36,15 @@ def is_authorized_admin(email: str) -> bool:
 def login():
     """Microsoft OAuth login initiation - redirect directly to Microsoft"""
     try:
-        redirect_uri = url_for('auth.auth_callback', _external=True)
-
-        # Force localhost instead of 127.0.0.1 for local development
-        if '127.0.0.1' in redirect_uri:
-            redirect_uri = redirect_uri.replace('127.0.0.1', 'localhost')
+        # Use fixed redirect URI from env if set (for domain migration)
+        fixed_uri = os.getenv('MICROSOFT_REDIRECT_URI')
+        if fixed_uri:
+            redirect_uri = fixed_uri
+        else:
+            redirect_uri = url_for('auth.auth_callback', _external=True)
+            # Force localhost instead of 127.0.0.1 for local development
+            if '127.0.0.1' in redirect_uri:
+                redirect_uri = redirect_uri.replace('127.0.0.1', 'localhost')
 
         auth_url, state, flow = AuthService.get_authorization_url(redirect_uri)
 
@@ -159,10 +164,14 @@ def auth_callback():
 def login_google():
     """Google OAuth login initiation"""
     try:
-        redirect_uri = url_for('auth.auth_google_callback', _external=True)
-
-        if '127.0.0.1' in redirect_uri:
-            redirect_uri = redirect_uri.replace('127.0.0.1', 'localhost')
+        # Use fixed redirect URI from env if set (for domain migration)
+        fixed_uri = os.getenv('GOOGLE_REDIRECT_URI')
+        if fixed_uri:
+            redirect_uri = fixed_uri
+        else:
+            redirect_uri = url_for('auth.auth_google_callback', _external=True)
+            if '127.0.0.1' in redirect_uri:
+                redirect_uri = redirect_uri.replace('127.0.0.1', 'localhost')
 
         auth_url = AuthService.get_google_authorization_url(redirect_uri)
 
@@ -171,7 +180,8 @@ def login_google():
 
         return redirect(auth_url)
 
-    except Exception:
+    except Exception as e:
+        print(f"[ERROR] Google login initiation failed: {e}")
         return "Failed to initiate Google login", 500
 
 
@@ -188,13 +198,20 @@ def auth_google_callback():
         if not code:
             return redirect(url_for('api.index', error="No authorization code received"))
 
-        redirect_uri = url_for('auth.auth_google_callback', _external=True)
-        if '127.0.0.1' in redirect_uri:
-            redirect_uri = redirect_uri.replace('127.0.0.1', 'localhost')
+        # Use fixed redirect URI from env if set (must match what was used in login)
+        fixed_uri = os.getenv('GOOGLE_REDIRECT_URI')
+        if fixed_uri:
+            redirect_uri = fixed_uri
+        else:
+            redirect_uri = url_for('auth.auth_google_callback', _external=True)
+            if '127.0.0.1' in redirect_uri:
+                redirect_uri = redirect_uri.replace('127.0.0.1', 'localhost')
 
+        print(f"[DEBUG] Google callback - using redirect_uri: {redirect_uri}")
         token_response = AuthService.exchange_google_code_for_token(code, redirect_uri)
 
         if not token_response:
+            print(f"[ERROR] Google token exchange returned None")
             return redirect(url_for('api.index', error="Failed to exchange authorization code"))
 
         id_token_str = token_response.get('id_token')

@@ -314,6 +314,18 @@ class AuthService:
 
         uri = redirect_uri or GOOGLE_REDIRECT_URI
 
+        # Debug: Check if credentials are configured
+        if not GOOGLE_CLIENT_ID:
+            print("[ERROR] GOOGLE_CLIENT_ID is not set")
+            return None
+        if not GOOGLE_CLIENT_SECRET:
+            print("[ERROR] GOOGLE_CLIENT_SECRET is not set")
+            return None
+
+        print(f"[DEBUG] Google token exchange - redirect_uri: {uri}")
+        print(f"[DEBUG] Google token exchange - client_id configured: {bool(GOOGLE_CLIENT_ID)}")
+        print(f"[DEBUG] Google token exchange - client_secret configured: {bool(GOOGLE_CLIENT_SECRET)}")
+
         try:
             # Exchange code for tokens
             token_url = 'https://oauth2.googleapis.com/token'
@@ -326,12 +338,17 @@ class AuthService:
             }
 
             response = requests.post(token_url, data=data)
-            response.raise_for_status()
+
+            # Log the response for debugging
+            if response.status_code != 200:
+                print(f"[ERROR] Google token exchange failed with status {response.status_code}")
+                print(f"[ERROR] Response: {response.text}")
+                return None
 
             token_response = response.json()
             print(f"[OK] Google token exchange successful")
             return token_response
 
         except Exception as e:
-            print(f"[ERROR] Google token exchange failed: {e}")
+            print(f"[ERROR] Google token exchange exception: {e}")
             return None
