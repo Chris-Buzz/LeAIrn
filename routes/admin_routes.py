@@ -254,36 +254,50 @@ def verify_account():
     """Verify email and create admin account from verification link"""
     try:
         token = request.args.get('token')
+        print(f"[DEBUG] Account verification attempt - token: {token[:20] if token else 'None'}...")
 
         if not token:
+            print("[ERROR] No token provided in verification request")
             return render_template('admin_verify.html',
                                  error='Invalid verification link. No token provided.')
 
         # Get pending account data
         pending_account = db.get_pending_account_verification(token)
+        print(f"[DEBUG] Pending account lookup result: {'Found' if pending_account else 'Not found'}")
 
         if not pending_account:
+            print(f"[ERROR] Pending account not found for token: {token[:20]}...")
             return render_template('admin_verify.html',
                                  error='Verification link is invalid or has expired. Please request a new verification email.')
+
+        print(f"[DEBUG] Pending account email: {pending_account.get('email')}, username: {pending_account.get('username')}")
 
         # Create the actual admin account with pre-hashed password
         from datetime import datetime, timezone
 
         client = db.get_firestore_client()
         if not client:
+            print("[ERROR] Firestore client not available")
             return render_template('admin_verify.html',
                                  error='Database connection error. Please try again later.')
 
         admins_ref = client.collection('admin_accounts')
 
-        # Check if admin already exists
-        existing_email = admins_ref.where('email', '==', pending_account['email']).limit(1).get()
-        existing_username = admins_ref.where('username', '==', pending_account['username']).limit(1).get()
+        # Check if admin already exists - convert to list to properly check
+        existing_email = list(admins_ref.where('email', '==', pending_account['email']).limit(1).get())
+        existing_username = list(admins_ref.where('username', '==', pending_account['username']).limit(1).get())
+
+        print(f"[DEBUG] Existing email check: {len(existing_email)} found, existing username check: {len(existing_username)} found")
 
         if existing_email or existing_username:
             db.delete_pending_account_verification(token)
-            return render_template('admin_verify.html',
-                                 error='Account could not be created. Email or username already exists.')
+            error_msg = 'Account could not be created. '
+            if existing_email:
+                error_msg += 'This email is already registered. '
+            if existing_username:
+                error_msg += 'This username is already taken.'
+            print(f"[ERROR] {error_msg}")
+            return render_template('admin_verify.html', error=error_msg.strip())
 
         # Create admin account with pre-hashed password from pending account
         admin_data = {

@@ -2505,33 +2505,60 @@ def get_pending_account_verification(verification_token: str) -> Optional[Dict]:
     try:
         client = get_firestore_client()
         if not client:
+            print("[ERROR] Firestore client not available for pending account lookup")
             return None
 
         pending_ref = client.collection('pending_admin_accounts')
         doc = pending_ref.document(verification_token).get()
 
         if not doc.exists:
-            print(f"Pending account not found for token: {verification_token[:10]}...")
+            print(f"[DEBUG] Pending account document not found for token: {verification_token[:15]}...")
             return None
 
         pending_data = doc.to_dict()
+        print(f"[DEBUG] Found pending account for: {pending_data.get('email')}")
 
         # Check if token has expired
-        expires_at = datetime.fromisoformat(pending_data['expires_at'].replace('Z', '+00:00'))
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        expires_at_raw = pending_data.get('expires_at')
+        print(f"[DEBUG] Token expires_at raw value: {expires_at_raw}")
+
+        if not expires_at_raw:
+            print("[ERROR] No expires_at field in pending account data")
+            return None
+
+        # Handle different datetime formats from Firestore
+        try:
+            if hasattr(expires_at_raw, 'isoformat'):
+                # It's already a datetime object (Firestore sometimes returns these)
+                expires_at = expires_at_raw
+                if expires_at.tzinfo is None:
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
+            else:
+                # It's a string, parse it
+                expires_at_str = str(expires_at_raw).replace('Z', '+00:00')
+                expires_at = datetime.fromisoformat(expires_at_str)
+                if expires_at.tzinfo is None:
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
+        except Exception as parse_err:
+            print(f"[ERROR] Failed to parse expires_at '{expires_at_raw}': {parse_err}")
+            return None
 
         now = datetime.now(timezone.utc)
+        print(f"[DEBUG] Token expiry check - Now: {now.isoformat()}, Expires: {expires_at.isoformat()}")
+
         if now > expires_at:
-            print(f"Pending account token expired: {verification_token[:10]}...")
+            print(f"[DEBUG] Token EXPIRED - Now ({now}) > Expires ({expires_at})")
             # Clean up expired token
             delete_pending_account_verification(verification_token)
             return None
 
+        print(f"[DEBUG] Token is valid, {(expires_at - now).total_seconds() / 60:.1f} minutes remaining")
         return pending_data
 
     except Exception as e:
-        print(f"ERROR getting pending account: {e}")
+        print(f"[ERROR] Exception getting pending account: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
