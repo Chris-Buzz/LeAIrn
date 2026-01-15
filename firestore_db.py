@@ -1,5 +1,5 @@
 """
-Firestore Database Module for LeAIrn Booking System
+Firestore Database Module for LearnAI Booking System
 
 This module handles all Firestore database operations, replacing JSON file storage.
 """
@@ -9,8 +9,8 @@ import json
 import base64
 import firebase_admin
 from firebase_admin import credentials, firestore
-from datetime import datetime
-from typing import List, Dict, Optional
+from datetime import datetime, timezone, timedelta
+from typing import List, Dict, Optional, Tuple
 import pytz
 
 # Global Firestore client
@@ -1097,14 +1097,14 @@ def check_verification_rate_limit(email: str, request_type: str = 'booking') -> 
         requests = rate_limit.get('requests', [])
 
         # Filter requests from last hour
-        one_hour_ago = (now - __import__('datetime').timedelta(hours=1)).isoformat()
+        one_hour_ago = (now - timedelta(hours=1)).isoformat()
         recent_requests = [r for r in requests if r.get('timestamp', '') > one_hour_ago]
 
         if len(recent_requests) >= limit:
             # Rate limit exceeded
             oldest_request = min([r.get('timestamp', '') for r in recent_requests])
             oldest_dt = datetime.fromisoformat(oldest_request)
-            wait_until = oldest_dt + __import__('datetime').timedelta(hours=1)
+            wait_until = oldest_dt + timedelta(hours=1)
             wait_minutes = max(1, int((wait_until - now).total_seconds() / 60))
 
             return {'allowed': False, 'wait_minutes': wait_minutes}
@@ -1164,14 +1164,14 @@ def check_admin_login_rate_limit(ip_address: str) -> dict:
         attempts = rate_limit.get('attempts', [])
 
         # Filter attempts from last hour
-        one_hour_ago = (now - __import__('datetime').timedelta(hours=1)).isoformat()
+        one_hour_ago = (now - timedelta(hours=1)).isoformat()
         recent_attempts = [a for a in attempts if a.get('timestamp', '') > one_hour_ago]
 
         if len(recent_attempts) >= 5:
             # Rate limit exceeded
             oldest_attempt = min([a.get('timestamp', '') for a in recent_attempts])
             oldest_dt = datetime.fromisoformat(oldest_attempt)
-            wait_until = oldest_dt + __import__('datetime').timedelta(hours=1)
+            wait_until = oldest_dt + timedelta(hours=1)
             wait_minutes = max(1, int((wait_until - now).total_seconds() / 60))
 
             return {'allowed': False, 'wait_minutes': wait_minutes, 'attempts': len(recent_attempts)}
@@ -1255,14 +1255,14 @@ def check_device_booking_rate_limit(device_id: str) -> dict:
         bookings = rate_limit.get('bookings', [])
 
         # Filter bookings from last 24 hours
-        twenty_four_hours_ago = (now - __import__('datetime').timedelta(hours=24)).isoformat()
+        twenty_four_hours_ago = (now - timedelta(hours=24)).isoformat()
         recent_bookings = [b for b in bookings if b.get('timestamp', '') > twenty_four_hours_ago]
 
         if len(recent_bookings) >= 2:
             # Rate limit exceeded (2 bookings per 24 hours)
             oldest_booking = min([b.get('timestamp', '') for b in recent_bookings])
             oldest_dt = datetime.fromisoformat(oldest_booking)
-            wait_until = oldest_dt + __import__('datetime').timedelta(hours=24)
+            wait_until = oldest_dt + timedelta(hours=24)
             wait_hours = max(1, int((wait_until - now).total_seconds() / 3600))
 
             return {'allowed': False, 'wait_hours': wait_hours, 'bookings': len(recent_bookings)}
@@ -1319,14 +1319,14 @@ def check_ip_booking_rate_limit(ip_address: str) -> dict:
         bookings = rate_limit.get('bookings', [])
 
         # Filter bookings from last 24 hours
-        twenty_four_hours_ago = (now - __import__('datetime').timedelta(hours=24)).isoformat()
+        twenty_four_hours_ago = (now - timedelta(hours=24)).isoformat()
         recent_bookings = [b for b in bookings if b.get('timestamp', '') > twenty_four_hours_ago]
 
         if len(recent_bookings) >= 25:
             # Rate limit exceeded (25 bookings per 24 hours)
             oldest_booking = min([b.get('timestamp', '') for b in recent_bookings])
             oldest_dt = datetime.fromisoformat(oldest_booking)
-            wait_until = oldest_dt + __import__('datetime').timedelta(hours=24)
+            wait_until = oldest_dt + timedelta(hours=24)
             wait_hours = max(1, int((wait_until - now).total_seconds() / 3600))
 
             return {'allowed': False, 'wait_hours': wait_hours, 'bookings': len(recent_bookings)}
@@ -1400,6 +1400,97 @@ def record_ip_booking_request(ip_address: str) -> bool:
 
     except Exception as e:
         print(f"ERROR: Failed to record IP booking request: {e}")
+        return False
+
+
+def check_email_booking_rate_limit(email: str) -> dict:
+    """
+    Check if email has exceeded booking rate limit (1 booking per 24 hours).
+
+    Args:
+        email: User's email address
+
+    Returns:
+        dict: {'allowed': bool, 'wait_hours': int, 'has_active_booking': bool}
+    """
+    try:
+        initialize_firestore()
+
+        email = str(email).strip().lower()
+
+        # First, check if user already has an active booking
+        bookings = get_all_bookings()
+        for booking in bookings:
+            if booking.get('email', '').lower() == email:
+                return {
+                    'allowed': False,
+                    'wait_hours': 0,
+                    'has_active_booking': True,
+                    'message': 'You already have an active booking. Please cancel it first to book a new session.'
+                }
+
+        # Check rate limit record for 24-hour booking requests
+        doc_ref = db.collection('email_booking_limits').document(email.replace('@', '_at_').replace('.', '_dot_'))
+        doc = doc_ref.get()
+
+        now = datetime.now()
+
+        if not doc.exists:
+            return {'allowed': True, 'wait_hours': 0, 'has_active_booking': False}
+
+        rate_limit = doc.to_dict()
+        last_booking_str = rate_limit.get('last_booking', '')
+
+        if not last_booking_str:
+            return {'allowed': True, 'wait_hours': 0, 'has_active_booking': False}
+
+        last_booking_dt = datetime.fromisoformat(last_booking_str)
+        hours_since_last = (now - last_booking_dt).total_seconds() / 3600
+
+        if hours_since_last < 24:
+            # Rate limit - can only book once per 24 hours
+            wait_hours = max(1, int(24 - hours_since_last))
+            return {
+                'allowed': False,
+                'wait_hours': wait_hours,
+                'has_active_booking': False,
+                'message': f'You can only book one session per day. Please try again in {wait_hours} hour{"s" if wait_hours != 1 else ""}.'
+            }
+
+        return {'allowed': True, 'wait_hours': 0, 'has_active_booking': False}
+
+    except Exception as e:
+        print(f"ERROR: Failed to check email booking rate limit: {e}")
+        # On error, allow the booking
+        return {'allowed': True, 'wait_hours': 0, 'has_active_booking': False}
+
+
+def record_email_booking_request(email: str) -> bool:
+    """
+    Record an email booking request for rate limiting tracking.
+
+    Args:
+        email: User's email address
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        initialize_firestore()
+
+        email = str(email).strip().lower()
+        doc_id = email.replace('@', '_at_').replace('.', '_dot_')
+        doc_ref = db.collection('email_booking_limits').document(doc_id)
+
+        doc_ref.set({
+            'email': email,
+            'last_booking': datetime.now().isoformat()
+        })
+
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to record email booking request: {e}")
         return False
 
 
@@ -1544,10 +1635,10 @@ def initialize_tutors():
 
     tutors = [
         {
-            'id': 'christopher',
+            'id': 'christopher_buzaid',
             'username': 'christopher',
             'full_name': 'Christopher Buzaid',
-            'email': 'cbuzaid@monmouth.edu',
+            'email': 's1363246@monmouth.edu',
             'role': 'super_admin',  # Can see all tutors
             'max_slots_per_week': 999,  # Unlimited for super admin
             'active': True,
@@ -1557,7 +1648,7 @@ def initialize_tutors():
             'id': 'danny',
             'username': 'danny',
             'full_name': 'Danny',
-            'email': 'danny@monmouth.edu',  # Update with real email
+            'email': 's1323702@monmouth.edu',
             'role': 'tutor_admin',  # Can only see own slots
             'max_slots_per_week': 10,
             'active': True,
@@ -1567,7 +1658,7 @@ def initialize_tutors():
             'id': 'kiumbura',
             'username': 'kiumbura',
             'full_name': 'Kiumbura',
-            'email': 'kiumbura@monmouth.edu',  # Update with real email
+            'email': 's1358017@monmouth.edu',
             'role': 'tutor_admin',  # Can only see own slots
             'max_slots_per_week': 10,
             'active': True,
@@ -1581,7 +1672,1349 @@ def initialize_tutors():
             print(f"Creating tutor: {tutor['full_name']}")
             add_tutor(tutor)
         else:
-            print(f"Tutor already exists: {tutor['full_name']}")
+            # Update existing tutor if email is missing or has changed
+            existing_email = existing.get('email', '')
+            expected_email = tutor.get('email', '')
+            if expected_email and existing_email != expected_email:
+                print(f"Updating tutor email: {tutor['full_name']} -> {expected_email}")
+                update_tutor(tutor['id'], {'email': expected_email})
+            else:
+                print(f"Tutor already exists: {tutor['full_name']}")
+
+
+# ============================================================================
+# ADMIN OAUTH LOGIN TRACKING (For auto-admin with verification safety net)
+# ============================================================================
+
+def track_admin_oauth_login(email: str) -> int:
+    """
+    Track OAuth login count for admin emails and return current count.
+    Used to determine when verification is required (after 10 logins).
+    """
+    try:
+        initialize_firestore()
+        email = email.lower().strip()
+        doc_ref = db.collection('admin_oauth_logins').document(email)
+        doc = doc_ref.get()
+
+        now = datetime.now(timezone.utc).isoformat()
+
+        if doc.exists:
+            current_count = doc.to_dict().get('login_count', 0) + 1
+            doc_ref.update({
+                'login_count': current_count,
+                'last_login': now
+            })
+            print(f"[OK] Admin OAuth login tracked: {email} (count: {current_count})")
+            return current_count
+        else:
+            doc_ref.set({
+                'email': email,
+                'login_count': 1,
+                'first_login': now,
+                'last_login': now,
+                'verified': False,
+                'verified_at': None
+            })
+            print(f"[OK] New admin OAuth login tracked: {email}")
+            return 1
+    except Exception as e:
+        print(f"ERROR tracking admin OAuth login: {e}")
+        return 0
+
+
+def get_admin_verification_status(email: str) -> dict:
+    """Get admin verification status including login count."""
+    try:
+        initialize_firestore()
+        email = email.lower().strip()
+        doc = db.collection('admin_oauth_logins').document(email).get()
+        return doc.to_dict() if doc.exists else None
+    except Exception as e:
+        print(f"ERROR getting admin verification status: {e}")
+        return None
+
+
+def store_admin_verification_code(email: str, code: str) -> bool:
+    """Store a verification code for admin with 10-minute expiry."""
+    try:
+        initialize_firestore()
+        email = email.lower().strip()
+        now = datetime.now(timezone.utc)
+        expires_at = now + timedelta(minutes=10)
+
+        db.collection('admin_verification_codes').document(email).set({
+            'email': email,
+            'code': code,
+            'created_at': now.isoformat(),
+            'expires_at': expires_at.isoformat()
+        })
+        print(f"[OK] Verification code stored for: {email}")
+        return True
+    except Exception as e:
+        print(f"ERROR storing verification code: {e}")
+        return False
+
+
+def get_admin_verification_code(email: str) -> dict:
+    """Get stored verification code if valid (not expired)."""
+    try:
+        initialize_firestore()
+        email = email.lower().strip()
+        doc = db.collection('admin_verification_codes').document(email).get()
+
+        if not doc.exists:
+            return None
+
+        data = doc.to_dict()
+        expires_at = datetime.fromisoformat(data.get('expires_at', ''))
+        now = datetime.now(timezone.utc)
+
+        # Check if expired
+        if now > expires_at:
+            print(f"[WARN] Verification code expired for: {email}")
+            return None
+
+        return data
+    except Exception as e:
+        print(f"ERROR getting verification code: {e}")
+        return None
+
+
+def verify_admin_oauth(email: str) -> bool:
+    """Mark admin as verified and reset login counter."""
+    try:
+        initialize_firestore()
+        email = email.lower().strip()
+        now = datetime.now(timezone.utc).isoformat()
+
+        db.collection('admin_oauth_logins').document(email).update({
+            'verified': True,
+            'verified_at': now,
+            'login_count': 0  # Reset counter after successful verification
+        })
+
+        # Delete the used verification code
+        db.collection('admin_verification_codes').document(email).delete()
+
+        print(f"[OK] Admin verified and counter reset: {email}")
+        return True
+    except Exception as e:
+        print(f"ERROR verifying admin OAuth: {e}")
+        return False
+
+
+# ============================================================================
+# BOOKING STATISTICS (Historical data tracking)
+# ============================================================================
+
+def get_booking_statistics() -> dict:
+    """
+    Get booking statistics including historical data.
+    Returns stats per tutor and master totals.
+    """
+    try:
+        initialize_firestore()
+        doc = db.collection('app_statistics').document('booking_stats').get()
+
+        if doc.exists:
+            return doc.to_dict()
+        else:
+            # Initialize with historical data if not exists
+            return initialize_booking_statistics()
+    except Exception as e:
+        print(f"ERROR getting booking statistics: {e}")
+        return {
+            'tutors': {
+                'christopher_buzaid': {'total_bookings': 0, 'unique_clients': []}
+            },
+            'initialized': False
+        }
+
+
+def initialize_booking_statistics() -> dict:
+    """
+    Initialize booking statistics with historical data.
+    Christopher: 31 total bookings, 21 unique clients
+    """
+    try:
+        initialize_firestore()
+
+        # Historical data - 21 unique client emails for Christopher
+        # These are placeholder emails representing the 21 unique clients
+        historical_clients = [
+            f"historical_client_{i}@monmouth.edu" for i in range(1, 22)
+        ]
+
+        stats = {
+            'tutors': {
+                'christopher_buzaid': {
+                    'tutor_name': 'Christopher Buzaid',
+                    'total_bookings': 31,
+                    'unique_clients': historical_clients
+                },
+                'danny': {
+                    'tutor_name': 'Danny',
+                    'total_bookings': 0,
+                    'unique_clients': []
+                },
+                'kiumbura': {
+                    'tutor_name': 'Kiumbura',
+                    'total_bookings': 0,
+                    'unique_clients': []
+                }
+            },
+            'initialized': True,
+            'initialized_at': datetime.now(timezone.utc).isoformat()
+        }
+
+        db.collection('app_statistics').document('booking_stats').set(stats)
+        print("[OK] Booking statistics initialized with historical data")
+        return stats
+    except Exception as e:
+        print(f"ERROR initializing booking statistics: {e}")
+        return {'tutors': {}, 'initialized': False}
+
+
+def add_completed_booking(tutor_id: str, tutor_name: str, client_email: str) -> bool:
+    """
+    Add a completed booking to statistics.
+    Called when a booking is marked as completed.
+    """
+    try:
+        initialize_firestore()
+        doc_ref = db.collection('app_statistics').document('booking_stats')
+        doc = doc_ref.get()
+
+        if not doc.exists:
+            stats = initialize_booking_statistics()
+        else:
+            stats = doc.to_dict()
+
+        # Initialize tutor if not exists
+        if tutor_id not in stats.get('tutors', {}):
+            stats['tutors'][tutor_id] = {
+                'tutor_name': tutor_name,
+                'total_bookings': 0,
+                'unique_clients': []
+            }
+
+        # Increment booking count
+        stats['tutors'][tutor_id]['total_bookings'] += 1
+
+        # Add unique client if not already exists
+        client_email = client_email.lower().strip()
+        if client_email and client_email not in stats['tutors'][tutor_id]['unique_clients']:
+            stats['tutors'][tutor_id]['unique_clients'].append(client_email)
+
+        # Update last modified
+        stats['last_updated'] = datetime.now(timezone.utc).isoformat()
+
+        doc_ref.set(stats)
+        print(f"[OK] Booking stats updated for {tutor_name}: {stats['tutors'][tutor_id]['total_bookings']} total")
+        return True
+    except Exception as e:
+        print(f"ERROR adding completed booking to stats: {e}")
+        return False
+
+
+def get_statistics_summary() -> dict:
+    """
+    Get a summary of all booking statistics for the admin dashboard.
+    Returns total bookings and unique clients per tutor + master total.
+    """
+    try:
+        stats = get_booking_statistics()
+
+        result = {
+            'tutors': {},
+            'master_total': {
+                'total_bookings': 0,
+                'unique_clients': 0
+            }
+        }
+
+        all_unique_emails = set()
+
+        for tutor_id, tutor_data in stats.get('tutors', {}).items():
+            total = tutor_data.get('total_bookings', 0)
+            unique_list = tutor_data.get('unique_clients', [])
+
+            result['tutors'][tutor_id] = {
+                'tutor_name': tutor_data.get('tutor_name', tutor_id),
+                'total_bookings': total,
+                'unique_clients': len(unique_list)
+            }
+
+            result['master_total']['total_bookings'] += total
+            all_unique_emails.update(unique_list)
+
+        result['master_total']['unique_clients'] = len(all_unique_emails)
+
+        return result
+    except Exception as e:
+        print(f"ERROR getting statistics summary: {e}")
+        return {
+            'tutors': {},
+            'master_total': {'total_bookings': 0, 'unique_clients': 0}
+        }
+
+
+# ============================================================================
+# ADMIN ACCOUNT MANAGEMENT WITH SECURE PASSWORD STORAGE
+# ============================================================================
+
+def create_admin_account(email: str, username: str, password: str, role: str = 'tutor_admin',
+                        tutor_id: str = None, tutor_name: str = None) -> bool:
+    """
+    Create a new admin account with securely hashed password.
+
+    Args:
+        email: Admin email address
+        username: Admin username
+        password: Plain text password (will be hashed)
+        role: Admin role (tutor_admin or super_admin)
+        tutor_id: Optional tutor ID to associate with this admin
+        tutor_name: Optional tutor name
+
+    Returns:
+        bool: True if account created successfully, False otherwise
+    """
+    try:
+        from werkzeug.security import generate_password_hash
+
+        client = get_firestore_client()
+        if not client:
+            print("ERROR: Firestore not initialized for admin account creation")
+            return False
+
+        # Check if admin with email or username already exists
+        admins_ref = client.collection('admin_accounts')
+
+        # Check email
+        existing_email = admins_ref.where('email', '==', email).limit(1).get()
+        if existing_email:
+            print(f"ERROR: Admin account with email {email} already exists")
+            return False
+
+        # Check username
+        existing_username = admins_ref.where('username', '==', username).limit(1).get()
+        if existing_username:
+            print(f"ERROR: Admin account with username {username} already exists")
+            return False
+
+        # Create admin account with hashed password
+        admin_data = {
+            'email': email.lower().strip(),
+            'username': username.strip(),
+            'password_hash': generate_password_hash(password, method='pbkdf2:sha256'),
+            'role': role,
+            'tutor_id': tutor_id or username,
+            'tutor_name': tutor_name or username.capitalize(),
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'last_password_verification': datetime.now(timezone.utc).isoformat(),
+            'active': True
+        }
+
+        # Store in Firestore
+        doc_ref = admins_ref.document()
+        doc_ref.set(admin_data)
+
+        print(f"[OK] Created admin account: {email} (username: {username})")
+        return True
+
+    except Exception as e:
+        print(f"ERROR creating admin account: {e}")
+        return False
+
+
+def verify_admin_password(username: str, password: str) -> Optional[Dict]:
+    """
+    Verify admin password and return admin data if valid.
+
+    Args:
+        username: Admin username
+        password: Plain text password to verify
+
+    Returns:
+        Dict with admin data if password is valid, None otherwise
+    """
+    try:
+        from werkzeug.security import check_password_hash
+
+        client = get_firestore_client()
+        if not client:
+            print("ERROR: Firestore not initialized for password verification")
+            return None
+
+        # Get admin by username
+        admins_ref = client.collection('admin_accounts')
+        query = admins_ref.where('username', '==', username).where('active', '==', True).limit(1)
+        results = query.get()
+
+        if not results:
+            print(f"Admin account not found: {username}")
+            return None
+
+        admin_doc = results[0]
+        admin_data = admin_doc.to_dict()
+        admin_data['id'] = admin_doc.id
+
+        # Verify password
+        if check_password_hash(admin_data.get('password_hash', ''), password):
+            print(f"[OK] Password verified for admin: {username}")
+            return admin_data
+        else:
+            print(f"Invalid password for admin: {username}")
+            return None
+
+    except Exception as e:
+        print(f"ERROR verifying admin password: {e}")
+        return None
+
+
+def get_admin_by_email(email: str) -> Optional[Dict]:
+    """
+    Get admin account by email address.
+
+    Args:
+        email: Admin email address
+
+    Returns:
+        Dict with admin data if found, None otherwise
+    """
+    try:
+        client = get_firestore_client()
+        if not client:
+            return None
+
+        admins_ref = client.collection('admin_accounts')
+        query = admins_ref.where('email', '==', email.lower().strip()).where('active', '==', True).limit(1)
+        results = query.get()
+
+        if not results:
+            return None
+
+        admin_doc = results[0]
+        admin_data = admin_doc.to_dict()
+        admin_data['id'] = admin_doc.id
+
+        return admin_data
+
+    except Exception as e:
+        print(f"ERROR getting admin by email: {e}")
+        return None
+
+
+def get_admin_by_username(username: str) -> Optional[Dict]:
+    """
+    Get admin account by username.
+
+    Args:
+        username: Admin username
+
+    Returns:
+        Dict with admin data if found, None otherwise
+    """
+    try:
+        client = get_firestore_client()
+        if not client:
+            return None
+
+        admins_ref = client.collection('admin_accounts')
+        query = admins_ref.where('username', '==', username).where('active', '==', True).limit(1)
+        results = query.get()
+
+        if not results:
+            return None
+
+        admin_doc = results[0]
+        admin_data = admin_doc.to_dict()
+        admin_data['id'] = admin_doc.id
+
+        return admin_data
+
+    except Exception as e:
+        print(f"ERROR getting admin by username: {e}")
+        return None
+
+
+def delete_admin_account_by_email(email: str) -> bool:
+    """
+    Delete admin account by email address (for super_admin use).
+
+    Args:
+        email: Admin email address to delete
+
+    Returns:
+        bool: True if deleted successfully, False otherwise
+    """
+    try:
+        client = get_firestore_client()
+        if not client:
+            return False
+
+        admins_ref = client.collection('admin_accounts')
+        query = admins_ref.where('email', '==', email.lower().strip()).limit(1)
+        results = query.get()
+
+        if not results:
+            print(f"No admin account found for email: {email}")
+            return False
+
+        admin_doc = results[0]
+        admin_doc.reference.delete()
+        print(f"[OK] Deleted admin account for: {email}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR deleting admin account: {e}")
+        return False
+
+
+def update_admin_last_password_verification(username: str) -> bool:
+    """
+    Update the last password verification timestamp for an admin.
+
+    Args:
+        username: Admin username
+
+    Returns:
+        bool: True if updated successfully, False otherwise
+    """
+    try:
+        client = get_firestore_client()
+        if not client:
+            return False
+
+        admins_ref = client.collection('admin_accounts')
+        query = admins_ref.where('username', '==', username).limit(1)
+        results = query.get()
+
+        if not results:
+            return False
+
+        admin_doc = results[0]
+        admin_doc.reference.update({
+            'last_password_verification': datetime.now(timezone.utc).isoformat()
+        })
+
+        print(f"[OK] Updated password verification timestamp for admin: {username}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR updating password verification timestamp: {e}")
+        return False
+
+
+def check_admin_password_verification_needed(username: str, days: int = 3) -> bool:
+    """
+    Check if admin needs to re-verify their password (after N days).
+
+    Args:
+        username: Admin username
+        days: Number of days before re-verification is required (default: 3)
+
+    Returns:
+        bool: True if password verification is needed, False otherwise
+    """
+    try:
+        admin = get_admin_by_username(username)
+        if not admin:
+            return True  # Require verification if admin not found
+
+        last_verification_str = admin.get('last_password_verification')
+        if not last_verification_str:
+            return True  # Require verification if never verified
+
+        # Parse timestamp
+        last_verification = datetime.fromisoformat(last_verification_str.replace('Z', '+00:00'))
+        if last_verification.tzinfo is None:
+            last_verification = last_verification.replace(tzinfo=timezone.utc)
+
+        # Check if more than N days have passed
+        now = datetime.now(timezone.utc)
+        time_since_verification = now - last_verification
+
+        needs_verification = time_since_verification.days >= days
+
+        if needs_verification:
+            print(f"Admin {username} needs password re-verification (last verified {time_since_verification.days} days ago)")
+
+        return needs_verification
+
+    except Exception as e:
+        print(f"ERROR checking password verification status: {e}")
+        return True  # Err on the side of caution
+
+
+# ============================================================================
+# AUTHORIZED ADMIN EMAILS (Database-driven, not hardcoded)
+# ============================================================================
+
+def get_authorized_admin_by_email(email: str) -> Optional[Dict]:
+    """
+    Get authorized admin configuration by email address.
+    This replaces the hardcoded ADMIN_OAUTH_EMAILS dictionary.
+
+    Args:
+        email: Email address to check
+
+    Returns:
+        Dict with admin config if authorized, None otherwise
+    """
+    try:
+        db = get_firestore_client()
+        if not db:
+            return None
+
+        doc = db.collection('authorized_admins').document(email.lower().strip()).get()
+
+        if doc.exists:
+            return doc.to_dict()
+        return None
+
+    except Exception as e:
+        print(f"ERROR getting authorized admin: {e}")
+        return None
+
+
+def get_all_authorized_admins() -> List[Dict]:
+    """
+    Get all authorized admin emails and their configurations.
+
+    Returns:
+        List of authorized admin configs
+    """
+    try:
+        db = get_firestore_client()
+        if not db:
+            return []
+
+        docs = db.collection('authorized_admins').stream()
+
+        admins = []
+        for doc in docs:
+            admin_data = doc.to_dict()
+            admin_data['email'] = doc.id
+            admins.append(admin_data)
+
+        return admins
+
+    except Exception as e:
+        print(f"ERROR getting all authorized admins: {e}")
+        return []
+
+
+def add_authorized_admin(email: str, tutor_id: str, tutor_name: str,
+                         tutor_role: str = 'tutor_admin', admin_username: str = None) -> bool:
+    """
+    Add a new authorized admin email.
+
+    Args:
+        email: Email address to authorize
+        tutor_id: Tutor ID for this admin
+        tutor_name: Display name
+        tutor_role: 'super_admin' or 'tutor_admin'
+        admin_username: Optional username hint
+
+    Returns:
+        bool: True if added successfully
+    """
+    try:
+        db = get_firestore_client()
+        if not db:
+            return False
+
+        admin_config = {
+            'tutor_id': tutor_id,
+            'tutor_name': tutor_name,
+            'tutor_role': tutor_role,
+            'admin_username': admin_username or tutor_id,
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'active': True
+        }
+
+        db.collection('authorized_admins').document(email.lower().strip()).set(admin_config)
+        print(f"[OK] Added authorized admin: {email} ({tutor_name})")
+        return True
+
+    except Exception as e:
+        print(f"ERROR adding authorized admin: {e}")
+        return False
+
+
+def remove_authorized_admin(email: str) -> bool:
+    """
+    Remove an authorized admin email.
+
+    Args:
+        email: Email address to remove
+
+    Returns:
+        bool: True if removed successfully
+    """
+    try:
+        db = get_firestore_client()
+        if not db:
+            return False
+
+        db.collection('authorized_admins').document(email.lower().strip()).delete()
+        print(f"[OK] Removed authorized admin: {email}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR removing authorized admin: {e}")
+        return False
+
+
+def initialize_authorized_admins_if_empty() -> bool:
+    """
+    Initialize authorized admins collection ONLY if it's empty.
+    This is a one-time migration from hardcoded values to database.
+    After running once, admins are managed through the database only.
+
+    Returns:
+        bool: True if initialized or already exists
+    """
+    try:
+        client = get_firestore_client()
+        if not client:
+            return False
+
+        # Check if collection already has data
+        existing = list(client.collection('authorized_admins').limit(1).stream())
+        if existing:
+            print("[OK] Authorized admins collection already initialized")
+            return True
+
+        # Collection is empty - initialize with default admins
+        # This runs ONCE on first deployment, then data lives in database only
+        print("[MIGRATION] Initializing authorized_admins collection...")
+
+        default_admins = [
+            {
+                'email': 's1363246@monmouth.edu',
+                'tutor_id': 'christopher_buzaid',
+                'tutor_name': 'Christopher Buzaid',
+                'tutor_role': 'super_admin',
+                'admin_username': 'christopher'
+            },
+            {
+                'email': 'cjpbuzaid@gmail.com',
+                'tutor_id': 'christopher_buzaid',
+                'tutor_name': 'Christopher Buzaid',
+                'tutor_role': 'super_admin',
+                'admin_username': 'christopher'
+            },
+            {
+                'email': 's1323702@monmouth.edu',
+                'tutor_id': 'danny',
+                'tutor_name': 'Danny',
+                'tutor_role': 'tutor_admin',
+                'admin_username': 'danny'
+            },
+            {
+                'email': 's1358017@monmouth.edu',
+                'tutor_id': 'kiumbura',
+                'tutor_name': 'Kiumbura',
+                'tutor_role': 'tutor_admin',
+                'admin_username': 'kiumbura'
+            }
+        ]
+
+        for admin in default_admins:
+            email = admin['email']
+            add_authorized_admin(
+                email=email,
+                tutor_id=admin['tutor_id'],
+                tutor_name=admin['tutor_name'],
+                tutor_role=admin['tutor_role'],
+                admin_username=admin['admin_username']
+            )
+
+        print(f"[OK] Initialized {len(default_admins)} authorized admins in database")
+        return True
+
+    except Exception as e:
+        print(f"ERROR initializing authorized admins: {e}")
+        return False
+
+
+def store_pending_account_verification(email: str, username: str, password: str,
+                                       verification_token: str, role: str = 'tutor_admin',
+                                       tutor_id: str = None, tutor_name: str = None) -> bool:
+    """
+    Store pending admin account awaiting email verification.
+
+    Args:
+        email: Admin email address
+        username: Chosen username
+        password: Plain text password (will be hashed before storage)
+        verification_token: Unique verification token
+        role: Admin role
+        tutor_id: Tutor ID
+        tutor_name: Tutor name
+
+    Returns:
+        bool: True if stored successfully
+    """
+    try:
+        from werkzeug.security import generate_password_hash
+
+        client = get_firestore_client()
+        if not client:
+            print("ERROR: Firestore not initialized for pending account storage")
+            return False
+
+        # Store pending account with 1-hour expiry
+        pending_data = {
+            'email': email.lower().strip(),
+            'username': username.strip(),
+            'password_hash': generate_password_hash(password, method='pbkdf2:sha256'),
+            'role': role,
+            'tutor_id': tutor_id or username,
+            'tutor_name': tutor_name or username.capitalize(),
+            'verification_token': verification_token,
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'expires_at': (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+        }
+
+        # Store in Firestore with token as document ID for easy lookup
+        pending_ref = client.collection('pending_admin_accounts')
+        pending_ref.document(verification_token).set(pending_data)
+
+        print(f"[OK] Stored pending admin account for: {email} (token: {verification_token[:10]}...)")
+        return True
+
+    except Exception as e:
+        print(f"ERROR storing pending account: {e}")
+        return False
+
+
+def get_pending_account_verification(verification_token: str) -> Optional[Dict]:
+    """
+    Get pending admin account by verification token.
+
+    Args:
+        verification_token: The verification token
+
+    Returns:
+        Dict with pending account data if found and not expired, None otherwise
+    """
+    try:
+        client = get_firestore_client()
+        if not client:
+            return None
+
+        pending_ref = client.collection('pending_admin_accounts')
+        doc = pending_ref.document(verification_token).get()
+
+        if not doc.exists:
+            print(f"Pending account not found for token: {verification_token[:10]}...")
+            return None
+
+        pending_data = doc.to_dict()
+
+        # Check if token has expired
+        expires_at = datetime.fromisoformat(pending_data['expires_at'].replace('Z', '+00:00'))
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+        now = datetime.now(timezone.utc)
+        if now > expires_at:
+            print(f"Pending account token expired: {verification_token[:10]}...")
+            # Clean up expired token
+            delete_pending_account_verification(verification_token)
+            return None
+
+        return pending_data
+
+    except Exception as e:
+        print(f"ERROR getting pending account: {e}")
+        return None
+
+
+def delete_pending_account_verification(verification_token: str) -> bool:
+    """
+    Delete pending admin account verification entry.
+
+    Args:
+        verification_token: The verification token
+
+    Returns:
+        bool: True if deleted successfully
+    """
+    try:
+        client = get_firestore_client()
+        if not client:
+            return False
+
+        pending_ref = client.collection('pending_admin_accounts')
+        pending_ref.document(verification_token).delete()
+
+        print(f"[OK] Deleted pending account verification: {verification_token[:10]}...")
+        return True
+
+    except Exception as e:
+        print(f"ERROR deleting pending account: {e}")
+        return False
+
+# ================== User Payment Management ==================
+
+def get_user_payment_status(email: str) -> Dict:
+    """
+    Get payment status for a user
+
+    Args:
+        email: User's email address
+
+    Returns:
+        Dictionary with payment status information:
+        {
+            'has_paid': bool,
+            'payment_date': str (ISO format),
+            'amount_paid': float,
+            'currency': str,
+            'payment_id': str,
+            'is_internal': bool  # True for @monmouth.edu users
+        }
+    """
+    try:
+        email = email.lower().strip()
+
+        # Monmouth users get free access
+        if email.endswith('@monmouth.edu'):
+            return {
+                'has_paid': True,
+                'is_internal': True,
+                'free_access': True,
+                'reason': 'Monmouth University student/staff'
+            }
+
+        # Check external user payment status
+        users_ref = db.collection('users')
+        user_doc = users_ref.document(email).get()
+
+        if not user_doc.exists:
+            return {
+                'has_paid': False,
+                'is_internal': False,
+                'free_access': False
+            }
+
+        user_data = user_doc.to_dict()
+        return {
+            'has_paid': user_data.get('has_paid', False),
+            'is_internal': False,
+            'free_access': False,
+            'payment_date': user_data.get('payment_date'),
+            'amount_paid': user_data.get('amount_paid'),
+            'currency': user_data.get('currency', 'USD'),
+            'payment_id': user_data.get('payment_id')
+        }
+
+    except Exception as e:
+        print(f"ERROR getting user payment status: {e}")
+        # Default to requiring payment for safety
+        return {
+            'has_paid': False,
+            'is_internal': False,
+            'free_access': False
+        }
+
+
+def record_user_payment(email: str, amount: float, currency: str = 'USD',
+                       payment_id: str = None) -> bool:
+    """
+    Record a successful payment for a user
+
+    Args:
+        email: User's email address
+        amount: Payment amount
+        currency: Currency code (default: USD)
+        payment_id: Payment transaction ID from payment provider
+
+    Returns:
+        bool: True if successful
+    """
+    try:
+        email = email.lower().strip()
+
+        users_ref = db.collection('users')
+        user_doc_ref = users_ref.document(email)
+
+        payment_data = {
+            'email': email,
+            'has_paid': True,
+            'payment_date': datetime.now(timezone.utc).isoformat(),
+            'amount_paid': amount,
+            'currency': currency,
+            'payment_id': payment_id,
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }
+
+        user_doc_ref.set(payment_data, merge=True)
+        print(f"[OK] Payment recorded for {email}: {amount} {currency}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR recording user payment: {e}")
+        return False
+
+
+def get_or_create_user(email: str, name: str = None, oauth_provider: str = None) -> Dict:
+    """
+    Get or create user document with metadata
+
+    Args:
+        email: User's email address
+        name: User's display name
+        oauth_provider: OAuth provider used (google, microsoft)
+
+    Returns:
+        User data dictionary
+    """
+    try:
+        email = email.lower().strip()
+
+        users_ref = db.collection('users')
+        user_doc = users_ref.document(email).get()
+
+        if user_doc.exists:
+            return user_doc.to_dict()
+
+        # Create new user
+        is_internal = email.endswith('@monmouth.edu')
+
+        user_data = {
+            'email': email,
+            'name': name or email.split('@')[0],
+            'oauth_provider': oauth_provider,
+            'is_internal': is_internal,
+            'has_paid': is_internal,  # Monmouth users auto-approved
+            'free_access': is_internal,
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'updated_at': datetime.now(timezone.utc).isoformat(),
+            'banned': False,
+            'missed_sessions': 0,
+            'unexcused_misses': 0
+        }
+
+        users_ref.document(email).set(user_data)
+        print(f"[OK] Created user: {email} (internal={is_internal})")
+        return user_data
+
+    except Exception as e:
+        print(f"ERROR getting/creating user: {e}")
+        return {}
+
+
+def record_missed_session(email: str, excused: bool = False, reason: str = None) -> bool:
+    """
+    Record a missed session for a user
+
+    Args:
+        email: User's email address
+        excused: Whether the miss is excused (has valid reason)
+        reason: Reason for missing (if provided)
+
+    Returns:
+        bool: True if successful
+    """
+    try:
+        email = email.lower().strip()
+        user = get_or_create_user(email)
+
+        users_ref = db.collection('users')
+        user_doc_ref = users_ref.document(email)
+
+        # Increment counters
+        missed_sessions = user.get('missed_sessions', 0) + 1
+        unexcused_misses = user.get('unexcused_misses', 0)
+
+        if not excused:
+            unexcused_misses += 1
+
+        # Auto-ban external users after 2 unexcused misses
+        should_ban = False
+        if not user.get('is_internal', False) and unexcused_misses >= 2:
+            should_ban = True
+
+        update_data = {
+            'missed_sessions': missed_sessions,
+            'unexcused_misses': unexcused_misses,
+            'last_missed_at': datetime.now(timezone.utc).isoformat(),
+            'last_miss_reason': reason or '',
+            'last_miss_excused': excused,
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }
+
+        if should_ban:
+            update_data['banned'] = True
+            update_data['banned_at'] = datetime.now(timezone.utc).isoformat()
+            update_data['ban_reason'] = f'Automatically banned after {unexcused_misses} unexcused missed sessions'
+            print(f"[WARNING] User {email} automatically banned after {unexcused_misses} unexcused misses")
+
+        user_doc_ref.update(update_data)
+        print(f"[OK] Recorded {'excused' if excused else 'unexcused'} miss for {email} (total: {unexcused_misses})")
+        return True
+
+    except Exception as e:
+        print(f"ERROR recording missed session: {e}")
+        return False
+
+
+def is_user_banned(email: str) -> Tuple[bool, Optional[str]]:
+    """
+    Check if a user is banned
+
+    Args:
+        email: User's email address
+
+    Returns:
+        Tuple of (is_banned, ban_reason)
+    """
+    try:
+        email = email.lower().strip()
+
+        # Monmouth users cannot be banned
+        if email.endswith('@monmouth.edu'):
+            return False, None
+
+        users_ref = db.collection('users')
+        user_doc = users_ref.document(email).get()
+
+        if not user_doc.exists:
+            return False, None
+
+        user_data = user_doc.to_dict()
+        is_banned = user_data.get('banned', False)
+        ban_reason = user_data.get('ban_reason', 'Account suspended')
+
+        return is_banned, ban_reason
+
+    except Exception as e:
+        print(f"ERROR checking ban status: {e}")
+        return False, None
+
+
+def ban_user(email: str, reason: str = 'Manually banned by administrator') -> bool:
+    """
+    Ban a user from the system
+
+    Args:
+        email: User's email address
+        reason: Reason for banning
+
+    Returns:
+        bool: True if successful
+    """
+    try:
+        email = email.lower().strip()
+
+        # Cannot ban Monmouth users
+        if email.endswith('@monmouth.edu'):
+            print(f"[WARNING] Cannot ban Monmouth user: {email}")
+            return False
+
+        # Ensure user exists
+        get_or_create_user(email)
+
+        users_ref = db.collection('users')
+        user_doc_ref = users_ref.document(email)
+
+        user_doc_ref.update({
+            'banned': True,
+            'banned_at': datetime.now(timezone.utc).isoformat(),
+            'ban_reason': reason,
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        })
+
+        print(f"[OK] Banned user: {email} - {reason}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR banning user: {e}")
+        return False
+
+
+def unban_user(email: str) -> bool:
+    """
+    Unban a user
+
+    Args:
+        email: User's email address
+
+    Returns:
+        bool: True if successful
+    """
+    try:
+        email = email.lower().strip()
+
+        users_ref = db.collection('users')
+        user_doc = users_ref.document(email).get()
+
+        if not user_doc.exists:
+            print(f"[WARNING] User not found: {email}")
+            return False
+
+        users_ref.document(email).update({
+            'banned': False,
+            'unbanned_at': datetime.now(timezone.utc).isoformat(),
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        })
+
+        print(f"[OK] Unbanned user: {email}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR unbanning user: {e}")
+        return False
+
+
+def reset_user_misses(email: str) -> bool:
+    """
+    Reset missed session counters for a user
+
+    Args:
+        email: User's email address
+
+    Returns:
+        bool: True if successful
+    """
+    try:
+        email = email.lower().strip()
+
+        users_ref = db.collection('users')
+        user_doc = users_ref.document(email).get()
+
+        if not user_doc.exists:
+            print(f"[WARNING] User not found: {email}")
+            return False
+
+        users_ref.document(email).update({
+            'missed_sessions': 0,
+            'unexcused_misses': 0,
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        })
+
+        print(f"[OK] Reset miss counters for: {email}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR resetting misses: {e}")
+        return False
+
+
+def get_rate_limit_count(rate_key: str, window_seconds: int) -> int:
+    """
+    Get current request count for a rate limit key within the time window
+
+    Args:
+        rate_key: Unique key for rate limiting (e.g., "rate_limit:global:192.168.1.1")
+        window_seconds: Time window in seconds
+
+    Returns:
+        int: Number of requests in the current time window
+    """
+    try:
+        client = get_firestore_client()
+        if not client:
+            return 0
+
+        rate_limits_ref = client.collection('rate_limits')
+        doc = rate_limits_ref.document(rate_key).get()
+
+        if not doc.exists:
+            return 0
+
+        data = doc.to_dict()
+
+        # Check if window has expired
+        last_reset_str = data.get('last_reset')
+        if last_reset_str:
+            last_reset = datetime.fromisoformat(last_reset_str.replace('Z', '+00:00'))
+            if last_reset.tzinfo is None:
+                last_reset = last_reset.replace(tzinfo=timezone.utc)
+
+            now = datetime.now(timezone.utc)
+            time_elapsed = (now - last_reset).total_seconds()
+
+            # If window has passed, reset counter
+            if time_elapsed >= window_seconds:
+                return 0
+
+        return data.get('count', 0)
+
+    except Exception as e:
+        print(f"ERROR getting rate limit count: {e}")
+        return 0
+
+
+def increment_rate_limit(rate_key: str, window_seconds: int) -> bool:
+    """
+    Increment the request counter for a rate limit key
+
+    Args:
+        rate_key: Unique key for rate limiting
+        window_seconds: Time window in seconds
+
+    Returns:
+        bool: True if successful
+    """
+    try:
+        client = get_firestore_client()
+        if not client:
+            return False
+
+        rate_limits_ref = client.collection('rate_limits')
+        doc_ref = rate_limits_ref.document(rate_key)
+        doc = doc_ref.get()
+
+        now = datetime.now(timezone.utc)
+
+        if not doc.exists:
+            # Create new rate limit entry
+            doc_ref.set({
+                'count': 1,
+                'last_reset': now.isoformat(),
+                'window_seconds': window_seconds,
+                'created_at': now.isoformat()
+            })
+            return True
+
+        data = doc.to_dict()
+
+        # Check if window has expired
+        last_reset_str = data.get('last_reset')
+        if last_reset_str:
+            last_reset = datetime.fromisoformat(last_reset_str.replace('Z', '+00:00'))
+            if last_reset.tzinfo is None:
+                last_reset = last_reset.replace(tzinfo=timezone.utc)
+
+            time_elapsed = (now - last_reset).total_seconds()
+
+            # If window has passed, reset counter
+            if time_elapsed >= window_seconds:
+                doc_ref.set({
+                    'count': 1,
+                    'last_reset': now.isoformat(),
+                    'window_seconds': window_seconds,
+                    'updated_at': now.isoformat()
+                })
+                return True
+
+        # Increment counter
+        doc_ref.update({
+            'count': data.get('count', 0) + 1,
+            'updated_at': now.isoformat()
+        })
+        return True
+
+    except Exception as e:
+        print(f"ERROR incrementing rate limit: {e}")
+        return False
 
 
 if __name__ == "__main__":
@@ -1592,3 +3025,7 @@ if __name__ == "__main__":
     # Initialize tutors
     print("\nInitializing tutors...")
     initialize_tutors()
+
+    # Initialize booking statistics with historical data
+    print("\nInitializing booking statistics...")
+    initialize_booking_statistics()

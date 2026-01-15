@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Verification - LearnAI</title>
+    <link rel="icon" type="image/png" href="/static/icon.png">
+    <link rel="stylesheet" href="/static/css/admin-verify.css">
+</head>
+<body>
+    <div class="verify-container">
+        <div class="verify-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+        </div>
+
+        <div class="verify-card">
+            <h2>Password Verification Required</h2>
+            <p class="subtitle">
+                For your security, please re-enter your password.<br>
+                Logged in as: <span class="username-display">{{ username }}</span>
+            </p>
+
+            <div class="error-message" id="errorMessage"></div>
+
+            <form id="verifyForm" onsubmit="verifyPassword(event)">
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required autofocus>
+                </div>
+
+                <button type="submit" class="btn-verify" id="verifyButton">
+                    Verify & Continue
+                </button>
+            </form>
+
+            <div class="security-note">
+                <p>Password verification is required every 3 days for enhanced security.</p>
+                <p style="margin-top: 0.5rem;">Not you? <a href="/admin/logout" class="logout-link">Logout</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/admin-verify.js"></script>
+</body>
+</html>
