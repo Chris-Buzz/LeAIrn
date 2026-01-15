@@ -1,0 +1,25 @@
+# Test dependencies for LearnAI
+# Install with: pip install -r requirements-test.txt
+
+# Testing framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-flask>=1.2.0
+
+# Coverage reporting
+coverage>=7.0.0
+
+# Mocking
+pytest-mock>=3.10.0
+
+# Security testing
+bandit>=1.7.0
+safety>=2.3.0
+
+# Code quality
+flake8>=6.0.0
+black>=23.0.0
+
+# HTTP testing
+requests>=2.28.0
+responses>=0.22.0

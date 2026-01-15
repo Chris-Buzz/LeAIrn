@@ -66,15 +66,9 @@ htmlcov/
 nosetests.xml
 coverage/
 
-# Test scripts and local testing files
-tests/
-pytest.ini
-requirements-test.txt
-run_tests.py
-validate_deployment.py
+# Local test scripts (not the main test suite)
 test_local_*.py
 *_test_local.py
-conftest.py
 
 # Migration and fix scripts (one-time use)
 fix_admin_account.py
