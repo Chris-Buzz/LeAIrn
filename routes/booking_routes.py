@@ -5,9 +5,24 @@ Handles all booking-related operations (create, update, delete, lookup).
 
 from flask import Blueprint, request, session, jsonify
 from datetime import datetime
+import threading
 import firestore_db as db
 from utils import get_client_ip
+from utils.validators import InputValidator
 from services.email_service import EmailService
+from middleware.auth import login_required
+
+
+def send_emails_async(email_func, *args, **kwargs):
+    """Send emails in a background thread to not block the response"""
+    def _send():
+        try:
+            email_func(*args, **kwargs)
+        except Exception as e:
+            print(f"[EMAIL ASYNC ERROR] {e}")
+
+    thread = threading.Thread(target=_send, daemon=True)
+    thread.start()
 
 booking_bp = Blueprint('booking', __name__)
 
@@ -27,24 +42,65 @@ def request_booking_verification():
 
         # SECURITY: Get authenticated email from session ONLY (ignore any email in request body)
         email = session.get('user_email')
-        
+
         if not email:
             return jsonify({
                 'success': False,
                 'message': 'Session expired. Please sign in again.'
             }), 401
 
-        # Validate required fields
-        required_fields = ['full_name', 'role', 'selected_slot', 'selected_room']
-        for field in required_fields:
-            if field not in data or data[field] is None or (isinstance(data[field], str) and not data[field].strip()):
-                return jsonify({'success': False, 'message': f'Missing required field: {field}'}), 400
+        # Validate email format (defense in depth)
+        is_valid, error = InputValidator.validate_email(email)
+        if not is_valid:
+            return jsonify({'success': False, 'message': 'Invalid session email'}), 401
+
+        # Comprehensive input validation and sanitization
+        is_valid, sanitized_data, error_message = InputValidator.sanitize_booking_data(data)
+        if not is_valid:
+            return jsonify({
+                'success': False,
+                'message': f'Validation error: {error_message}'
+            }), 400
 
         # OAuth provides strong authentication - no additional verification needed
         print(f"[OK] Proceeding with booking - user authenticated via OAuth ({email})")
 
+        # Check if user is banned
+        is_banned, ban_reason = db.is_user_banned(email)
+        if is_banned:
+            return jsonify({
+                'success': False,
+                'banned': True,
+                'message': f'Your account has been suspended. Reason: {ban_reason}',
+                'ban_reason': ban_reason
+            }), 403
+
+        # Check email-based rate limiting (1 booking per 24 hours per email)
+        email_rate_limit = db.check_email_booking_rate_limit(email)
+        if not email_rate_limit['allowed']:
+            if email_rate_limit.get('has_active_booking'):
+                return jsonify({
+                    'success': False,
+                    'message': email_rate_limit.get('message', 'You already have an active booking.'),
+                    'has_active_booking': True
+                }), 400
+            else:
+                wait_hours = email_rate_limit['wait_hours']
+                return jsonify({
+                    'success': False,
+                    'message': email_rate_limit.get('message', f'You can only book one session per day. Please try again in {wait_hours} hour{"s" if wait_hours != 1 else ""}.'),
+                    'rate_limited': True,
+                    'wait_hours': wait_hours
+                }), 429
+
+        # Check payment status for external users (but allow booking with payment pending)
+        payment_status = db.get_user_payment_status(email)
+        is_internal = payment_status.get('is_internal', False)
+        has_paid = payment_status.get('has_paid', False)
+        payment_pending = not is_internal and not has_paid
+
         # Check device-based rate limiting (2 bookings/24hrs per device)
-        device_id = data.get('device_id')
+        device_id = sanitized_data.get('device_id')
         if device_id:
             device_rate_limit = db.check_device_booking_rate_limit(device_id)
             if not device_rate_limit['allowed']:
@@ -74,9 +130,9 @@ def request_booking_verification():
                 'wait_hours': wait_hours
             }), 429
 
-        # Validate the slot exists and is available
+        # Validate the slot exists and is available (use sanitized slot ID)
         slots = db.get_all_slots()
-        requested_slot = (data.get('selected_slot') or '').strip()
+        requested_slot = sanitized_data.get('selected_slot')
 
         slot_found = False
         selected_slot_data = None
@@ -102,29 +158,46 @@ def request_booking_verification():
         # Get tutor information from the selected slot
         tutor_id = selected_slot_data.get('tutor_id')
         tutor_name = selected_slot_data.get('tutor_name', 'Christopher Buzaid')  # Default to Christopher
+        tutor_email = selected_slot_data.get('tutor_email', '')
 
-        # Create booking data (safely handle None values)
+        # If tutor_email is missing from slot, look it up from tutors collection
+        if not tutor_email and tutor_id:
+            tutor_info = db.get_tutor_by_id(tutor_id)
+            if tutor_info:
+                tutor_email = tutor_info.get('email', '')
+                tutor_name = tutor_info.get('full_name') or tutor_info.get('name') or tutor_name
+
+        # Default to master admin email if still not found
+        if not tutor_email:
+            tutor_email = 'cjpbuzaid@gmail.com'
+
+        # Create booking data using sanitized inputs
         booking_data = {
-            'full_name': data['full_name'].strip(),
+            'full_name': sanitized_data['full_name'],
             'email': email,
-            'phone': (data.get('phone') or '').strip(),
-            'role': data['role'].strip(),
-            'department': (data.get('department') or '').strip(),
-            'ai_familiarity': (data.get('ai_familiarity') or '').strip(),
-            'ai_tools': (data.get('ai_tools') or '').strip(),
-            'primary_use': (data.get('primary_use') or '').strip(),
-            'learning_goal': (data.get('learning_goal') or '').strip(),
-            'confidence_level': data.get('confidence_level', 3),
-            'personal_comments': (data.get('personal_comments') or '').strip(),
-            'research_consent': data.get('research_consent'),  # true = consented, false = declined, null = not asked
-            'selected_slot': selected_slot_data.get('id'),  # Store the slot ID, not the entire object
+            'phone': sanitized_data.get('phone', ''),
+            'role': sanitized_data['role'],
+            'department': sanitized_data.get('department', ''),
+            'ai_familiarity': sanitized_data.get('ai_familiarity', ''),
+            'ai_tools': sanitized_data.get('ai_tools', ''),
+            'primary_use': sanitized_data.get('primary_use', ''),
+            'learning_goal': sanitized_data.get('learning_goal', ''),
+            'confidence_level': sanitized_data.get('confidence_level', 3),
+            'personal_comments': sanitized_data.get('personal_comments', ''),
+            'research_consent': sanitized_data.get('research_consent', None),
+            'selected_slot': selected_slot_data.get('id'),
             'slot_details': selected_slot_data,
-            'selected_room': data['selected_room'].strip(),
-            'tutor_id': tutor_id,  # Assign tutor from slot
-            'tutor_name': tutor_name,  # Store tutor name for display
+            'selected_room': sanitized_data['selected_room'],
+            'meeting_type': sanitized_data.get('meeting_type', 'in-person'),
+            'attendee_count': sanitized_data.get('attendee_count', 1),
+            'tutor_id': tutor_id,
+            'tutor_name': tutor_name,
+            'tutor_email': tutor_email,
             'timestamp': datetime.now().isoformat(),
-            'submission_date': datetime.now().isoformat(),  # For sorting in admin
+            'submission_date': datetime.now().isoformat(),
             'status': 'confirmed',
+            'payment_pending': payment_pending,
+            'is_internal_user': is_internal,
             'device_id': device_id,
             'client_ip': client_ip
         }
@@ -141,33 +214,42 @@ def request_booking_verification():
         if device_id:
             db.record_device_booking_request(device_id)
         db.record_ip_booking_request(client_ip)
+        db.record_email_booking_request(email)
 
-        # Send confirmation emails
+        # Send confirmation emails using sanitized data
         try:
             slot_data = {
                 'day': selected_slot_data.get('day', ''),
                 'date': selected_slot_data.get('date', ''),
                 'time': selected_slot_data.get('time', ''),
-                'location': data['selected_room']
+                'location': sanitized_data['selected_room'],
+                'tutor_name': tutor_name,
+                'tutor_email': tutor_email
             }
-            
+
             user_data = {
                 'email': email,
-                'full_name': data['full_name'],
-                'role': data['role'],
-                'selected_room': data['selected_room'],
-                'department': data.get('department', ''),
-                'ai_familiarity': data.get('ai_familiarity', ''),
-                'ai_tools': data.get('ai_tools', ''),
-                'primary_use': data.get('primary_use', ''),
-                'learning_goal': data.get('learning_goal', ''),
-                'personal_comments': data.get('personal_comments', '')
+                'full_name': sanitized_data['full_name'],
+                'role': sanitized_data['role'],
+                'selected_room': sanitized_data['selected_room'],
+                'meeting_type': sanitized_data.get('meeting_type', 'in-person'),
+                'attendee_count': sanitized_data.get('attendee_count', 1),
+                'department': sanitized_data.get('department', ''),
+                'ai_familiarity': sanitized_data.get('ai_familiarity', ''),
+                'ai_tools': sanitized_data.get('ai_tools', ''),
+                'primary_use': sanitized_data.get('primary_use', ''),
+                'learning_goal': sanitized_data.get('learning_goal', ''),
+                'personal_comments': sanitized_data.get('personal_comments', ''),
+                'tutor_id': tutor_id,
+                'tutor_name': tutor_name,
+                'tutor_email': tutor_email
             }
-            
-            EmailService.send_booking_confirmation(email, data['full_name'], slot_data)
-            EmailService.send_admin_notification(user_data, slot_data)
+
+            # Send emails asynchronously to not block the response
+            send_emails_async(EmailService.send_booking_confirmation, email, sanitized_data['full_name'], slot_data)
+            send_emails_async(EmailService.send_admin_notification, user_data, slot_data)
         except Exception as e:
-            print(f"Email sending error: {e}")
+            print(f"[ERROR] Email queuing failed")
 
         return jsonify({
             'success': True,
@@ -195,8 +277,9 @@ def confirm_booking_verification():
 
 
 @booking_bp.route('/api/booking/<booking_id>', methods=['DELETE'])
+@login_required
 def delete_booking(booking_id):
-    """Delete a booking and free up the time slot"""
+    """Delete a booking and free up the time slot (admin only)"""
     try:
         users = db.get_all_bookings()
         deleted_user = None
@@ -233,11 +316,11 @@ def delete_booking(booking_id):
         if not success:
             return jsonify({'success': False, 'message': 'Failed to delete booking'}), 500
 
-        # Send deletion notification email
+        # Send deletion notification email asynchronously
         try:
-            EmailService.send_booking_deletion(deleted_user, slot_details)
+            send_emails_async(EmailService.send_booking_deletion, deleted_user, slot_details)
         except Exception as e:
-            print(f"Email error: {e}")
+            print(f"[ERROR] Deletion email queuing failed")
 
         return jsonify({'success': True, 'message': 'Booking deleted successfully'})
 
@@ -247,10 +330,22 @@ def delete_booking(booking_id):
 
 
 @booking_bp.route('/api/booking/<booking_id>', methods=['PUT'])
+@login_required
 def update_booking(booking_id):
-    """Update an existing booking"""
+    """Update an existing booking (admin only)"""
     try:
         data = request.json
+
+        # Validate and sanitize input data
+        if data:
+            is_valid, sanitized_data, error_message = InputValidator.sanitize_booking_data(data)
+            if not is_valid:
+                return jsonify({
+                    'success': False,
+                    'message': f'Validation error: {error_message}'
+                }), 400
+            data = sanitized_data
+
         users = db.get_all_bookings()
 
         booking_to_update = None
@@ -323,11 +418,12 @@ def update_booking(booking_id):
         if not success:
             return jsonify({'success': False, 'message': 'Failed to update booking'}), 500
 
-        # Send update notification email
+        # Send update notification email asynchronously
         try:
             booking_to_update.update(updates)
             new_slot_details = updates.get('slot_details', old_slot)
-            EmailService.send_booking_update(
+            send_emails_async(
+                EmailService.send_booking_update,
                 booking_to_update,
                 old_slot,
                 new_slot_details,
@@ -335,7 +431,7 @@ def update_booking(booking_id):
                 new_room
             )
         except Exception as e:
-            print(f"Email error: {e}")
+            print(f"[ERROR] Update email queuing failed")
 
         return jsonify({'success': True, 'message': 'Booking updated successfully'})
 

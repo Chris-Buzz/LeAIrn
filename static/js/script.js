@@ -11,23 +11,39 @@ function typeWriterEffect() {
     if (!typingElement) return;
 
     let index = 0;
-    let currentHTML = '';
 
     function type() {
         if (index < text.length) {
-            const char = text.charAt(index);
-            if (char === '\n') {
-                currentHTML += '<br>';
-            } else {
-                currentHTML += char;
-            }
-            // Add cursor while typing
-            typingElement.innerHTML = currentHTML + '<span class="typing-cursor">|</span>';
+            // Clear and rebuild with safe methods
+            typingElement.textContent = '';
+            
+            const textContent = text.substring(0, index + 1);
+            const lines = textContent.split('\n');
+            
+            lines.forEach((line, lineIndex) => {
+                if (lineIndex > 0) {
+                    typingElement.appendChild(document.createElement('br'));
+                }
+                typingElement.appendChild(document.createTextNode(line));
+            });
+            
+            // Add cursor safely
+            const cursor = document.createElement('span');
+            cursor.className = 'typing-cursor';
+            cursor.textContent = '|';
+            typingElement.appendChild(cursor);
+            
             index++;
             setTimeout(type, 100); // 100ms between each character for slower effect
         } else {
             // Keep cursor blinking at the end
-            typingElement.innerHTML = currentHTML + '<span class="typing-cursor">|</span>';
+            const cursor = typingElement.querySelector('.typing-cursor');
+            if (!cursor) {
+                const newCursor = document.createElement('span');
+                newCursor.className = 'typing-cursor';
+                newCursor.textContent = '|';
+                typingElement.appendChild(newCursor);
+            }
         }
     }
 
@@ -236,66 +252,211 @@ function showConsentModal(nextStep) {
         padding: 1rem;
     `;
 
-    modal.innerHTML = `
-        <div style="background: var(--surface); border-radius: 1rem; max-width: 800px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 2rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
-            <h2 style="margin-bottom: 0.5rem; color: var(--primary); font-size: 1.1rem; text-align: center;">INFORMED CONSENT FOR RESEARCH PARTICIPATION</h2>
-            <h3 style="margin-bottom: 0.75rem; color: var(--text-primary); font-size: 0.85rem; text-align: center;">Improving Efficiency in Higher Education through Customized AI Training</h3>
-
-            <div style="color: var(--text-primary); line-height: 1.4; font-size: 0.7rem;">
-                <p style="margin-bottom: 0.5rem;"><strong>Principal Investigator:</strong> Weihao Qu, Phone: 732-263-5396, Email: wqu@monmouth.edu</p>
-                <p style="margin-bottom: 0.75rem;"><strong>Co-Investigator:</strong> Ling Zheng, Phone: 732-571-4459, Email: lzheng@monmouth.edu</p>
-
-                <p style="margin-bottom: 0.75rem; font-weight: 600;">You are being asked to be a participant in a research study.</p>
-
-                <h4 style="color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;">What is the purpose of this study?</h4>
-                <p style="margin-bottom: 0.75rem;">The purpose of this study is about how artificial intelligence (AI) tools can be used to improve efficiency in learning, studying, and working at a mid-sized college. The goal of this project is to design and test customized AI training workshops, one-on-one sessions, and online modules for students, staff, and faculty.</p>
-
-                <h4 style="color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;">What will you have to do, if you agree to be in the study?</h4>
-                <p style="margin-bottom: 0.3rem;">If you agree to be in this study, your part will involve:</p>
-                <ul style="margin: 0.3rem 0 0.75rem 1.5rem; list-style-type: disc;">
-                    <li>Finish an online pre-assessment on your own AI tool knowledge before the training session when you book the training.</li>
-                    <li>Attend a one-on-one training session (about 45–60 minutes).</li>
-                    <li>Complete a short survey (5–10 minutes) at the end of the training session.</li>
-                    <li>Receive a follow-up survey about one month later (5–10 minutes).</li>
-                </ul>
-                <p style="margin-bottom: 0.75rem;">Your total participation time will be about 55–70 minutes.</p>
-
-                <h4 style="color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;">Are there any possible risks to being in this study?</h4>
-                <p style="margin-bottom: 0.75rem;">If you agree to be in this study, there are no foreseeable risks to you, above those that you experience in your daily life.</p>
-
-                <h4 style="color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;">Are there any possible benefits to being in this study?</h4>
-                <p style="margin-bottom: 0.75rem;">There is no direct benefit to you by participating in this study.</p>
-
-                <h4 style="color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;">How will your study information be protected?</h4>
-                <p style="margin-bottom: 0.5rem;">Your name will not be linked in any way to the information you provide. Neither IP addresses nor any other identifiable information will be collected. The registered email will be collected during the one-on-one training in order to contact the participants with the post survey.</p>
-                <p style="margin-bottom: 0.5rem;">Data will be collected using the Internet; no guarantees can be made regarding the interception of data sent via the Internet by any third party. Confidentiality will be maintained to the degree permitted by the technology used.</p>
-                <p style="margin-bottom: 0.75rem;">Your information will be viewed by the study team and other people within Monmouth University who help administer and oversee research. If information from this study is published or presented at scientific meetings, your name and other identifiable information will not be used.</p>
-
-                <h4 style="color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;">Important Contact Information</h4>
-                <p style="margin-bottom: 0.5rem;">Please contact Dr. Weihao Qu at 732-263-5396 or via e-mail at wqu@monmouth.edu if you have any questions about the study, or if you believe you have experienced harm or injury as a result of being in this study.</p>
-                <p style="margin-bottom: 0.5rem; font-size: 0.65rem; color: var(--text-secondary);">If your participation in this research study has caused you to feel uncomfortable in any way, or if by participating in this research study it has prompted you to consider personal matters about which you are concerned, we encourage you to immediately stop participating in this research study and strongly encourage you to contact support services. If you are a Monmouth University student, you can contact Monmouth University's Counseling and Psychological Services (CPS) to schedule a confidential appointment to speak to a counselor at 732-571-7517. If you are a Monmouth University employee, you can contact Monmouth University's Employee Assistance Program (EAP) at their confidential intake number at 1-800-300-0628. If you are a member of the general public, you may contact your local community mental health center or the National Helpline of the Substance Abuse and Mental Health Services Administration (SAMHSA) at 1-800-662-HELP (4357) — a free, confidential, 24/7 resource for individuals seeking counseling or mental health support.</p>
-                <p style="margin-bottom: 0.75rem;">In addition, for any questions about your rights as a research participant, please contact the Monmouth University Institutional Review Board via e-mail at IRB@monmouth.edu.</p>
-
-                <h4 style="color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;">Your participation is voluntary!</h4>
-                <p style="margin-bottom: 0.75rem;">Your participation in this study is voluntary. You may decide not to participate at all or, if you start the study, you may withdraw at any time without any penalty. Withdrawal or refusing to participate will not affect your relationship with Monmouth University in any way.</p>
-
-                <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--primary); padding: 1rem; border-radius: 0.5rem; margin: 1.5rem 0;">
-                    <p style="margin: 0; font-weight: 600;">If you click 'I ACCEPT' below, it means that you have (a) read this consent form, (b) you agree to be a participant in this study, and (c) you are over 18 years old.</p>
-                    <p style="margin: 0.5rem 0 0 0;">If you click 'I DO NOT ACCEPT', you will still go through the steps listed within the purpose of the study, but your data will not be used for research purposes.</p>
-                </div>
-            </div>
-
-            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                <button onclick="handleConsent(false, ${nextStep})" style="flex: 1; padding: 1rem; background: linear-gradient(135deg, #EF4444, #DC2626); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); transition: all 0.3s;">
-                    I DO NOT ACCEPT
-                </button>
-                <button onclick="handleConsent(true, ${nextStep})" style="flex: 1; padding: 1rem; background: linear-gradient(135deg, #10B981, #059669); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: all 0.3s;">
-                    I ACCEPT
-                </button>
-            </div>
-        </div>
+    // Create modal content container
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+        background: var(--surface);
+        border-radius: 1rem;
+        max-width: 800px;
+        width: 100%;
+        max-height: 85vh;
+        overflow-y: auto;
+        padding: 2rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     `;
 
+    // Title
+    const title = document.createElement('h2');
+    title.style.cssText = 'margin-bottom: 0.5rem; color: var(--primary); font-size: 1.1rem; text-align: center;';
+    title.textContent = 'INFORMED CONSENT FOR RESEARCH PARTICIPATION';
+    modalContent.appendChild(title);
+
+    // Subtitle
+    const subtitle = document.createElement('h3');
+    subtitle.style.cssText = 'margin-bottom: 0.75rem; color: var(--text-primary); font-size: 0.85rem; text-align: center;';
+    subtitle.textContent = 'Improving Efficiency in Higher Education through Customized AI Training';
+    modalContent.appendChild(subtitle);
+
+    // Content div
+    const contentDiv = document.createElement('div');
+    contentDiv.style.cssText = 'color: var(--text-primary); line-height: 1.4; font-size: 0.7rem;';
+
+    // PI info
+    const piInfo = document.createElement('p');
+    piInfo.style.marginBottom = '0.5rem';
+    const piStrong = document.createElement('strong');
+    piStrong.textContent = 'Principal Investigator:';
+    piInfo.appendChild(piStrong);
+    piInfo.appendChild(document.createTextNode(' Weihao Qu, Phone: 732-263-5396, Email: wqu@monmouth.edu'));
+    contentDiv.appendChild(piInfo);
+
+    // Co-Investigator info
+    const coInvInfo = document.createElement('p');
+    coInvInfo.style.marginBottom = '0.75rem';
+    const coInvStrong = document.createElement('strong');
+    coInvStrong.textContent = 'Co-Investigator:';
+    coInvInfo.appendChild(coInvStrong);
+    coInvInfo.appendChild(document.createTextNode(' Ling Zheng, Phone: 732-571-4459, Email: lzheng@monmouth.edu'));
+    contentDiv.appendChild(coInvInfo);
+
+    // Participation statement
+    const participationP = document.createElement('p');
+    participationP.style.cssText = 'margin-bottom: 0.75rem; font-weight: 600;';
+    participationP.textContent = 'You are being asked to be a participant in a research study.';
+    contentDiv.appendChild(participationP);
+
+    // Purpose section
+    const purposeH4 = document.createElement('h4');
+    purposeH4.style.cssText = 'color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;';
+    purposeH4.textContent = 'What is the purpose of this study?';
+    contentDiv.appendChild(purposeH4);
+    
+    const purposeP = document.createElement('p');
+    purposeP.style.marginBottom = '0.75rem';
+    purposeP.textContent = 'The purpose of this study is about how artificial intelligence (AI) tools can be used to improve efficiency in learning, studying, and working at a mid-sized college. The goal of this project is to design and test customized AI training workshops, one-on-one sessions, and online modules for students, staff, and faculty.';
+    contentDiv.appendChild(purposeP);
+
+    // What will you do section
+    const whatDoH4 = document.createElement('h4');
+    whatDoH4.style.cssText = 'color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;';
+    whatDoH4.textContent = 'What will you have to do, if you agree to be in the study?';
+    contentDiv.appendChild(whatDoH4);
+    
+    const whatDoP = document.createElement('p');
+    whatDoP.style.marginBottom = '0.3rem';
+    whatDoP.textContent = 'If you agree to be in this study, your part will involve:';
+    contentDiv.appendChild(whatDoP);
+    
+    const whatDoUl = document.createElement('ul');
+    whatDoUl.style.cssText = 'margin: 0.3rem 0 0.75rem 1.5rem; list-style-type: disc;';
+    const tasks = [
+        'Finish an online pre-assessment on your own AI tool knowledge before the training session when you book the training.',
+        'Attend a one-on-one training session (about 45–60 minutes).',
+        'Complete a short survey (5–10 minutes) at the end of the training session.',
+        'Receive a follow-up survey about one month later (5–10 minutes).'
+    ];
+    tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.textContent = task;
+        whatDoUl.appendChild(li);
+    });
+    contentDiv.appendChild(whatDoUl);
+    
+    const timeP = document.createElement('p');
+    timeP.style.marginBottom = '0.75rem';
+    timeP.textContent = 'Your total participation time will be about 55–70 minutes.';
+    contentDiv.appendChild(timeP);
+
+    // Risks section
+    const risksH4 = document.createElement('h4');
+    risksH4.style.cssText = 'color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;';
+    risksH4.textContent = 'Are there any possible risks to being in this study?';
+    contentDiv.appendChild(risksH4);
+    
+    const risksP = document.createElement('p');
+    risksP.style.marginBottom = '0.75rem';
+    risksP.textContent = 'If you agree to be in this study, there are no foreseeable risks to you, above those that you experience in your daily life.';
+    contentDiv.appendChild(risksP);
+
+    // Benefits section
+    const benefitsH4 = document.createElement('h4');
+    benefitsH4.style.cssText = 'color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;';
+    benefitsH4.textContent = 'Are there any possible benefits to being in this study?';
+    contentDiv.appendChild(benefitsH4);
+    
+    const benefitsP = document.createElement('p');
+    benefitsP.style.marginBottom = '0.75rem';
+    benefitsP.textContent = 'There is no direct benefit to you by participating in this study.';
+    contentDiv.appendChild(benefitsP);
+
+    // Protection section
+    const protectionH4 = document.createElement('h4');
+    protectionH4.style.cssText = 'color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;';
+    protectionH4.textContent = 'How will your study information be protected?';
+    contentDiv.appendChild(protectionH4);
+    
+    const protectionP1 = document.createElement('p');
+    protectionP1.style.marginBottom = '0.5rem';
+    protectionP1.textContent = 'Your name will not be linked in any way to the information you provide. Neither IP addresses nor any other identifiable information will be collected. The registered email will be collected during the one-on-one training in order to contact the participants with the post survey.';
+    contentDiv.appendChild(protectionP1);
+    
+    const protectionP2 = document.createElement('p');
+    protectionP2.style.marginBottom = '0.5rem';
+    protectionP2.textContent = 'Data will be collected using the Internet; no guarantees can be made regarding the interception of data sent via the Internet by any third party. Confidentiality will be maintained to the degree permitted by the technology used.';
+    contentDiv.appendChild(protectionP2);
+    
+    const protectionP3 = document.createElement('p');
+    protectionP3.style.marginBottom = '0.75rem';
+    protectionP3.textContent = 'Your information will be viewed by the study team and other people within Monmouth University who help administer and oversee research. If information from this study is published or presented at scientific meetings, your name and other identifiable information will not be used.';
+    contentDiv.appendChild(protectionP3);
+
+    // Contact section
+    const contactH4 = document.createElement('h4');
+    contactH4.style.cssText = 'color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;';
+    contactH4.textContent = 'Important Contact Information';
+    contentDiv.appendChild(contactH4);
+    
+    const contactP1 = document.createElement('p');
+    contactP1.style.marginBottom = '0.5rem';
+    contactP1.textContent = 'Please contact Dr. Weihao Qu at 732-263-5396 or via e-mail at wqu@monmouth.edu if you have any questions about the study, or if you believe you have experienced harm or injury as a result of being in this study.';
+    contentDiv.appendChild(contactP1);
+    
+    const contactP2 = document.createElement('p');
+    contactP2.style.cssText = 'margin-bottom: 0.5rem; font-size: 0.65rem; color: var(--text-secondary);';
+    contactP2.textContent = 'If your participation in this research study has caused you to feel uncomfortable in any way, or if by participating in this research study it has prompted you to consider personal matters about which you are concerned, we encourage you to immediately stop participating in this research study and strongly encourage you to contact support services. If you are a Monmouth University student, you can contact Monmouth University\'s Counseling and Psychological Services (CPS) to schedule a confidential appointment to speak to a counselor at 732-571-7517. If you are a Monmouth University employee, you can contact Monmouth University\'s Employee Assistance Program (EAP) at their confidential intake number at 1-800-300-0628. If you are a member of the general public, you may contact your local community mental health center or the National Helpline of the Substance Abuse and Mental Health Services Administration (SAMHSA) at 1-800-662-HELP (4357) — a free, confidential, 24/7 resource for individuals seeking counseling or mental health support.';
+    contentDiv.appendChild(contactP2);
+    
+    const contactP3 = document.createElement('p');
+    contactP3.style.marginBottom = '0.75rem';
+    contactP3.textContent = 'In addition, for any questions about your rights as a research participant, please contact the Monmouth University Institutional Review Board via e-mail at IRB@monmouth.edu.';
+    contentDiv.appendChild(contactP3);
+
+    // Voluntary section
+    const voluntaryH4 = document.createElement('h4');
+    voluntaryH4.style.cssText = 'color: var(--primary); margin: 1rem 0 0.4rem 0; font-size: 0.8rem;';
+    voluntaryH4.textContent = 'Your participation is voluntary!';
+    contentDiv.appendChild(voluntaryH4);
+    
+    const voluntaryP = document.createElement('p');
+    voluntaryP.style.marginBottom = '0.75rem';
+    voluntaryP.textContent = 'Your participation in this study is voluntary. You may decide not to participate at all or, if you start the study, you may withdraw at any time without any penalty. Withdrawal or refusing to participate will not affect your relationship with Monmouth University in any way.';
+    contentDiv.appendChild(voluntaryP);
+
+    // Consent box
+    const consentBox = document.createElement('div');
+    consentBox.style.cssText = 'background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--primary); padding: 1rem; border-radius: 0.5rem; margin: 1.5rem 0;';
+    
+    const consentP1 = document.createElement('p');
+    consentP1.style.cssText = 'margin: 0; font-weight: 600;';
+    consentP1.textContent = 'If you click \'I ACCEPT\' below, it means that you have (a) read this consent form, (b) you agree to be a participant in this study, and (c) you are over 18 years old.';
+    consentBox.appendChild(consentP1);
+    
+    const consentP2 = document.createElement('p');
+    consentP2.style.cssText = 'margin: 0.5rem 0 0 0;';
+    consentP2.textContent = 'If you click \'I DO NOT ACCEPT\', you will still go through the steps listed within the purpose of the study, but your data will not be used for research purposes.';
+    consentBox.appendChild(consentP2);
+    
+    contentDiv.appendChild(consentBox);
+    modalContent.appendChild(contentDiv);
+
+    // Buttons container
+    const buttonsDiv = document.createElement('div');
+    buttonsDiv.style.cssText = 'display: flex; gap: 1rem; margin-top: 2rem;';
+    
+    const rejectBtn = document.createElement('button');
+    rejectBtn.style.cssText = 'flex: 1; padding: 1rem; background: linear-gradient(135deg, #EF4444, #DC2626); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); transition: all 0.3s;';
+    rejectBtn.textContent = 'I DO NOT ACCEPT';
+    rejectBtn.onclick = () => handleConsent(false, nextStep);
+    buttonsDiv.appendChild(rejectBtn);
+    
+    const acceptBtn = document.createElement('button');
+    acceptBtn.style.cssText = 'flex: 1; padding: 1rem; background: linear-gradient(135deg, #10B981, #059669); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: all 0.3s;';
+    acceptBtn.textContent = 'I ACCEPT';
+    acceptBtn.onclick = () => handleConsent(true, nextStep);
+    buttonsDiv.appendChild(acceptBtn);
+    
+    modalContent.appendChild(buttonsDiv);
+    modal.appendChild(modalContent);
     document.body.appendChild(modal);
 }
 
@@ -542,10 +703,15 @@ function validateCurrentStep() {
     return true;
 }
 
+// Global storage for all slots (for filtering)
+let allTimeSlots = [];
+let currentTutorFilter = 'all';
+
 // Load Time Slots
 async function loadTimeSlots() {
     const loadingEl = document.getElementById('loadingSlots');
     const slotsContainer = document.getElementById('slotsContainer');
+    const filterContainer = document.getElementById('tutorFilterContainer');
 
     loadingEl.classList.remove('hidden');
     slotsContainer.classList.add('hidden');
@@ -556,46 +722,182 @@ async function loadTimeSlots() {
 
         const slots = await response.json();
 
+        // Store all slots globally
+        allTimeSlots = slots;
+
     loadingEl.classList.add('hidden');
     slotsContainer.classList.remove('hidden');
 
         if (slots.length === 0) {
-            slotsContainer.innerHTML = `
-                    <div class="slots-empty">
-                        <p>No available slots at the moment</p>
-                        <p style="margin-top: 0.5rem; color: var(--text-tertiary);">Please check back later</p>
-                    </div>
-                `;
+            // Clear and create safe elements
+            slotsContainer.textContent = '';
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'slots-empty';
+            
+            const p1 = document.createElement('p');
+            p1.textContent = 'No available slots at the moment';
+            emptyDiv.appendChild(p1);
+            
+            const p2 = document.createElement('p');
+            p2.style.cssText = 'margin-top: 0.5rem; color: var(--text-tertiary);';
+            p2.textContent = 'Please check back later';
+            emptyDiv.appendChild(p2);
+            
+            slotsContainer.appendChild(emptyDiv);
+            // Hide filter if no slots
+            if (filterContainer) filterContainer.style.display = 'none';
             return;
         }
 
-        // Render slots
-        slotsContainer.innerHTML = '';
-        slots.forEach((slot, index) => {
-            const slotEl = document.createElement('div');
-            slotEl.className = 'time-slot';
-            slotEl.dataset.slotId = slot.id;
-            slotEl.style.animationDelay = `${index * 0.03}s`;
-            slotEl.style.animation = 'fadeInUp 0.4s ease both';
+        // Show filter container
+        if (filterContainer) filterContainer.style.display = 'block';
 
-            slotEl.innerHTML = `
-                <div class="time-day">${slot.day}</div>
-                <div class="time-date">${slot.date}</div>
-                <div class="time-time">${slot.time}</div>
-            `;
-
-            slotEl.addEventListener('click', () => selectTimeSlot(slot, slotEl));
-            slotsContainer.appendChild(slotEl);
-        });
+        // Render all slots initially
+        renderTimeSlots(slots);
 
     } catch (error) {
         console.error('Error loading slots:', error);
-        loadingEl.innerHTML = `
-            <p class="error-text">Failed to load time slots</p>
-            <p style="font-size: 0.95rem; margin-top: 0.5rem;">Please refresh the page to try again</p>
-        `;
+        loadingEl.textContent = '';
+        
+        const errorP = document.createElement('p');
+        errorP.className = 'error-text';
+        errorP.textContent = 'Failed to load time slots';
+        loadingEl.appendChild(errorP);
+        
+        const refreshP = document.createElement('p');
+        refreshP.style.cssText = 'font-size: 0.95rem; margin-top: 0.5rem;';
+        refreshP.textContent = 'Please refresh the page to try again';
+        loadingEl.appendChild(refreshP);
     }
 }
+
+// Render time slots (with optional filtering)
+function renderTimeSlots(slots) {
+    const slotsContainer = document.getElementById('slotsContainer');
+
+    if (slots.length === 0) {
+        slotsContainer.textContent = '';
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'slots-empty';
+        
+        const p1 = document.createElement('p');
+        p1.textContent = 'No slots available for selected tutor';
+        emptyDiv.appendChild(p1);
+        
+        const p2 = document.createElement('p');
+        p2.style.cssText = 'margin-top: 0.5rem; color: var(--text-tertiary);';
+        p2.textContent = 'Try selecting a different tutor';
+        emptyDiv.appendChild(p2);
+        
+        slotsContainer.appendChild(emptyDiv);
+        return;
+    }
+
+    // Render slots
+    slotsContainer.textContent = '';
+    slots.forEach((slot, index) => {
+        const slotEl = document.createElement('div');
+        slotEl.className = 'time-slot';
+        slotEl.dataset.slotId = slot.id;
+        slotEl.dataset.tutorId = slot.tutor_id || 'christopher_buzaid'; // Default to Christopher
+        slotEl.style.animationDelay = `${index * 0.03}s`;
+        slotEl.style.animation = 'fadeInUp 0.4s ease both';
+
+        // Add tutor header with avatar
+        const tutorName = slot.tutor_name || 'Christopher Buzaid';
+        const tutorFirstName = tutorName.split(' ')[0];
+        const tutorInitial = tutorName.charAt(0).toUpperCase();
+
+        // Create tutor header safely
+        const tutorHeader = document.createElement('div');
+        tutorHeader.className = 'tutor-header';
+        
+        const tutorAvatar = document.createElement('div');
+        tutorAvatar.className = 'tutor-avatar';
+        tutorAvatar.textContent = tutorInitial;
+        tutorHeader.appendChild(tutorAvatar);
+        
+        const tutorNameSpan = document.createElement('span');
+        tutorNameSpan.className = 'tutor-name';
+        tutorNameSpan.textContent = tutorFirstName;
+        tutorHeader.appendChild(tutorNameSpan);
+        
+        slotEl.appendChild(tutorHeader);
+        
+        // Create slot details safely
+        const slotDetails = document.createElement('div');
+        slotDetails.className = 'slot-details';
+        
+        const timeDay = document.createElement('div');
+        timeDay.className = 'time-day';
+        timeDay.textContent = slot.day;
+        slotDetails.appendChild(timeDay);
+        
+        const timeDate = document.createElement('div');
+        timeDate.className = 'time-date';
+        timeDate.textContent = slot.date;
+        slotDetails.appendChild(timeDate);
+        
+        const timeTime = document.createElement('div');
+        timeTime.className = 'time-time';
+        timeTime.textContent = slot.time;
+        slotDetails.appendChild(timeTime);
+        
+        slotEl.appendChild(slotDetails);
+
+        slotEl.addEventListener('click', () => selectTimeSlot(slot, slotEl));
+        slotsContainer.appendChild(slotEl);
+    });
+}
+
+// Filter slots by tutor
+function filterByTutor(tutorId) {
+    currentTutorFilter = tutorId;
+
+    // Update button states
+    document.querySelectorAll('.tutor-filter-btn').forEach(btn => {
+        if (btn.dataset.tutor === tutorId) {
+            btn.classList.add('active');
+            btn.style.background = 'var(--primary)';
+            btn.style.color = 'white';
+        } else {
+            btn.classList.remove('active');
+            btn.style.background = 'var(--surface)';
+            btn.style.color = 'var(--text-primary)';
+        }
+    });
+
+    // Filter slots
+    let filteredSlots = allTimeSlots;
+    if (tutorId !== 'all') {
+        filteredSlots = allTimeSlots.filter(slot => {
+            const slotTutorId = slot.tutor_id || 'christopher_buzaid';
+            // Handle legacy 'christopher' tutor_id matching 'christopher_buzaid'
+            if (tutorId === 'christopher_buzaid') {
+                return slotTutorId === 'christopher_buzaid' || slotTutorId === 'christopher';
+            }
+            return slotTutorId === tutorId;
+        });
+    }
+
+    // Re-render with filtered slots
+    renderTimeSlots(filteredSlots);
+}
+
+// Make filterByTutor available globally
+window.filterByTutor = filterByTutor;
+
+// Function for dropdown filter
+function filterSlotsByTutor() {
+    const tutorFilter = document.getElementById('tutorFilter');
+    if (!tutorFilter) return;
+
+    const selectedTutor = tutorFilter.value;
+    filterByTutor(selectedTutor);
+}
+
+// Make filterSlotsByTutor available globally
+window.filterSlotsByTutor = filterSlotsByTutor;
 
 function selectTimeSlot(slot, element) {
     // Deselect all
@@ -636,14 +938,25 @@ async function confirmBooking() {
     const learningGoals = Array.from(document.querySelectorAll('input[name="learning_goal"]:checked'))
         .map(cb => cb.value);
 
+    // Get meeting type (zoom or in-person)
+    const meetingType = selectedMeetingType || 'in-person';
+    const numAttendees = attendeeCount || 1;
+
     // Combine building and room number into selected_room for backward compatibility
-    const building = document.getElementById('selected_building').value;
-    const roomNumber = document.getElementById('room_number').value.trim();
-    const fullLocation = building && roomNumber ? `${building} - ${roomNumber}` : '';
+    const building = document.getElementById('selected_building')?.value || '';
+    const roomNumber = document.getElementById('room_number')?.value.trim() || '';
+
+    // Handle location based on meeting type
+    let fullLocation;
+    if (meetingType === 'zoom') {
+        fullLocation = 'Zoom Session';
+    } else {
+        fullLocation = building && roomNumber ? `${building} - ${roomNumber}` : '';
+    }
 
     // Get department/major if visible
     const departmentField = document.getElementById('department-field');
-    const department = departmentField.style.display !== 'none' ? document.getElementById('department').value.trim() : null;
+    const department = departmentField?.style.display !== 'none' ? document.getElementById('department')?.value.trim() : null;
 
     // Check if user is authenticated (email will be from session)
     const isAuthenticated = document.body.dataset.authenticated === 'true';
@@ -658,8 +971,10 @@ async function confirmBooking() {
         department: department, // Add department/major
         selected_slot: document.getElementById('selected_slot').value,
         selected_room: fullLocation,
-        selected_building: building,
-        room_number: roomNumber,
+        selected_building: meetingType === 'zoom' ? '' : building,
+        room_number: meetingType === 'zoom' ? '' : roomNumber,
+        meeting_type: meetingType,
+        attendee_count: numAttendees,
         // Research consent status
         research_consent: consentGiven, // true = consented, false = declined, null = not asked
         // Questionnaire data
@@ -671,8 +986,8 @@ async function confirmBooking() {
         personal_comments: document.getElementById('personal_comments')?.value.trim() || null // Optional
     };
 
-    // Validate
-    if (!building || !roomNumber) {
+    // Validate location based on meeting type
+    if (meetingType === 'in-person' && (!building || !roomNumber)) {
         showNotification('Please select a building and enter a room number', 'error');
         return;
     }
@@ -690,14 +1005,14 @@ async function confirmBooking() {
     formData.device_id = deviceId;
 
     try {
-        // Generate reCAPTCHA token if available
-        if (window.RECAPTCHA_SITE_KEY && typeof grecaptcha !== 'undefined') {
+        // Generate reCAPTCHA token if available (key from body data attribute)
+        const recaptchaSiteKey = document.body.dataset.recaptchaKey;
+        if (recaptchaSiteKey && typeof grecaptcha !== 'undefined') {
             try {
                 await grecaptcha.ready();
-                const token = await grecaptcha.execute(window.RECAPTCHA_SITE_KEY, { action: 'booking' });
+                const token = await grecaptcha.execute(recaptchaSiteKey, { action: 'booking' });
                 formData.recaptcha_token = token;
             } catch (recaptchaError) {
-                console.warn('reCAPTCHA error:', recaptchaError);
                 // Continue without token - server will handle
             }
         }
@@ -716,20 +1031,27 @@ async function confirmBooking() {
             const slotDetails = result.slot_details || {};
             bookingData.slot = {
                 id: formData.selected_slot,
-                datetime: slotDetails.datetime,
-                day: slotDetails.day,
-                date: slotDetails.date,
-                time: slotDetails.time
+                datetime: slotDetails.datetime || '',
+                day: slotDetails.day || 'TBD',
+                date: slotDetails.date || 'TBD',
+                time: slotDetails.time || 'TBD'
             };
             bookingData.selected_room = fullLocation;
 
-            displayBookingDetails({
-                name: formData.full_name,
-                slot: bookingData.slot,
-                room: fullLocation
-            });
+            // Display booking details with error handling
+            try {
+                displayBookingDetails({
+                    name: formData.full_name,
+                    slot: bookingData.slot,
+                    room: fullLocation
+                });
+            } catch (displayError) {
+                console.error('Error displaying booking details:', displayError);
+                // Continue to step 8 even if display fails
+            }
 
-            goToStep(8);
+            // Always go to step 8 on successful booking
+            goToStep(8, true); // Skip validation for confirmation step
             showNotification('Booking confirmed! Check your email for details.', 'success');
         } else {
             // Show error message
@@ -739,11 +1061,18 @@ async function confirmBooking() {
             if (response.status === 429) {
                 // Rate limited
                 showNotification(result.message || 'Too many requests. Please wait before trying again.', 'error');
+            } else if (response.status === 402 && result.payment_required) {
+                // Payment required for external users
+                showNotification('External users: Payment is processed after booking. Please contact us to complete your booking.', 'warning');
+            } else if (response.status === 401) {
+                // Not authenticated
+                showNotification('Please sign in to make a booking.', 'error');
             } else if (result.captcha_failed) {
                 // reCAPTCHA failed
                 showNotification('Security verification failed. Please refresh the page and try again.', 'error');
             } else {
                 // Other error
+                console.error('Booking error:', result);
                 showNotification(result.message || 'Failed to confirm booking. Please try again.', 'error');
             }
         }
@@ -758,46 +1087,82 @@ async function confirmBooking() {
 
 function displayBookingDetails(data) {
     const detailsContainer = document.getElementById('bookingDetails');
+    detailsContainer.textContent = '';
 
-    detailsContainer.innerHTML = `
-        <div class="detail-item">
-            <div class="detail-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                </svg>
-            </div>
-            <div class="detail-content">
-                <div class="detail-label">Name</div>
-                <div class="detail-value">${data.name}</div>
-            </div>
-        </div>
-        <div class="detail-item">
-            <div class="detail-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-            </div>
-            <div class="detail-content">
-                <div class="detail-label">Date & Time</div>
-                <div class="detail-value">${data.slot.day}, ${data.slot.date} at ${data.slot.time}</div>
-            </div>
-        </div>
-        <div class="detail-item">
-            <div class="detail-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
-                </svg>
-            </div>
-            <div class="detail-content">
-                <div class="detail-label">Location</div>
-                <div class="detail-value">${data.room}</div>
-            </div>
-        </div>
-    `;
+    // Create Name detail item
+    const nameItem = document.createElement('div');
+    nameItem.className = 'detail-item';
+    
+    const nameIcon = document.createElement('div');
+    nameIcon.className = 'detail-icon';
+    nameIcon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+    nameItem.appendChild(nameIcon);
+    
+    const nameContent = document.createElement('div');
+    nameContent.className = 'detail-content';
+    
+    const nameLabel = document.createElement('div');
+    nameLabel.className = 'detail-label';
+    nameLabel.textContent = 'Name';
+    nameContent.appendChild(nameLabel);
+    
+    const nameValue = document.createElement('div');
+    nameValue.className = 'detail-value';
+    nameValue.textContent = data.name;
+    nameContent.appendChild(nameValue);
+    
+    nameItem.appendChild(nameContent);
+    detailsContainer.appendChild(nameItem);
+
+    // Create Date & Time detail item
+    const dateItem = document.createElement('div');
+    dateItem.className = 'detail-item';
+    
+    const dateIcon = document.createElement('div');
+    dateIcon.className = 'detail-icon';
+    dateIcon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+    dateItem.appendChild(dateIcon);
+    
+    const dateContent = document.createElement('div');
+    dateContent.className = 'detail-content';
+    
+    const dateLabel = document.createElement('div');
+    dateLabel.className = 'detail-label';
+    dateLabel.textContent = 'Date & Time';
+    dateContent.appendChild(dateLabel);
+    
+    const dateValue = document.createElement('div');
+    dateValue.className = 'detail-value';
+    dateValue.textContent = `${data.slot.day}, ${data.slot.date} at ${data.slot.time}`;
+    dateContent.appendChild(dateValue);
+    
+    dateItem.appendChild(dateContent);
+    detailsContainer.appendChild(dateItem);
+
+    // Create Location detail item
+    const locationItem = document.createElement('div');
+    locationItem.className = 'detail-item';
+    
+    const locationIcon = document.createElement('div');
+    locationIcon.className = 'detail-icon';
+    locationIcon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+    locationItem.appendChild(locationIcon);
+    
+    const locationContent = document.createElement('div');
+    locationContent.className = 'detail-content';
+    
+    const locationLabel = document.createElement('div');
+    locationLabel.className = 'detail-label';
+    locationLabel.textContent = 'Location';
+    locationContent.appendChild(locationLabel);
+    
+    const locationValue = document.createElement('div');
+    locationValue.className = 'detail-value';
+    locationValue.textContent = data.room;
+    locationContent.appendChild(locationValue);
+    
+    locationItem.appendChild(locationContent);
+    detailsContainer.appendChild(locationItem);
 }
 
 // Google Calendar Integration
@@ -928,8 +1293,6 @@ function showViewBookingModal() {
         const resultDiv = document.getElementById('booking-lookup-result');
         const subtitleElement = document.getElementById('viewBookingSubtitle');
 
-        console.log('[showViewBookingModal] isAuthenticated:', isAuthenticated, 'userEmail:', userEmail);
-
         // Reset result div
         if (resultDiv) {
             resultDiv.style.display = 'none';
@@ -937,7 +1300,6 @@ function showViewBookingModal() {
         }
 
         if (isAuthenticated && userEmail) {
-            console.log('[showViewBookingModal] Showing authenticated section');
             // Update subtitle for authenticated users
             if (subtitleElement) {
                 subtitleElement.textContent = 'Viewing booking for your signed-in account';
@@ -951,7 +1313,6 @@ function showViewBookingModal() {
             // Hide the View Booking button and Cancel button for authenticated users
             if (buttonSection) buttonSection.style.display = 'none';
         } else {
-            console.log('[showViewBookingModal] Showing email input section');
             // Update subtitle for non-authenticated users
             if (subtitleElement) {
                 subtitleElement.textContent = 'Enter your email to view your upcoming booking';
@@ -979,20 +1340,13 @@ async function openViewMyBookingDirect() {
     const isAuthenticated = document.body.getAttribute('data-authenticated') === 'true';
     const userEmail = document.body.getAttribute('data-user-email');
 
-    console.log('[DEBUG] openViewMyBookingDirect called');
-    console.log('[DEBUG] data-authenticated:', document.body.getAttribute('data-authenticated'));
-    console.log('[DEBUG] data-user-email:', userEmail);
-    console.log('[DEBUG] isAuthenticated:', isAuthenticated);
-    
     if (!isAuthenticated) {
         // For non-authenticated users, show the modal with email input
-        console.log('[DEBUG] User not authenticated, showing email input form');
         showViewBookingModal();
         return;
     }
-    
+
     // For authenticated users, open modal and immediately fetch their booking
-    console.log('[DEBUG] User authenticated, showing modal and fetching booking');
     showViewBookingModal();
     
     // Give the modal a moment to open, then fetch their booking
@@ -1088,14 +1442,14 @@ async function lookupBooking() {
 
                         <div style="display: grid; gap: 0.75rem;">
                             <div style="display: flex; gap: 0.75rem;">
-                                <button onclick='showEditBookingFormById()' style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                <button data-action="editBookingById" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
                                     Edit Booking
                                 </button>
-                                <button onclick='confirmDeleteSpecificBooking("${booking.id}", "${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}")' style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                <button data-action="deleteBookingById" data-booking-id="${booking.id}" data-slot-info="${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
                                     Delete Booking
                                 </button>
                             </div>
-                            <button onclick="closeViewBookingModal()" style="width: 100%; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                            <button data-action="closeViewBookingModal" style="width: 100%; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
                                 Close
                             </button>
                         </div>
@@ -1112,7 +1466,7 @@ async function lookupBooking() {
                         <h3 style="margin-bottom: 0.5rem;">No Booking Found</h3>
                         <p style="color: var(--text-secondary);">You don't have any bookings yet.</p>
                         <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">Click "Book a Session" to schedule your first AI learning experience!</p>
-                        <button onclick="closeViewBookingModal()" style="margin-top: 1.5rem; width: 100%; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                        <button data-action="closeViewBookingModal" style="margin-top: 1.5rem; width: 100%; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
                             Close
                         </button>
                     </div>
@@ -1142,25 +1496,30 @@ async function lookupBooking() {
                         <div style="margin-bottom: 1.5rem;">
                             <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Enter Verification Code</label>
                             <input type="text" id="verification_code" maxlength="6" placeholder="000000"
-                                style="width: 100%; padding: 0.875rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1.5rem; text-align: center; letter-spacing: 0.5rem; font-weight: 600;"
-                                oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                style="width: 100%; padding: 0.875rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1.5rem; text-align: center; letter-spacing: 0.5rem; font-weight: 600;">
                             <small style="display: block; margin-top: 0.5rem; color: var(--text-tertiary);">Code expires in 10 minutes</small>
                         </div>
 
                         <div style="display: flex; gap: 0.75rem;">
-                            <button onclick="verifyCode()" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                            <button data-action="verifyCode" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
                                 Verify Code
                             </button>
-                            <button onclick="resendVerificationCode()" style="flex: 1; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                            <button data-action="resendVerificationCode" style="flex: 1; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
                                 Resend Code
                             </button>
                         </div>
                     </div>
                 `;
 
-                // Focus on code input
+                // Focus on code input and add input filter
                 setTimeout(() => {
-                    document.getElementById('verification_code').focus();
+                    const codeInput = document.getElementById('verification_code');
+                    if (codeInput) {
+                        codeInput.focus();
+                        codeInput.addEventListener('input', function() {
+                            this.value = this.value.replace(/[^0-9]/g, '');
+                        });
+                    }
                 }, 100);
             } else {
                 // Check if this is a rate limit error
@@ -1271,10 +1630,10 @@ async function verifyCode() {
                         </div>
 
                         <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 0.75rem;">
-                            <button onclick="showEditBookingForm('${verificationEmail}', '${escapedBooking}')" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                            <button data-action="editBookingWithEmail" data-email="${verificationEmail}" data-booking="${escapedBooking}" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
                                 Edit Booking
                             </button>
-                            <button onclick="confirmDeleteSpecificBooking('${booking.id}', '${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}')" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                            <button data-action="deleteBookingById" data-booking-id="${booking.id}" data-slot-info="${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
                                 Delete Booking
                             </button>
                         </div>
@@ -1339,7 +1698,30 @@ function openContactForm() {
     const modal = document.getElementById('contactFormModal');
     if (modal) {
         modal.classList.remove('hidden');
-        document.getElementById('contact_name').focus();
+
+        // Auto-fill email for authenticated users
+        const userEmail = document.body.getAttribute('data-user-email');
+        const userName = document.body.getAttribute('data-user-name');
+        const emailInput = document.getElementById('contact_email');
+        const nameInput = document.getElementById('contact_name');
+
+        if (userEmail && emailInput) {
+            emailInput.value = userEmail;
+            emailInput.readOnly = true;
+            emailInput.style.backgroundColor = 'var(--bg-secondary)';
+            emailInput.style.cursor = 'not-allowed';
+        }
+
+        if (userName && nameInput && !nameInput.value) {
+            nameInput.value = userName;
+        }
+
+        // Focus on name if empty, otherwise message
+        if (nameInput && !nameInput.value) {
+            nameInput.focus();
+        } else {
+            document.getElementById('contact_message')?.focus();
+        }
     }
 }
 
@@ -1349,6 +1731,14 @@ function closeContactForm() {
         modal.classList.add('hidden');
         document.getElementById('contactForm').reset();
         document.getElementById('contact-form-result').style.display = 'none';
+
+        // Reset email field styling
+        const emailInput = document.getElementById('contact_email');
+        if (emailInput) {
+            emailInput.readOnly = false;
+            emailInput.style.backgroundColor = '';
+            emailInput.style.cursor = '';
+        }
     }
 }
 
@@ -1454,41 +1844,59 @@ function confirmDeleteBooking(email) {
         animation: fadeIn 0.3s ease;
     `;
 
-    modal.innerHTML = `
-        <div style="background: var(--surface); border-radius: 1rem; max-width: 500px; width: 90%; padding: 2rem; box-shadow: var(--shadow-lg); position: relative;">
-            <div style="text-align: center; margin-bottom: 1.5rem;">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--error)" stroke-width="2" style="margin: 0 auto 1rem;">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="15" y1="9" x2="9" y2="15"></line>
-                    <line x1="9" y1="9" x2="15" y2="15"></line>
-                </svg>
-                <h2 style="color: var(--text-primary); margin-bottom: 0.5rem;">Delete Your Booking?</h2>
-                <p style="color: var(--text-secondary); font-size: 0.95rem;">Are you sure you want to delete your booking? This action cannot be undone.</p>
-            </div>
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = 'background: var(--surface); border-radius: 1rem; max-width: 500px; width: 90%; padding: 2rem; box-shadow: var(--shadow-lg); position: relative;';
 
-            <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--error); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
-                <p style="color: var(--text-primary); font-size: 0.9rem; margin: 0;">
-                    <strong>Warning:</strong> Your time slot will be released and available for others to book.
-                </p>
-            </div>
-
-            <div style="display: flex; gap: 1rem;">
-                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="flex: 1; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;">
-                    Cancel
-                </button>
-                <button onclick="deleteBookingByEmail('${email}', this.parentElement.parentElement.parentElement)" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;">
-                    Yes, Delete My Booking
-                </button>
-            </div>
-        </div>
+    // Header section
+    const headerDiv = document.createElement('div');
+    headerDiv.style.cssText = 'text-align: center; margin-bottom: 1.5rem;';
+    headerDiv.innerHTML = `
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--error)" stroke-width="2" style="margin: 0 auto 1rem;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+        <h2 style="color: var(--text-primary); margin-bottom: 0.5rem;">Delete Your Booking?</h2>
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">Are you sure you want to delete your booking? This action cannot be undone.</p>
     `;
+
+    // Warning section
+    const warningDiv = document.createElement('div');
+    warningDiv.style.cssText = 'background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--error); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem;';
+    warningDiv.innerHTML = `<p style="color: var(--text-primary); font-size: 0.9rem; margin: 0;"><strong>Warning:</strong> Your time slot will be released and available for others to book.</p>`;
+
+    // Button container
+    const buttonDiv = document.createElement('div');
+    buttonDiv.style.cssText = 'display: flex; gap: 1rem;';
+
+    // Cancel button
+    const cancelBtn = document.createElement('button');
+    cancelBtn.style.cssText = 'flex: 1; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', () => modal.remove());
+
+    // Delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.style.cssText = 'flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;';
+    deleteBtn.textContent = 'Yes, Delete My Booking';
+    deleteBtn.addEventListener('click', () => deleteBookingByEmail(email, modal));
+
+    // Assemble modal
+    buttonDiv.appendChild(cancelBtn);
+    buttonDiv.appendChild(deleteBtn);
+    modalContent.appendChild(headerDiv);
+    modalContent.appendChild(warningDiv);
+    modalContent.appendChild(buttonDiv);
+    modal.appendChild(modalContent);
 
     document.body.appendChild(modal);
 }
 
 async function deleteBookingByEmail(email, confirmModal) {
-    // Get the button and show loading state
-    const deleteBtn = confirmModal.querySelector('button[onclick*="deleteBookingByEmail"]');
+    // Get the delete button (last button in the modal)
+    const buttons = confirmModal.querySelectorAll('button');
+    const deleteBtn = buttons[buttons.length - 1];
     const originalBtnText = deleteBtn.innerHTML;
     deleteBtn.disabled = true;
     deleteBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem;"><span style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>Deleting...</span>';
@@ -1514,19 +1922,27 @@ async function deleteBookingByEmail(email, confirmModal) {
             // Update the booking lookup result to show deletion success
             const resultDiv = document.getElementById('booking-lookup-result');
             if (resultDiv) {
-                resultDiv.innerHTML = `
-                    <div style="background: var(--bg); border: 2px solid var(--success); border-radius: 1rem; padding: 1.5rem; text-align: center;">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" style="margin: 0 auto 1rem;">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M9 12l2 2 4-4"></path>
-                        </svg>
-                        <h3 style="margin-bottom: 0.5rem; color: var(--success);">Booking Deleted</h3>
-                        <p style="color: var(--text-secondary);">Your booking has been successfully deleted. The time slot is now available for others.</p>
-                        <button onclick="closeViewBookingModal()" style="margin-top: 1rem; padding: 0.75rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600;">
-                            Close
-                        </button>
-                    </div>
+                // Create success content
+                const successDiv = document.createElement('div');
+                successDiv.style.cssText = 'background: var(--bg); border: 2px solid var(--success); border-radius: 1rem; padding: 1.5rem; text-align: center;';
+                successDiv.innerHTML = `
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" style="margin: 0 auto 1rem;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9 12l2 2 4-4"></path>
+                    </svg>
+                    <h3 style="margin-bottom: 0.5rem; color: var(--success);">Booking Deleted</h3>
+                    <p style="color: var(--text-secondary);">Your booking has been successfully deleted. The time slot is now available for others.</p>
                 `;
+
+                // Create close button with event listener
+                const closeBtn = document.createElement('button');
+                closeBtn.style.cssText = 'margin-top: 1rem; padding: 0.75rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600;';
+                closeBtn.textContent = 'Close';
+                closeBtn.addEventListener('click', closeViewBookingModal);
+
+                successDiv.appendChild(closeBtn);
+                resultDiv.innerHTML = '';
+                resultDiv.appendChild(successDiv);
             }
         } else {
             // Show error and restore button
@@ -1560,38 +1976,55 @@ function confirmDeleteSpecificBooking(bookingId, bookingDetails) {
         animation: fadeIn 0.3s ease;
     `;
 
-    modal.innerHTML = `
-        <div style="background: var(--surface); border-radius: 1rem; max-width: 500px; width: 90%; padding: 2rem; box-shadow: var(--shadow-lg); position: relative;">
-            <div style="text-align: center; margin-bottom: 1.5rem;">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--error)" stroke-width="2" style="margin: 0 auto 1rem;">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="15" y1="9" x2="9" y2="15"></line>
-                    <line x1="9" y1="9" x2="15" y2="15"></line>
-                </svg>
-                <h2 style="color: var(--text-primary); margin-bottom: 0.5rem;">Delete This Booking?</h2>
-                <p style="color: var(--text-secondary); font-size: 0.95rem;">Are you sure you want to delete the booking for ${bookingDetails}?</p>
-            </div>
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = 'background: var(--surface); border-radius: 1rem; max-width: 500px; width: 90%; padding: 2rem; box-shadow: var(--shadow-lg); position: relative;';
 
-            <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--error); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
-                <p style="color: var(--text-primary); font-size: 0.9rem; margin: 0;">This action cannot be undone. The time slot will become available for others to book.</p>
-            </div>
-
-            <div style="display: flex; gap: 0.75rem;">
-                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="flex: 1; padding: 0.875rem; background: var(--bg); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; color: var(--text-primary); font-size: 1rem;">
-                    Cancel
-                </button>
-                <button id="confirmDeleteBtn" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
-                    Delete Booking
-                </button>
-            </div>
-        </div>
+    // Header section
+    const headerDiv = document.createElement('div');
+    headerDiv.style.cssText = 'text-align: center; margin-bottom: 1.5rem;';
+    headerDiv.innerHTML = `
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--error)" stroke-width="2" style="margin: 0 auto 1rem;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+        <h2 style="color: var(--text-primary); margin-bottom: 0.5rem;">Delete This Booking?</h2>
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">Are you sure you want to delete the booking for ${bookingDetails}?</p>
     `;
+
+    // Warning section
+    const warningDiv = document.createElement('div');
+    warningDiv.style.cssText = 'background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--error); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem;';
+    warningDiv.innerHTML = `<p style="color: var(--text-primary); font-size: 0.9rem; margin: 0;">This action cannot be undone. The time slot will become available for others to book.</p>`;
+
+    // Button container
+    const buttonDiv = document.createElement('div');
+    buttonDiv.style.cssText = 'display: flex; gap: 0.75rem;';
+
+    // Cancel button
+    const cancelBtn = document.createElement('button');
+    cancelBtn.style.cssText = 'flex: 1; padding: 0.875rem; background: var(--bg); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; color: var(--text-primary); font-size: 1rem;';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', () => modal.remove());
+
+    // Delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.style.cssText = 'flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem;';
+    deleteBtn.textContent = 'Delete Booking';
+
+    // Assemble modal
+    buttonDiv.appendChild(cancelBtn);
+    buttonDiv.appendChild(deleteBtn);
+    modalContent.appendChild(headerDiv);
+    modalContent.appendChild(warningDiv);
+    modalContent.appendChild(buttonDiv);
+    modal.appendChild(modalContent);
 
     document.body.appendChild(modal);
 
     // Handle delete confirmation
-    const deleteBtn = document.getElementById('confirmDeleteBtn');
-    deleteBtn.onclick = async () => {
+    deleteBtn.addEventListener('click', async () => {
         const originalBtnText = deleteBtn.innerHTML;
         deleteBtn.disabled = true;
         deleteBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem; vertical-align: middle;"><span class="spinner" style="border-width: 2px; width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></span>Deleting...</span>';
@@ -1623,7 +2056,7 @@ function confirmDeleteSpecificBooking(bookingId, bookingDetails) {
             deleteBtn.disabled = false;
             deleteBtn.innerHTML = originalBtnText;
         }
-    };
+    });
 }
 
 // Show edit booking form by ID (for authenticated users)
@@ -1679,8 +2112,12 @@ async function showEditBookingForm(email, bookingDataStr) {
     const currentRoomNumber = booking.room_number || roomParts[1] || '';
     const slotDetails = booking.slot_details || {};
 
+    // Check if current booking is Zoom
+    const isZoom = currentBuilding.toLowerCase() === 'zoom';
+
     // Create modal overlay
     const modal = document.createElement('div');
+    modal.className = 'user-edit-booking-modal';
     modal.style.cssText = `
         position: fixed;
         top: 0;
@@ -1719,31 +2156,69 @@ async function showEditBookingForm(email, bookingDataStr) {
                 <small id="slots-loading" style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem; display: block;">Loading available slots...</small>
             </div>
 
+            <!-- Meeting Type Toggle -->
             <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Building *</label>
-                <select id="edit_user_building" style="width: 100%; padding: 0.875rem; border: 2px solid var(--border); border-radius: 0.75rem; background: var(--bg); color: var(--text-primary); font-size: 1rem;">
-                    <option value="">Select a building</option>
-                    <option value="Edison Hall" ${currentBuilding === 'Edison Hall' ? 'selected' : ''}>Edison Hall</option>
-                    <option value="Howard Hall" ${currentBuilding === 'Howard Hall' ? 'selected' : ''}>Howard Hall</option>
-                    <option value="Pozycki Hall" ${currentBuilding === 'Pozycki Hall' ? 'selected' : ''}>Pozycki Hall</option>
-                    <option value="McAllan Hall" ${currentBuilding === 'McAllan Hall' ? 'selected' : ''}>McAllan Hall</option>
-                    <option value="Great Hall" ${currentBuilding === 'Great Hall' ? 'selected' : ''}>Great Hall</option>
-                    <option value="Bey Hall" ${currentBuilding === 'Bey Hall' ? 'selected' : ''}>Bey Hall</option>
-                    <option value="Rebecca Stafford Student Center" ${currentBuilding === 'Rebecca Stafford Student Center' ? 'selected' : ''}>Rebecca Stafford Student Center</option>
-                    <option value="Guggenheim Memorial Library" ${currentBuilding === 'Guggenheim Memorial Library' ? 'selected' : ''}>Guggenheim Memorial Library</option>
-                </select>
+                <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: var(--text-primary);">Meeting Type *</label>
+                <div style="display: flex; gap: 1rem;">
+                    <label style="flex: 1; display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border: 2px solid ${isZoom ? 'var(--border)' : 'var(--primary)'}; border-radius: 0.75rem; cursor: pointer; transition: all 0.3s; background: ${isZoom ? 'var(--bg)' : 'rgba(99, 102, 241, 0.1)'};" id="inperson-option">
+                        <input type="radio" name="edit_meeting_type" value="inperson" ${!isZoom ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: var(--primary);">
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary);">In-Person</div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">Meet on campus</div>
+                        </div>
+                    </label>
+                    <label style="flex: 1; display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border: 2px solid ${isZoom ? 'var(--primary)' : 'var(--border)'}; border-radius: 0.75rem; cursor: pointer; transition: all 0.3s; background: ${isZoom ? 'rgba(99, 102, 241, 0.1)' : 'var(--bg)'};" id="zoom-option">
+                        <input type="radio" name="edit_meeting_type" value="zoom" ${isZoom ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: var(--primary);">
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Zoom</div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">Online meeting</div>
+                        </div>
+                    </label>
+                </div>
             </div>
 
-            <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Room Number / Office *</label>
-                <input type="text" id="edit_user_room_number" value="${currentRoomNumber}" placeholder="e.g., 301, Professor's Office" style="width: 100%; padding: 0.875rem; border: 2px solid var(--border); border-radius: 0.75rem; background: var(--bg); color: var(--text-primary); font-size: 1rem;">
+            <!-- In-Person Location Fields (hidden when Zoom selected) -->
+            <div id="edit-location-fields" style="display: ${isZoom ? 'none' : 'block'};">
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Building *</label>
+                    <select id="edit_user_building" style="width: 100%; padding: 0.875rem; border: 2px solid var(--border); border-radius: 0.75rem; background: var(--bg); color: var(--text-primary); font-size: 1rem;">
+                        <option value="">Select a building</option>
+                        <option value="Edison Hall" ${currentBuilding === 'Edison Hall' ? 'selected' : ''}>Edison Hall</option>
+                        <option value="Howard Hall" ${currentBuilding === 'Howard Hall' ? 'selected' : ''}>Howard Hall</option>
+                        <option value="Pozycki Hall" ${currentBuilding === 'Pozycki Hall' ? 'selected' : ''}>Pozycki Hall</option>
+                        <option value="McAllan Hall" ${currentBuilding === 'McAllan Hall' ? 'selected' : ''}>McAllan Hall</option>
+                        <option value="Great Hall" ${currentBuilding === 'Great Hall' ? 'selected' : ''}>Great Hall</option>
+                        <option value="Bey Hall" ${currentBuilding === 'Bey Hall' ? 'selected' : ''}>Bey Hall</option>
+                        <option value="Rebecca Stafford Student Center" ${currentBuilding === 'Rebecca Stafford Student Center' ? 'selected' : ''}>Rebecca Stafford Student Center</option>
+                        <option value="Guggenheim Memorial Library" ${currentBuilding === 'Guggenheim Memorial Library' ? 'selected' : ''}>Guggenheim Memorial Library</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Room Number / Office *</label>
+                    <input type="text" id="edit_user_room_number" value="${isZoom ? '' : currentRoomNumber}" placeholder="e.g., 301, Professor's Office" style="width: 100%; padding: 0.875rem; border: 2px solid var(--border); border-radius: 0.75rem; background: var(--bg); color: var(--text-primary); font-size: 1rem;">
+                </div>
+            </div>
+
+            <!-- Zoom Info (shown when Zoom selected) -->
+            <div id="edit-zoom-info" style="display: ${isZoom ? 'block' : 'none'}; margin-bottom: 1.5rem; padding: 1rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border: 2px solid rgba(99, 102, 241, 0.3); border-radius: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+                        <path d="M15.6 11.6L22 7v10l-6.4-4.5v-1z"></path>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>
+                    <div>
+                        <div style="font-weight: 600; color: var(--text-primary);">Online Meeting via Zoom</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">A Zoom link will be provided before your session</div>
+                    </div>
+                </div>
             </div>
 
             <div style="display: flex; gap: 1rem;">
-                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="flex: 1; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                <button data-action="cancelEditModal" style="flex: 1; padding: 0.875rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;">
                     Cancel
                 </button>
-                <button onclick="saveUserBookingEdit('${email}', '${booking.id}', this.parentElement.parentElement.parentElement)" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                <button data-action="saveUserBookingEdit" data-email="${email}" data-booking-id="${booking.id}" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.3s;">
                     Save Changes
                 </button>
             </div>
@@ -1751,6 +2226,35 @@ async function showEditBookingForm(email, bookingDataStr) {
     `;
 
     document.body.appendChild(modal);
+
+    // Add event listeners for meeting type toggle
+    const meetingTypeRadios = modal.querySelectorAll('input[name="edit_meeting_type"]');
+    const locationFields = document.getElementById('edit-location-fields');
+    const zoomInfo = document.getElementById('edit-zoom-info');
+    const inpersonOption = document.getElementById('inperson-option');
+    const zoomOption = document.getElementById('zoom-option');
+
+    meetingTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'zoom') {
+                locationFields.style.display = 'none';
+                zoomInfo.style.display = 'block';
+                // Update styling
+                zoomOption.style.border = '2px solid var(--primary)';
+                zoomOption.style.background = 'rgba(99, 102, 241, 0.1)';
+                inpersonOption.style.border = '2px solid var(--border)';
+                inpersonOption.style.background = 'var(--bg)';
+            } else {
+                locationFields.style.display = 'block';
+                zoomInfo.style.display = 'none';
+                // Update styling
+                inpersonOption.style.border = '2px solid var(--primary)';
+                inpersonOption.style.background = 'rgba(99, 102, 241, 0.1)';
+                zoomOption.style.border = '2px solid var(--border)';
+                zoomOption.style.background = 'var(--bg)';
+            }
+        });
+    });
 
     // Load available time slots
     try {
@@ -1780,15 +2284,29 @@ async function showEditBookingForm(email, bookingDataStr) {
 
 async function saveUserBookingEdit(email, bookingId, modal) {
     const newSlotId = document.getElementById('edit_user_slot').value;
-    const newBuilding = document.getElementById('edit_user_building').value;
-    const newRoomNumber = document.getElementById('edit_user_room_number').value.trim();
 
-    if (!newBuilding || !newRoomNumber) {
-        showNotification('Please select a building and enter a room number', 'error');
-        return;
+    // Check if Zoom is selected
+    const meetingType = modal.querySelector('input[name="edit_meeting_type"]:checked')?.value;
+    const isZoom = meetingType === 'zoom';
+
+    let newBuilding, newRoomNumber;
+
+    if (isZoom) {
+        // Zoom meeting - no building/room needed
+        newBuilding = 'Zoom';
+        newRoomNumber = 'Online';
+    } else {
+        // In-person meeting - require building and room
+        newBuilding = document.getElementById('edit_user_building').value;
+        newRoomNumber = document.getElementById('edit_user_room_number').value.trim();
+
+        if (!newBuilding || !newRoomNumber) {
+            showNotification('Please select a building and enter a room number', 'error');
+            return;
+        }
     }
 
-    const saveBtn = modal.querySelector('button[onclick*="saveUserBookingEdit"]');
+    const saveBtn = modal.querySelector('button[data-action="saveUserBookingEdit"]');
     const originalBtnText = saveBtn.innerHTML;
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.5rem; vertical-align: middle;"><span style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle;"></span>Saving...</span>';
@@ -1853,10 +2371,10 @@ async function saveUserBookingEdit(email, bookingId, modal) {
                             </div>
 
                             <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 0.75rem;">
-                                <button onclick="showEditBookingForm('${email}', '${escapedBooking}')" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                <button data-action="editBookingWithEmail" data-email="${email}" data-booking="${escapedBooking}" style="flex: 1; padding: 0.875rem; background: var(--primary); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
                                     Edit Booking
                                 </button>
-                                <button onclick="confirmDeleteSpecificBooking('${booking.id}', '${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}')" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
+                                <button data-action="deleteBookingById" data-booking-id="${booking.id}" data-slot-info="${slotDetails.day || ''}, ${slotDetails.date || ''} at ${slotDetails.time || ''}" style="flex: 1; padding: 0.875rem; background: var(--error); color: white; border: none; border-radius: 0.75rem; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s;">
                                     Delete Booking
                                 </button>
                             </div>
@@ -1889,39 +2407,6 @@ async function saveUserBookingEdit(email, bookingId, modal) {
     }
 }
 
-// ===== CURSOR TRACKER =====
-// Subtle cursor tracker with smooth following
-(function initCursorTracker() {
-    const cursorTracker = document.querySelector('.cursor-tracker');
-    if (!cursorTracker) return;
-
-    let mouseX = 0;
-    let mouseY = 0;
-    let trackerX = 0;
-    let trackerY = 0;
-
-    // Update mouse position
-    document.addEventListener('mousemove', (e) => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-    });
-
-    // Smooth follow animation with easing
-    function animateTracker() {
-        // Smooth easing - more subtle than projects page
-        trackerX += (mouseX - trackerX) * 0.12;
-        trackerY += (mouseY - trackerY) * 0.12;
-
-        cursorTracker.style.left = trackerX + 'px';
-        cursorTracker.style.top = trackerY + 'px';
-
-        requestAnimationFrame(animateTracker);
-    }
-
-    // Start animation
-    animateTracker();
-})();
-
 // ============================================================================
 // EMAIL VERIFICATION MODAL FOR BOOKING
 // ============================================================================
@@ -1950,10 +2435,10 @@ function showVerificationModal(email) {
                 <p id="verificationAttempts" class="verification-attempts" style="display: none; color: var(--text-tertiary); margin-top: 0.5rem; font-size: 0.875rem;"></p>
 
                 <div class="verification-actions" style="margin-top: 1.5rem; display: flex; gap: 1rem;">
-                    <button onclick="confirmVerificationCode()" class="btn btn-primary" id="verifyBtn" style="flex: 1;">
+                    <button data-action="confirmVerificationCode" class="btn btn-primary" id="verifyBtn" style="flex: 1;">
                         Verify & Confirm Booking
                     </button>
-                    <button onclick="closeVerificationModal()" class="btn btn-secondary" style="flex: 0 0 auto;">
+                    <button data-action="closeVerificationModal" class="btn btn-secondary" style="flex: 0 0 auto;">
                         Cancel
                     </button>
                 </div>
@@ -2074,3 +2559,484 @@ async function confirmVerificationCode() {
         errorMsg.style.display = 'block';
     }
 }
+
+// AI Tools Panel Functions
+function toggleAITools() {
+    const panel = document.getElementById('aiToolsPanel');
+    if (panel) {
+        panel.classList.toggle('hidden');
+    }
+}
+
+// Pricing Panel Functions
+function closePricingInfo() {
+    const panel = document.getElementById('pricingPanel');
+    if (panel) {
+        panel.classList.add('hidden');
+    }
+}
+
+// Logout Function
+function logout() {
+    window.location.href = '/logout';
+}
+
+// Coding Education Modal Functions
+function closeCodingEducationModal(reason) {
+    const modal = document.getElementById('codingEducationModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function showFullEducationModal() {
+    const stopSign = document.getElementById('stopSignScreen');
+    const fullContent = document.getElementById('fullEducationContent');
+    if (stopSign) stopSign.classList.add('hidden');
+    if (fullContent) fullContent.classList.remove('hidden');
+}
+
+function acknowledgeAndContinue(status) {
+    closeCodingEducationModal();
+    goToStep(6);
+}
+
+// Admin Registration Modal Functions
+function closeAdminRegistrationModal() {
+    const modal = document.getElementById('adminRegistrationModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+async function submitAdminRegistration(event) {
+    event.preventDefault();
+
+    const username = document.getElementById('admin_username').value.trim();
+    const password = document.getElementById('admin_password').value;
+    const confirmPassword = document.getElementById('admin_confirm_password').value;
+    const errorDiv = document.getElementById('adminRegError');
+    const submitBtn = document.getElementById('adminRegSubmitBtn');
+
+    // Clear previous error
+    errorDiv.style.display = 'none';
+
+    // Validate
+    if (password !== confirmPassword) {
+        errorDiv.textContent = 'Passwords do not match';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    if (password.length < 8) {
+        errorDiv.textContent = 'Password must be at least 8 characters';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Show loading
+    submitBtn.disabled = true;
+    const btnText = submitBtn.querySelector('.btn-text');
+    const btnSpinner = submitBtn.querySelector('.btn-spinner');
+    if (btnText) btnText.textContent = 'Creating Account...';
+    if (btnSpinner) btnSpinner.classList.remove('hidden');
+
+    try {
+        const response = await fetch('/api/admin/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            showNotification('Account created successfully! Redirecting...', 'success');
+            closeAdminRegistrationModal();
+            setTimeout(() => {
+                window.location.href = '/admin';
+            }, 1000);
+        } else {
+            errorDiv.textContent = result.message || 'Failed to create account';
+            errorDiv.style.display = 'block';
+            submitBtn.disabled = false;
+            if (btnText) btnText.textContent = 'Create Account';
+            if (btnSpinner) btnSpinner.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('Registration error:', error);
+        errorDiv.textContent = 'Connection error. Please try again.';
+        errorDiv.style.display = 'block';
+        submitBtn.disabled = false;
+        if (btnText) btnText.textContent = 'Create Account';
+        if (btnSpinner) btnSpinner.classList.add('hidden');
+    }
+}
+
+// ============================================================================
+// GLOBAL EVENT DELEGATION - CSP COMPLIANT
+// ============================================================================
+document.body.addEventListener('click', function(e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) return;
+
+    const action = target.dataset.action;
+    const param = target.dataset.param;
+
+    switch (action) {
+        // Theme and navigation
+        case 'toggleTheme':
+            toggleTheme();
+            break;
+        case 'logout':
+            logout();
+            break;
+        case 'openViewMyBookingDirect':
+            openViewMyBookingDirect();
+            break;
+        case 'openContactForm':
+            e.preventDefault();
+            openContactForm();
+            break;
+        case 'closeContactForm':
+            closeContactForm();
+            break;
+
+        // AI Tools Panel
+        case 'toggleAITools':
+            e.preventDefault();
+            toggleAITools();
+            break;
+
+        // Pricing Panel
+        case 'closePricingInfo':
+            closePricingInfo();
+            break;
+        case 'closePricingAndContact':
+            e.preventDefault();
+            closePricingInfo();
+            openContactForm();
+            break;
+
+        // Step navigation
+        case 'goToStep':
+            goToStep(parseInt(param, 10));
+            break;
+        case 'confirmBooking':
+            confirmBooking();
+            break;
+
+        // Calendar functions
+        case 'addToGoogleCalendar':
+            addToGoogleCalendar();
+            break;
+        case 'downloadICS':
+            downloadICS();
+            break;
+
+        // Welcome Modal
+        case 'closeWelcomeModal':
+            closeWelcomeModal();
+            break;
+
+        // View Booking Modal
+        case 'closeViewBookingModal':
+            closeViewBookingModal();
+            break;
+        case 'lookupBooking':
+            lookupBooking();
+            break;
+        case 'editBookingById':
+            showEditBookingFormById();
+            break;
+        case 'deleteBookingById':
+            const bookingId = target.dataset.bookingId;
+            const slotInfo = target.dataset.slotInfo;
+            confirmDeleteSpecificBooking(bookingId, slotInfo);
+            break;
+        case 'verifyCode':
+            verifyCode();
+            break;
+        case 'resendVerificationCode':
+            resendVerificationCode();
+            break;
+        case 'editBookingWithEmail':
+            const editEmail = target.dataset.email;
+            const editBooking = target.dataset.booking;
+            showEditBookingForm(editEmail, editBooking);
+            break;
+        case 'cancelEditModal':
+            // Find and remove the parent modal
+            const editModal = target.closest('.user-edit-booking-modal');
+            if (editModal) editModal.remove();
+            break;
+        case 'saveUserBookingEdit':
+            const saveEmail = target.dataset.email;
+            const saveBookingId = target.dataset.bookingId;
+            const saveModal = target.closest('.user-edit-booking-modal');
+            saveUserBookingEdit(saveEmail, saveBookingId, saveModal);
+            break;
+        case 'confirmVerificationCode':
+            confirmVerificationCode();
+            break;
+        case 'closeVerificationModal':
+            closeVerificationModal();
+            break;
+
+        // Reload page
+        case 'reloadPage':
+            location.reload();
+            break;
+
+        // Coding Education Modal
+        case 'closeCodingEducationModal':
+            closeCodingEducationModal(param || 'close');
+            break;
+        case 'showFullEducationModal':
+            showFullEducationModal();
+            break;
+        case 'acknowledgeAndContinue':
+            acknowledgeAndContinue(param || 'ready');
+            break;
+
+        // Admin Registration Modal
+        case 'closeAdminRegistrationModal':
+            closeAdminRegistrationModal();
+            break;
+
+        // Pricing Popup Modal
+        case 'closePricingPopup':
+            closePricingPopup();
+            break;
+        case 'acknowledgePricingAndContinue':
+            acknowledgePricingAndContinue();
+            break;
+
+        // Meeting Type & Attendee Selection
+        case 'selectMeetingType':
+            const meetingType = target.dataset.type;
+            handleMeetingTypeChange(meetingType);
+            break;
+        case 'increaseAttendees':
+            changeAttendeeCount(1);
+            break;
+        case 'decreaseAttendees':
+            changeAttendeeCount(-1);
+            break;
+    }
+});
+
+// Handle change events for select elements
+document.body.addEventListener('change', function(e) {
+    const target = e.target;
+    const action = target.dataset.action;
+
+    if (action === 'showDepartmentField') {
+        showDepartmentField();
+    } else if (action === 'filterSlotsByTutor') {
+        filterSlotsByTutor();
+    }
+});
+
+// Handle form submissions
+document.body.addEventListener('submit', function(e) {
+    const target = e.target;
+    const action = target.dataset.action;
+
+    if (action === 'submitContactForm') {
+        submitContactForm(e);
+    } else if (action === 'submitAdminRegistration') {
+        submitAdminRegistration(e);
+    }
+});
+
+// ============================================================================
+// PRICING POPUP FOR EXTERNAL USERS
+// ============================================================================
+let pricingAcknowledged = false;
+let pendingStep = null;
+
+function isExternalUser() {
+    // Check if user is external (non-Monmouth) by looking at body dataset or pricing button highlight class
+    const pricingBtn = document.getElementById('pricingBtn');
+    // If the pricing button has the highlight class, user is external
+    return pricingBtn && pricingBtn.classList.contains('nav-btn-highlight');
+}
+
+function showPricingPopup(nextStep) {
+    const modal = document.getElementById('pricingPopupModal');
+    if (modal) {
+        pendingStep = nextStep;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closePricingPopup() {
+    const modal = document.getElementById('pricingPopupModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+        pendingStep = null;
+    }
+}
+
+function acknowledgePricingAndContinue() {
+    pricingAcknowledged = true;
+    localStorage.setItem('pricingAcknowledged', 'true');
+    closePricingPopup();
+
+    // Continue to the pending step
+    if (pendingStep) {
+        goToStep(pendingStep, true);
+    }
+}
+
+// Check if pricing was previously acknowledged in this session
+if (localStorage.getItem('pricingAcknowledged') === 'true') {
+    pricingAcknowledged = true;
+}
+
+// Override goToStep - pricing popup removed, pricing shown on step 7 for external users only
+const originalGoToStep = goToStep;
+goToStep = function(stepNumber, skipValidation = false) {
+    // Call original goToStep directly (no popup intercept)
+    originalGoToStep(stepNumber, skipValidation);
+
+    // Show/hide pricing preview on step 7 based on user type
+    if (stepNumber === 7) {
+        const pricingPreview = document.getElementById('pricingPreview');
+        if (pricingPreview) {
+            pricingPreview.style.display = isExternalUser() ? 'flex' : 'none';
+        }
+    }
+};
+
+// ============================================================================
+// MEETING TYPE & ATTENDEE SELECTION
+// ============================================================================
+let selectedMeetingType = 'in-person';
+let attendeeCount = 1;
+
+// Pricing tiers based on group size
+const PRICING = {
+    // Base price per person based on group size tiers (before Zoom discount)
+    getBaseTierPrice: function(count) {
+        if (count === 1) return 80;       // 1 student: $80/person
+        if (count >= 2 && count <= 3) return 50;   // 2-3 students: $50/person
+        if (count >= 4 && count <= 6) return 38;   // 4-6 students: $38/person
+        if (count >= 7 && count <= 9) return 33;   // 7-9 students: $33/person
+        return 30;                         // 10+ students: $30/person
+    },
+    zoomDiscountPerPerson: 10,  // $10 off per person for Zoom sessions
+
+    // Calculate total price ensuring it never decreases as count increases
+    // This prevents edge cases where adding people makes it cheaper
+    calculateTotal: function(count, isZoom) {
+        let total = 0;
+        const discount = isZoom ? this.zoomDiscountPerPerson : 0;
+
+        // Calculate what the price would be at each attendee level
+        // and ensure we never go below the previous level's price
+        let minPrice = 0;
+        for (let i = 1; i <= count; i++) {
+            const priceAtLevel = i * Math.max(0, this.getBaseTierPrice(i) - discount);
+            // Price must be at least as high as previous level
+            minPrice = Math.max(minPrice, priceAtLevel);
+        }
+
+        return minPrice;
+    },
+
+    // Get effective per-person price after ensuring monotonic pricing
+    getEffectivePerPerson: function(count, isZoom) {
+        const total = this.calculateTotal(count, isZoom);
+        return Math.ceil(total / count);
+    }
+};
+
+function handleMeetingTypeChange(type) {
+    selectedMeetingType = type;
+
+    // Update radio button
+    const radioBtn = document.querySelector(`input[name="meeting_type"][value="${type}"]`);
+    if (radioBtn) radioBtn.checked = true;
+
+    // Toggle in-person location visibility
+    const inPersonLocation = document.getElementById('inPersonLocation');
+    const zoomNote = document.getElementById('zoomDiscountNote');
+
+    if (type === 'zoom') {
+        if (inPersonLocation) inPersonLocation.style.display = 'none';
+        // Only show discount note for external (paying) users
+        if (zoomNote) zoomNote.style.display = isExternalUser() ? 'flex' : 'none';
+    } else {
+        if (inPersonLocation) inPersonLocation.style.display = '';
+        if (zoomNote) zoomNote.style.display = 'none';
+    }
+
+    // Update pricing preview
+    updatePricingPreview();
+}
+
+function changeAttendeeCount(delta) {
+    const newCount = attendeeCount + delta;
+    if (newCount >= 1 && newCount <= 20) {
+        attendeeCount = newCount;
+
+        // Update display
+        const countEl = document.getElementById('attendeeCount');
+        const labelEl = document.querySelector('.attendee-label');
+        const minusBtn = document.querySelector('.attendee-btn.minus');
+
+        if (countEl) countEl.textContent = attendeeCount;
+        if (labelEl) labelEl.textContent = attendeeCount === 1 ? 'attendee' : 'attendees';
+        if (minusBtn) minusBtn.disabled = attendeeCount <= 1;
+
+        // Update pricing preview
+        updatePricingPreview();
+    }
+}
+
+function updatePricingPreview() {
+    const priceEl = document.getElementById('priceEstimate');
+    if (!priceEl) return;
+
+    const isZoom = selectedMeetingType === 'zoom';
+
+    // Calculate total price using monotonic pricing (never decreases with more attendees)
+    const totalPrice = PRICING.calculateTotal(attendeeCount, isZoom);
+
+    // Calculate what the in-person price would be (for showing Zoom savings)
+    const inPersonTotal = PRICING.calculateTotal(attendeeCount, false);
+    const zoomSavings = isZoom ? Math.max(0, inPersonTotal - totalPrice) : 0;
+
+    // Calculate effective per-person price
+    const perPerson = Math.round(totalPrice / attendeeCount);
+
+    // Format the display
+    if (attendeeCount === 1) {
+        priceEl.textContent = `$${totalPrice} / session`;
+    } else {
+        priceEl.textContent = `$${totalPrice} total ($${perPerson}/person)`;
+    }
+
+    // Add visual indicator for Zoom discount
+    if (isZoom && zoomSavings > 0) {
+        priceEl.innerHTML += ` <span style="color: #10B981; font-size: 0.85em;">(-$${zoomSavings} Zoom)</span>`;
+    }
+}
+
+// Initialize meeting type on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default meeting type
+    handleMeetingTypeChange('in-person');
+
+    // Hide $10 OFF badge for internal (Monmouth) users
+    if (!isExternalUser()) {
+        const zoomDiscountBadge = document.querySelector('.zoom-discount-badge');
+        if (zoomDiscountBadge) {
+            zoomDiscountBadge.style.display = 'none';
+        }
+    }
+});

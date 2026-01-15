@@ -1,0 +1,750 @@
+/* Pricing Page - Professional Design */
+
+:root {
+    --primary: #6366F1;
+    --primary-light: #818CF8;
+    --primary-dark: #4F46E5;
+    --success: #10B981;
+    --success-light: #34D399;
+    --warning: #F59E0B;
+    --error: #EF4444;
+    --text-primary: #1F2937;
+    --text-secondary: #6B7280;
+    --text-tertiary: #9CA3AF;
+    --bg: #FFFFFF;
+    --surface: #F9FAFB;
+    --surface-elevated: #FFFFFF;
+    --border: #E5E7EB;
+}
+
+[data-theme="dark"] {
+    --text-primary: #F9FAFB;
+    --text-secondary: #D1D5DB;
+    --text-tertiary: #9CA3AF;
+    --bg: #0a0b0f;
+    --surface: #111318;
+    --surface-elevated: #1a1c24;
+    --border: rgba(255, 255, 255, 0.08);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.6;
+}
+
+/* ============================================
+   BACKGROUND
+   ============================================ */
+.ambient-bg {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.35;
+    animation: orbFloat 40s ease-in-out infinite;
+}
+
+.orb-1 {
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.5) 0%, transparent 70%);
+    top: -200px;
+    left: -150px;
+}
+
+.orb-2 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.4) 0%, transparent 70%);
+    bottom: -150px;
+    right: -100px;
+    animation-delay: -15s;
+}
+
+.orb-3 {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.35) 0%, transparent 70%);
+    top: 50%;
+    left: 60%;
+    animation-delay: -25s;
+}
+
+[data-theme="dark"] .orb {
+    opacity: 0.5;
+}
+
+@keyframes orbFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(30px, -30px) scale(1.05); }
+}
+
+/* ============================================
+   NAVIGATION
+   ============================================ */
+.back-btn {
+    position: fixed;
+    top: 1.5rem;
+    left: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+
+.back-btn:hover {
+    transform: translateX(-3px);
+    border-color: var(--primary);
+}
+
+.theme-toggle {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface-elevated);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+
+.theme-toggle svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 2;
+    color: var(--text-primary);
+}
+
+.theme-toggle:hover {
+    transform: scale(1.05);
+    border-color: var(--primary);
+}
+
+.hidden { display: none !important; }
+
+/* ============================================
+   MAIN CONTAINER
+   ============================================ */
+.pricing-container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 6rem 1.5rem 3rem;
+}
+
+/* ============================================
+   HERO HEADER
+   ============================================ */
+.pricing-hero {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.pricing-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    color: var(--primary);
+    padding: 0.4rem 1rem;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.pricing-hero h1 {
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 800;
+    margin-bottom: 0.75rem;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+}
+
+.pricing-hero h1 .gradient-text {
+    background: linear-gradient(135deg, var(--primary) 0%, #A855F7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.pricing-hero .subtitle {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.pricing-hero .highlight {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* ============================================
+   MONMOUTH BANNER
+   ============================================ */
+.monmouth-banner {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.05) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    padding: 1.25rem 1.5rem;
+    border-radius: 14px;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.monmouth-banner h2 {
+    font-size: 1rem;
+    margin-bottom: 0.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    color: var(--success);
+}
+
+.monmouth-banner h2 svg {
+    color: var(--success);
+}
+
+.monmouth-banner .free-badge {
+    background: var(--success);
+    color: white;
+    padding: 0.15rem 0.5rem;
+    border-radius: 100px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.monmouth-banner p {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* ============================================
+   ZOOM DISCOUNT BANNER
+   ============================================ */
+.zoom-banner {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    padding: 1.5rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.zoom-banner-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.zoom-banner-icon svg {
+    width: 28px;
+    height: 28px;
+    color: white;
+}
+
+.zoom-banner-content h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.zoom-banner-content h3 .save-badge {
+    background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+    color: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.zoom-banner-content p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.zoom-banner-content strong {
+    color: var(--text-primary);
+}
+
+/* ============================================
+   PRICING TABLE SECTION
+   ============================================ */
+.pricing-table-section {
+    background: var(--surface-elevated);
+    border-radius: 18px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-title h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.02em;
+}
+
+.section-title p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Pricing Table */
+.pricing-table-wrapper {
+    overflow-x: auto;
+}
+
+.pricing-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.pricing-table th,
+.pricing-table td {
+    padding: 1rem 1.25rem;
+    text-align: center;
+}
+
+.pricing-table thead th {
+    background: var(--surface);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+}
+
+.pricing-table thead th:first-child {
+    text-align: left;
+    border-radius: 10px 0 0 0;
+}
+
+.pricing-table thead th:last-child {
+    border-radius: 0 10px 0 0;
+}
+
+.pricing-table tbody td {
+    border-bottom: 1px solid var(--border);
+}
+
+.pricing-table tbody td:first-child {
+    text-align: left;
+    font-weight: 600;
+}
+
+.pricing-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.pricing-table tbody tr {
+    transition: background 0.15s;
+}
+
+.pricing-table tbody tr:hover {
+    background: rgba(99, 102, 241, 0.03);
+}
+
+.price-cell {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.price-cell.total {
+    color: var(--primary);
+}
+
+.discount-badge {
+    display: inline-block;
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success);
+    padding: 0.15rem 0.45rem;
+    border-radius: 100px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    margin-left: 0.35rem;
+    vertical-align: middle;
+}
+
+/* ============================================
+   INFO CARDS
+   ============================================ */
+.info-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.info-card {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.25rem;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.info-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(99, 102, 241, 0.25);
+}
+
+.info-icon {
+    width: 44px;
+    height: 44px;
+    margin: 0 auto 0.75rem;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.info-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.info-card h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+}
+
+.info-card p {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+/* ============================================
+   CTA SECTION
+   ============================================ */
+.cta-section {
+    text-align: center;
+    padding: 2.5rem 2rem;
+    background: linear-gradient(135deg, var(--primary) 0%, #A855F7 100%);
+    border-radius: 18px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.cta-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+}
+
+.cta-content {
+    position: relative;
+    z-index: 1;
+}
+
+.cta-section h2 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 0.4rem;
+    letter-spacing: -0.02em;
+}
+
+.cta-section p {
+    opacity: 0.9;
+    font-size: 0.95rem;
+    margin-bottom: 1.25rem;
+}
+
+.cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.9rem 1.75rem;
+    background: white;
+    color: var(--primary);
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.cta-btn svg {
+    transition: transform 0.2s;
+}
+
+.cta-btn:hover svg {
+    transform: translateX(3px);
+}
+
+/* ============================================
+   FAQ SECTION
+   ============================================ */
+.faq-section {
+    margin-top: 2rem;
+}
+
+.faq-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.875rem;
+    margin-top: 1.25rem;
+}
+
+.faq-item {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem;
+    transition: all 0.2s;
+}
+
+.faq-item:hover {
+    border-color: rgba(99, 102, 241, 0.25);
+}
+
+.faq-item h4 {
+    font-size: 0.9rem;
+    margin-bottom: 0.35rem;
+    font-weight: 600;
+}
+
+.faq-item p {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.55;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+.pricing-footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-tertiary);
+    font-size: 0.8rem;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pricing-hero { animation: fadeInUp 0.4s ease; }
+.monmouth-banner { animation: fadeInUp 0.4s ease 0.05s both; }
+.zoom-banner { animation: fadeInUp 0.4s ease 0.1s both; }
+.pricing-table-section { animation: fadeInUp 0.4s ease 0.15s both; }
+.info-cards { animation: fadeInUp 0.4s ease 0.2s both; }
+.cta-section { animation: fadeInUp 0.4s ease 0.25s both; }
+.faq-section { animation: fadeInUp 0.4s ease 0.3s both; }
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    .pricing-container {
+        padding: 5rem 1rem 2rem;
+    }
+
+    .back-btn {
+        top: 1rem;
+        left: 1rem;
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+    }
+
+    .theme-toggle {
+        top: 1rem;
+        right: 1rem;
+        width: 42px;
+        height: 42px;
+    }
+
+    .pricing-hero h1 {
+        font-size: 1.65rem;
+    }
+
+    .zoom-banner {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.25rem;
+    }
+
+    .zoom-banner-icon {
+        width: 48px;
+        height: 48px;
+    }
+
+    .pricing-table-section {
+        padding: 1.25rem;
+    }
+
+    .info-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .faq-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cta-section {
+        padding: 2rem 1.25rem;
+    }
+
+    .cta-section h2 {
+        font-size: 1.4rem;
+    }
+
+    .policy-disclaimer {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+}
+
+/* ============================================
+   POLICY DISCLAIMER
+   ============================================ */
+.policy-disclaimer {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+    padding: 1.5rem;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 1rem;
+    margin-top: 2rem;
+}
+
+[data-theme="dark"] .policy-disclaimer {
+    background: rgba(245, 158, 11, 0.05);
+    border-color: rgba(245, 158, 11, 0.15);
+}
+
+.disclaimer-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: rgba(245, 158, 11, 0.15);
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.disclaimer-icon svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--warning);
+}
+
+.disclaimer-content h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--warning);
+    margin-bottom: 0.5rem;
+}
+
+.disclaimer-content p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* ============================================
+   SITE FOOTER
+   ============================================ */
+.site-footer {
+    margin-top: 3rem;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border);
+}
+
+.footer-content {
+    max-width: 1100px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.footer-content p {
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+}

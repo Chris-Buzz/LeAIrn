@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LeAIrn - Schedule Your AI Learning Session</title>
+    <title>LearnAI - Schedule Your AI Learning Session</title>
     <link rel="icon" type="image/png" href="/static/icon.png">
     <link rel="shortcut icon" type="image/png" href="/static/icon.png">
     <link rel="apple-touch-icon" href="/static/icon.png">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/css/style.css">
     {% if recaptcha_site_key %}
     <script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha_site_key }}"></script>
     {% endif %}
@@ -16,12 +16,37 @@
     {% if authenticated %}
     data-authenticated="true"
     data-user-email="{{ user_email }}"
+    data-user-name="{{ user_name }}"
     {% else %}
     data-authenticated="false"
     {% endif %}
+    {% if recaptcha_site_key %}
+    data-recaptcha-key="{{ recaptcha_site_key }}"
+    {% endif %}
 >
-    <!-- Theme Toggle -->
-    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+    <!-- Stunning Animated Background -->
+    <div class="gradient-bg">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="blob blob-4"></div>
+        <div class="blob blob-5"></div>
+    </div>
+    <div class="aurora"></div>
+    <div class="dot-pattern"></div>
+
+    <!-- Floating Particles -->
+    <div class="floating-particles">
+        <div class="floating-particle"></div>
+        <div class="floating-particle"></div>
+        <div class="floating-particle"></div>
+        <div class="floating-particle"></div>
+        <div class="floating-particle"></div>
+        <div class="floating-particle"></div>
+    </div>
+
+    <!-- Theme Toggle - Top Right -->
+    <button class="theme-toggle" data-action="toggleTheme" aria-label="Toggle theme" title="Toggle Dark/Light Mode">
         <svg id="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
         </svg>
@@ -30,96 +55,271 @@
         </svg>
     </button>
 
-    <!-- Sign Out Button (for authenticated users) -->
-    {% if session.get('authenticated') %}
-    <button onclick="logout()" class="signout-toggle" title="Sign Out" aria-label="Sign out">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-            <polyline points="16 17 21 12 16 7"></polyline>
-            <line x1="21" y1="12" x2="9" y2="12"></line>
-        </svg>
-    </button>
-    {% endif %}
+    <!-- Floating Navigation Bar -->
+    <nav class="floating-nav">
+        <!-- My Booking Button -->
+        <button class="nav-btn" data-action="openViewMyBookingDirect" title="View My Booking">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span class="nav-label">My Booking</span>
+        </button>
 
-    <!-- AI Tools Button -->
-    <a href="/ai-tools" class="ai-tools-btn" title="Free AI Tools">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
-        </svg>
-        <span class="btn-label">AI Tools</span>
-    </a>
+        <!-- AI Tools Button -->
+        <a href="/ai-tools" class="nav-btn" title="Free AI Tools for Students">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
+            </svg>
+            <span class="nav-label">AI Tools</span>
+        </a>
 
-    <!-- View Booking Button -->
-    <button onclick="openViewMyBookingDirect()" class="view-booking-btn" title="View My Booking">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-        </svg>
-        <span class="btn-label">My Booking</span>
-    </button>
+        <!-- Pricing Button -->
+        <a href="/pricing" class="nav-btn {% if is_external_user %}nav-btn-highlight{% endif %}" title="View Pricing" id="pricingBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
+                <path d="M12 18V6"/>
+            </svg>
+            <span class="nav-label">Pricing</span>
+        </a>
 
-    <script>
-        // Debug: Log authentication status on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const auth = document.body.getAttribute('data-authenticated');
-            const email = document.body.getAttribute('data-user-email');
-            console.log('[PAGE_LOAD] Authentication Status:');
-            console.log('  data-authenticated:', auth);
-            console.log('  data-user-email:', email);
-            console.log('  Body HTML:', document.body.outerHTML.substring(0, 200));
-        });
-    </script>
+        <!-- Contact Button -->
+        <a href="#" class="nav-btn" data-action="openContactForm" title="Contact Us">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            <span class="nav-label">Contact</span>
+        </a>
 
-    <!-- Email Contact Button -->
-    <a href="#" onclick="openContactForm(); return false;" class="email-contact-btn" title="Contact">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-            <polyline points="22,6 12,13 2,6"/>
-        </svg>
-        <span class="btn-label">Contact</span>
-    </a>
+        {% if session.get('authenticated') %}
+        <div class="nav-divider"></div>
 
-    <!-- AI Built Popup - Left Side -->
-    <div class="ai-popup" id="aiBanner">
-        <div class="ai-popup-content">
-            <button class="ai-popup-close" onclick="closeAIBanner()" aria-label="Close">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
+        <!-- Sign Out Button -->
+        <button class="nav-btn nav-btn-danger" data-action="logout" title="Sign Out" aria-label="Sign out">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span class="nav-label">Sign Out</span>
+        </button>
+        {% endif %}
+    </nav>
 
-            <div class="ai-popup-header">
-                <svg class="ai-popup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
-                </svg>
-                <h3>Built Entirely with AI</h3>
+    <!-- AI Tools Panel -->
+    <div id="aiToolsPanel" class="ai-tools-panel hidden">
+        <div class="ai-tools-header">
+            <h3>AI Tools Quick Guide</h3>
+            <button data-action="toggleAITools" class="ai-tools-close">&times;</button>
+        </div>
+        <p class="ai-tools-intro">The best AI tools for every task - bookmark this for quick reference!</p>
+
+        <div class="ai-tools-grid">
+            <!-- General Chat & Writing -->
+            <div class="ai-tool-category">
+                <div class="category-header">
+                    <span class="category-icon">💬</span>
+                    <h4>General Chat & Writing</h4>
+                </div>
+                <div class="tool-list">
+                    <a href="https://chat.openai.com" target="_blank" class="tool-item">
+                        <span class="tool-name">ChatGPT</span>
+                        <span class="tool-best">Best for: Versatile conversations, brainstorming</span>
+                    </a>
+                    <a href="https://claude.ai" target="_blank" class="tool-item">
+                        <span class="tool-name">Claude</span>
+                        <span class="tool-best">Best for: Long documents, nuanced analysis, coding</span>
+                    </a>
+                    <a href="https://gemini.google.com" target="_blank" class="tool-item">
+                        <span class="tool-name">Gemini</span>
+                        <span class="tool-best">Best for: Google integration, multimodal tasks</span>
+                    </a>
+                </div>
             </div>
 
-            <div class="ai-popup-body">
-                <div class="ai-popup-feature">
-                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span>No coding experience required</span>
+            <!-- Research -->
+            <div class="ai-tool-category">
+                <div class="category-header">
+                    <span class="category-icon">🔍</span>
+                    <h4>Research & Learning</h4>
                 </div>
-                <div class="ai-popup-feature">
-                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span>Created in just a few hours</span>
-                </div>
-                <div class="ai-popup-feature">
-                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span>Powered by Claude AI</span>
+                <div class="tool-list">
+                    <a href="https://perplexity.ai" target="_blank" class="tool-item">
+                        <span class="tool-name">Perplexity</span>
+                        <span class="tool-best">Best for: Real-time web research with citations</span>
+                    </a>
+                    <a href="https://elicit.com" target="_blank" class="tool-item">
+                        <span class="tool-name">Elicit</span>
+                        <span class="tool-best">Best for: Academic paper research & summaries</span>
+                    </a>
+                    <a href="https://notebooklm.google.com" target="_blank" class="tool-item">
+                        <span class="tool-name">NotebookLM</span>
+                        <span class="tool-best">Best for: Analyzing your own documents</span>
+                    </a>
                 </div>
             </div>
 
-            <div class="ai-popup-footer">
-                <p><strong>You can do this too!</strong></p>
-                <p>Learn AI skills and build your own projects.</p>
+            <!-- Coding -->
+            <div class="ai-tool-category">
+                <div class="category-header">
+                    <span class="category-icon">💻</span>
+                    <h4>Coding & Development</h4>
+                </div>
+                <div class="tool-list">
+                    <a href="https://github.com/features/copilot" target="_blank" class="tool-item">
+                        <span class="tool-name">GitHub Copilot</span>
+                        <span class="tool-best">Best for: Code autocomplete in your editor</span>
+                    </a>
+                    <a href="https://cursor.com" target="_blank" class="tool-item">
+                        <span class="tool-name">Cursor</span>
+                        <span class="tool-best">Best for: AI-first code editor experience</span>
+                    </a>
+                    <a href="https://claude.ai/download" target="_blank" class="tool-item">
+                        <span class="tool-name">Claude Code</span>
+                        <span class="tool-best">Best for: Complex coding projects & debugging</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Excel & Data -->
+            <div class="ai-tool-category">
+                <div class="category-header">
+                    <span class="category-icon">📊</span>
+                    <h4>Excel & Data Analysis</h4>
+                </div>
+                <div class="tool-list">
+                    <a href="https://www.microsoft.com/en-us/microsoft-365/copilot" target="_blank" class="tool-item">
+                        <span class="tool-name">Excel Copilot</span>
+                        <span class="tool-best">Best for: Formulas, pivot tables, analysis</span>
+                    </a>
+                    <a href="https://chat.openai.com" target="_blank" class="tool-item">
+                        <span class="tool-name">ChatGPT Code Interpreter</span>
+                        <span class="tool-best">Best for: Data cleaning, visualizations</span>
+                    </a>
+                    <a href="https://julius.ai" target="_blank" class="tool-item">
+                        <span class="tool-name">Julius AI</span>
+                        <span class="tool-best">Best for: Quick data analysis & charts</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Creative & Images -->
+            <div class="ai-tool-category">
+                <div class="category-header">
+                    <span class="category-icon">🎨</span>
+                    <h4>Images & Creative</h4>
+                </div>
+                <div class="tool-list">
+                    <a href="https://midjourney.com" target="_blank" class="tool-item">
+                        <span class="tool-name">Midjourney</span>
+                        <span class="tool-best">Best for: Artistic, high-quality images</span>
+                    </a>
+                    <a href="https://chat.openai.com" target="_blank" class="tool-item">
+                        <span class="tool-name">DALL-E 3</span>
+                        <span class="tool-best">Best for: Quick image generation via ChatGPT</span>
+                    </a>
+                    <a href="https://canva.com" target="_blank" class="tool-item">
+                        <span class="tool-name">Canva AI</span>
+                        <span class="tool-best">Best for: Design templates, presentations</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Productivity -->
+            <div class="ai-tool-category">
+                <div class="category-header">
+                    <span class="category-icon">⚡</span>
+                    <h4>Productivity & Workflow</h4>
+                </div>
+                <div class="tool-list">
+                    <a href="https://notion.so" target="_blank" class="tool-item">
+                        <span class="tool-name">Notion AI</span>
+                        <span class="tool-best">Best for: Notes, docs, project management</span>
+                    </a>
+                    <a href="https://otter.ai" target="_blank" class="tool-item">
+                        <span class="tool-name">Otter.ai</span>
+                        <span class="tool-best">Best for: Meeting transcription & summaries</span>
+                    </a>
+                    <a href="https://zapier.com" target="_blank" class="tool-item">
+                        <span class="tool-name">Zapier AI</span>
+                        <span class="tool-best">Best for: Automating workflows between apps</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="ai-tools-footer">
+            <p>Want to learn how to use these effectively? <a href="#" data-action="toggleAITools">Book a session!</a></p>
+        </div>
+    </div>
+
+    <!-- Pricing Panel -->
+    <div id="pricingPanel" class="ai-tools-panel hidden">
+        <div class="ai-tools-header">
+            <h3>Pricing Information</h3>
+            <button data-action="closePricingInfo" class="ai-tools-close">&times;</button>
+        </div>
+        <p class="ai-tools-intro">Flexible pricing options for everyone!</p>
+
+        <div style="padding: 1.5rem;">
+            <!-- Monmouth Students -->
+            <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1)); border-left: 4px solid var(--primary); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <h4 style="margin-top: 0; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                    </svg>
+                    Monmouth University Students
+                </h4>
+                <p style="font-size: 2rem; font-weight: 700; margin: 0.5rem 0; color: var(--success);">FREE</p>
+                <p style="margin: 0; color: var(--text-secondary);">
+                    All AI learning sessions are completely free for Monmouth University students. Just sign in with your Monmouth email to book!
+                </p>
+            </div>
+
+            <!-- Outside Users -->
+            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1)); border-left: 4px solid var(--success); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <h4 style="margin-top: 0; color: var(--success); display: flex; align-items: center; gap: 0.5rem;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                    Outside Users Welcome!
+                </h4>
+                <p style="font-size: 2rem; font-weight: 700; margin: 0.5rem 0; color: var(--text-primary);">$50 <span style="font-size: 1rem; font-weight: 400; color: var(--text-secondary);">/ 30-90 min session</span></p>
+                <p style="margin: 0 0 1rem 0; color: var(--text-secondary);">
+                    Professional AI mentoring tailored to your goals. Perfect for professionals, entrepreneurs, or anyone looking to master AI tools.
+                </p>
+                <ul style="margin: 0; padding-left: 1.5rem; color: var(--text-secondary);">
+                    <li>One-on-one personalized instruction</li>
+                    <li>Hands-on practice with real tools</li>
+                    <li>Follow-up resources and guidance</li>
+                    <li>Flexible scheduling</li>
+                </ul>
+            </div>
+
+            <!-- Payment Information -->
+            <div style="background: var(--surface-secondary); border: 1px solid var(--border); padding: 1.5rem; border-radius: 8px;">
+                <h4 style="margin-top: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4M12 8h.01"/>
+                    </svg>
+                    How Payment Works
+                </h4>
+                <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">
+                    <strong>Simple & Flexible:</strong> After you book a session, we'll send you payment details via email. You can pay before or after your session - whatever works best for you. We accept Venmo, Zelle, PayPal, or other convenient methods.
+                </p>
+            </div>
+
+            <div style="margin-top: 1.5rem; text-align: center;">
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                    Questions about pricing? <a href="#" data-action="closePricingAndContact" style="color: var(--primary); text-decoration: underline;">Contact us</a>
+                </p>
             </div>
         </div>
     </div>
@@ -140,7 +340,7 @@
             <div class="invite-gate-header" style="text-align: center; margin-bottom: 2rem;">
                 <div class="invite-logo-pulse" style="margin-bottom: 1rem;">
                     <h1 class="invite-logo" style="font-size: 2rem; font-weight: 800; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin: 0;">
-                        Le<span style="display: inline-block; font-weight: 900; font-size: 1.2em; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.3));">AI</span>rn
+                        Learn<span style="display: inline-block; font-weight: 900; font-size: 1.2em; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.3));">AI</span>
                     </h1>
                 </div>
                 <p class="invite-subtitle" style="color: var(--text-secondary); margin: 0.5rem 0 0 0; font-size: 0.95rem; font-weight: 500;">AI Learning Sessions</p>
@@ -157,13 +357,13 @@
             <!-- Title -->
             <div class="invite-title-section" style="text-align: center; margin-bottom: 2rem;">
                 <h2 class="invite-title" style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.75rem 0;">Authentication Required</h2>
-                <p class="invite-description" style="color: var(--text-secondary); margin: 0; font-size: 0.95rem;">Please sign in with your Monmouth University account to access the booking system.</p>
+                <p class="invite-description" style="color: var(--text-secondary); margin: 0; font-size: 0.95rem;">Sign in with your Monmouth University or Google account to book sessions.</p>
             </div>
 
             <!-- Microsoft Login Button -->
             <a
                 href="/login"
-                style="display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; width: 100%; padding: 1rem; background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-bottom: 1.5rem; font-size: 0.95rem;"
+                style="display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; width: 100%; padding: 1rem; background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-bottom: 0.75rem; font-size: 0.95rem;"
                 onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 20px rgba(0, 120, 212, 0.3)';"
                 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';"
             >
@@ -171,6 +371,22 @@
                     <path d="M11.4 24H0V12.6h11.4V24ZM24 24H12.6V12.6H24V24ZM11.4 11.4H0V0h11.4v11.4Zm12.6 0H12.6V0H24v11.4Z"/>
                 </svg>
                 <span>Sign In with Monmouth</span>
+            </a>
+
+            <!-- Google Login Button -->
+            <a
+                href="/login/google"
+                style="display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; width: 100%; padding: 1rem; background: white; color: #3c4043; border: 1px solid #dadce0; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-bottom: 1.5rem; font-size: 0.95rem;"
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.15)'; this.style.borderColor='#d2e3fc';"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'; this.style.borderColor='#dadce0';"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                <span>Sign In with Google</span>
             </a>
 
             <!-- Security Notice -->
@@ -182,7 +398,7 @@
                     </svg>
                 </div>
                 <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;">
-                    <strong style="color: var(--text-primary);">Secure Access:</strong> Only Monmouth University community members with a valid @monmouth.edu email can access the booking system.
+                    <strong style="color: var(--text-primary);">Secure Access:</strong> Monmouth students get free access. Outside users welcome with payment.
                 </p>
             </div>
         </div>
@@ -194,7 +410,7 @@
             <!-- Header -->
         <header class="header">
             <h1 class="logo">
-                <span class="logo-text">Le<span class="logo-ai">AI</span>rn</span>
+                <span class="logo-text">Learn<span class="logo-ai">AI</span></span>
             </h1>
             <p class="tagline">Schedule a Meeting</p>
             <a href="/projects" class="ai-badge-link">
@@ -288,9 +504,30 @@
                             <strong>✓ Email:</strong> {{ user_email }}
                         </p>
                         <p style="margin: 0.5rem 0 0 0; font-size: 0.875rem; color: #0c4a6e;">
+                            {% if is_external_user %}
+                            Verified via Google SSO
+                            {% else %}
                             Verified via Monmouth University SSO
+                            {% endif %}
                         </p>
                     </div>
+                    
+                    {% if is_external_user %}
+                    <div class="form-group" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border: 1px solid var(--primary); border-radius: 0.5rem; padding: 1rem; grid-column: 1 / -1;">
+                        <p style="margin: 0; font-size: 0.875rem; color: var(--text); display: flex; align-items: center; gap: 0.5rem;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
+                                <path d="M12 18V6"/>
+                            </svg>
+                            <strong>Pricing:</strong> Starting at $30/person for groups, $80 for individual sessions
+                        </p>
+                        <p style="margin: 0.5rem 0 0 1.75rem; font-size: 0.875rem; color: var(--text-secondary);">
+                            Group discounts available! $10 off per person for Zoom sessions.
+                            <a href="/pricing" style="color: var(--primary); text-decoration: underline; font-weight: 600;">View full pricing</a>
+                        </p>
+                    </div>
+                    {% endif %}
                     {% endif %}
 
                     <!-- Honeypot fields (hidden from users, bots will fill them) -->
@@ -305,7 +542,7 @@
 
                     <div class="form-group">
                         <label for="role">I am a *</label>
-                        <select id="role" required onchange="showDepartmentField()">
+                        <select id="role" required data-action="showDepartmentField">
                             <option value="">Select your role</option>
                             <option value="student">Student</option>
                             <option value="teacher">Teacher</option>
@@ -321,7 +558,7 @@
                     </div>
                 </div>
 
-                <button class="btn-primary" onclick="goToStep(2)">Continue to AI Experience</button>
+                <button class="btn-primary" data-action="goToStep" data-param="2">Continue to AI Experience</button>
             </div>
 
             <!-- Step 2: Question 1 - AI Experience & Familiarity -->
@@ -379,8 +616,8 @@
                 </div>
 
                 <div class="button-group">
-                    <button class="btn-secondary" onclick="goToStep(1)">Back</button>
-                    <button class="btn-primary" onclick="goToStep(3)">Next Question</button>
+                    <button class="btn-secondary" data-action="goToStep" data-param="1">Back</button>
+                    <button class="btn-primary" data-action="goToStep" data-param="3">Next Question</button>
                 </div>
             </div>
 
@@ -466,8 +703,8 @@
                 </div>
 
                 <div class="button-group">
-                    <button class="btn-secondary" onclick="goToStep(2)">Back</button>
-                    <button class="btn-primary" onclick="goToStep(4)">Next Question</button>
+                    <button class="btn-secondary" data-action="goToStep" data-param="2">Back</button>
+                    <button class="btn-primary" data-action="goToStep" data-param="4">Next Question</button>
                 </div>
             </div>
 
@@ -535,8 +772,8 @@
                 </div>
 
                 <div class="button-group">
-                    <button class="btn-secondary" onclick="goToStep(3)">Back</button>
-                    <button class="btn-primary" onclick="goToStep(5)">Next Question</button>
+                    <button class="btn-secondary" data-action="goToStep" data-param="3">Back</button>
+                    <button class="btn-primary" data-action="goToStep" data-param="5">Next Question</button>
                 </div>
             </div>
 
@@ -597,15 +834,26 @@
                 </div>
 
                 <div class="button-group">
-                    <button class="btn-secondary" onclick="goToStep(4)">Back</button>
-                    <button class="btn-primary" onclick="goToStep(6)">Continue to Time Selection</button>
+                    <button class="btn-secondary" data-action="goToStep" data-param="4">Back</button>
+                    <button class="btn-primary" data-action="goToStep" data-param="6">Continue to Time Selection</button>
                 </div>
             </div>
 
             <!-- Step 6: Time Selection -->
             <div id="step6" class="step">
                 <h2>Choose Your Preferred Time</h2>
-                <p class="step-description">Select a time slot that works best for you. Each session is 30 minutes.</p>
+                <p class="step-description">Select a time slot that works best for you. Sessions are 30-90 minutes based on your needs.</p>
+
+                <!-- Tutor Filter -->
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="tutorFilter" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Filter by Tutor:</label>
+                    <select id="tutorFilter" data-action="filterSlotsByTutor" style="width: 100%; max-width: 300px; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 1rem; cursor: pointer;">
+                        <option value="all">All Tutors</option>
+                        <option value="christopher_buzaid">Christopher Buzaid</option>
+                        <option value="danny">Danny</option>
+                        <option value="kiumbura">Kiumbura</option>
+                    </select>
+                </div>
 
                 <div id="loadingSlots" class="loading-container">
                     <div class="spinner"></div>
@@ -617,20 +865,68 @@
                 <input type="hidden" id="selected_slot">
 
                 <div class="button-group">
-                    <button class="btn-secondary" onclick="goToStep(5)">Back</button>
-                    <button id="continueToLocation" class="btn-primary" onclick="goToStep(7)" disabled>Continue to Location</button>
+                    <button class="btn-secondary" data-action="goToStep" data-param="5">Back</button>
+                    <button id="continueToLocation" class="btn-primary" data-action="goToStep" data-param="7" disabled>Continue to Location</button>
                 </div>
             </div>
 
-            <!-- Step 7: Location -->
+            <!-- Step 7: Location & Attendees -->
             <div id="step7" class="step">
-                <h2>Where Should We Meet?</h2>
-                <p class="step-description">Select a Monmouth University building and specify the room number or office.</p>
+                <h2>Session Details</h2>
+                <p class="step-description">Choose how you'd like to meet and how many will be attending.</p>
 
-                <div class="form-grid">
+                <!-- Meeting Type Selection -->
+                <div class="form-group meeting-type-group">
+                    <label class="section-label">How would you like to meet? *</label>
+                    <div class="meeting-type-options">
+                        <label class="meeting-option" data-action="selectMeetingType" data-type="in-person">
+                            <input type="radio" name="meeting_type" value="in-person" checked>
+                            <div class="meeting-option-content">
+                                <div class="meeting-option-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                    </svg>
+                                </div>
+                                <div class="meeting-option-text">
+                                    <span class="meeting-option-title">In-Person</span>
+                                    <span class="meeting-option-desc">Meet on campus at Monmouth University</span>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="meeting-option" data-action="selectMeetingType" data-type="zoom">
+                            <input type="radio" name="meeting_type" value="zoom">
+                            <div class="meeting-option-content">
+                                <div class="meeting-option-icon zoom-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="2" y="6" width="14" height="12" rx="2"/>
+                                        <path d="M16 10l4-2v8l-4-2"/>
+                                    </svg>
+                                </div>
+                                <div class="meeting-option-text">
+                                    <span class="meeting-option-title">Zoom Session</span>
+                                    <span class="meeting-option-desc">Virtual meeting via Zoom</span>
+                                </div>
+                                <span class="zoom-discount-badge">$10 OFF</span>
+                            </div>
+                        </label>
+                    </div>
+                    <p class="zoom-discount-note" id="zoomDiscountNote" style="display: none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+                            <path d="M9 12l2 2 4-4"/>
+                        </svg>
+                        Zoom sessions include a <strong>$10 discount</strong> per client. We'll send you the meeting link via email.
+                    </p>
+                </div>
+
+                <!-- In-Person Location (shown when in-person is selected) -->
+                <div id="inPersonLocation" class="form-grid">
                     <div class="form-group">
                         <label for="selected_building">Building *</label>
-                        <select id="selected_building" required>
+                        <select id="selected_building">
                             <option value="">Select a building</option>
                             <option value="Edison Hall">Edison Hall</option>
                             <option value="Howard Hall">Howard Hall</option>
@@ -645,8 +941,39 @@
 
                     <div class="form-group">
                         <label for="room_number">Room Number / Office *</label>
-                        <input type="text" id="room_number" placeholder="e.g., Room 204, Office 3B" required>
+                        <input type="text" id="room_number" placeholder="e.g., Room 204, Office 3B">
                         <small class="form-hint">Enter the specific room number or office name</small>
+                    </div>
+                </div>
+
+                <!-- Attendee Count Section -->
+                <div class="form-group attendee-section">
+                    <label class="section-label">How many people will be attending? *</label>
+                    <div class="attendee-selector">
+                        <button type="button" class="attendee-btn minus" data-action="decreaseAttendees">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
+                        </button>
+                        <div class="attendee-display">
+                            <span id="attendeeCount">1</span>
+                            <span class="attendee-label">attendee</span>
+                        </div>
+                        <button type="button" class="attendee-btn plus" data-action="increaseAttendees">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                        </button>
+                    </div>
+                    <div class="pricing-preview" id="pricingPreview" style="display: none;">
+                        <div class="pricing-preview-content">
+                            <span class="pricing-preview-label">Estimated price:</span>
+                            <span class="pricing-preview-amount" id="priceEstimate">$80 / session</span>
+                        </div>
+                        <a href="/pricing" class="pricing-link" target="_blank">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                <polyline points="15 3 21 3 21 9"/>
+                                <line x1="10" y1="14" x2="21" y2="3"/>
+                            </svg>
+                            View full pricing
+                        </a>
                     </div>
                 </div>
 
@@ -659,8 +986,8 @@
                 {% endif %}
 
                 <div class="button-group">
-                    <button class="btn-secondary" onclick="goToStep(6)">Back</button>
-                    <button class="btn-primary" onclick="confirmBooking()">
+                    <button class="btn-secondary" data-action="goToStep" data-param="6">Back</button>
+                    <button class="btn-primary" data-action="confirmBooking">
                         <span class="btn-text">Confirm Booking</span>
                         <span class="btn-spinner hidden"></span>
                     </button>
@@ -685,11 +1012,11 @@
                     <div class="calendar-section">
                         <h3>Add to Calendar</h3>
                         <div class="calendar-buttons">
-                            <button class="btn-calendar google" onclick="addToGoogleCalendar()">
+                            <button class="btn-calendar google" data-action="addToGoogleCalendar">
                                 <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V9h14v10z"/></svg>
                                 Google Calendar
                             </button>
-                            <button class="btn-calendar apple" onclick="downloadICS()">
+                            <button class="btn-calendar apple" data-action="downloadICS">
                                 <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V9h14v10z"/></svg>
                                 Apple/Outlook
                             </button>
@@ -699,7 +1026,7 @@
                     <div class="contact-section">
                         <h3>Have Questions?</h3>
                         <p>Need to reschedule or have questions about your session? Contact me directly.</p>
-                        <a href="#" onclick="openContactForm(); return false;" class="btn-contact">
+                        <a href="#" data-action="openContactForm" class="btn-contact">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                                 <polyline points="22,6 12,13 2,6"/>
@@ -708,52 +1035,87 @@
                         </a>
                     </div>
 
-                    <button class="btn-secondary" onclick="location.reload()">Book Another Session</button>
+                    <button class="btn-secondary" data-action="reloadPage">Book Another Session</button>
                 </div>
             </div>
         </div>
 
-        <!-- Admin Access Link -->
+        <!-- Admin Access Link (only for authorized admins) -->
+        {% if is_admin %}
         <div class="admin-access-footer">
-            <a href="/admin/login" class="admin-link">Admin Access</a>
+            <a href="/admin" class="admin-link">Admin Access</a>
         </div>
+        {% endif %}
     </div>
+
+    <!-- Site Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <p>&copy; {{ current_year }} LearnAI. All rights reserved.</p>
+        </div>
+    </footer>
 
     <!-- Welcome Popup Modal -->
     <div id="welcomeModal" class="welcome-modal">
         <div class="welcome-modal-content">
             <div class="welcome-modal-header">
-                <h1>AI is Transforming the World</h1>
-                <p class="welcome-subtitle">Don't Get Left Behind</p>
+                <div class="welcome-logo-container">
+                    <img src="/static/icon.png" alt="LeAIrn Logo" class="welcome-logo" />
+                </div>
+                <div class="welcome-header-text">
+                    <h1>Master AI. Shape Your Future.</h1>
+                    <p class="welcome-subtitle">One-on-one sessions with professional AI tutors</p>
+                </div>
+                <div class="welcome-header-glow"></div>
             </div>
 
             <div class="welcome-modal-body">
-                <div class="welcome-content-wrapper">
-                    <div class="welcome-left-column">
-                        <div class="welcome-message-large">
-                            <h2>Why Learn AI Now?</h2>
-                            <p>Artificial Intelligence is revolutionizing every industry, changing how we work, create, and solve problems.</p>
-                            <p><strong>The question isn't whether AI will impact your life — it's whether you'll be ready for it.</strong></p>
+                <div class="welcome-features">
+                    <div class="welcome-feature" style="animation-delay: 0.1s">
+                        <div class="feature-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 14l9-5-9-5-9 5 9 5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M12 14v7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="feature-text">
+                            <h3>Expert Tutors</h3>
+                            <p>Learn from professionals who use AI daily</p>
                         </div>
                     </div>
-
-                    <div class="welcome-right-column">
-                        <div class="mentor-intro">
-                            <div class="mentor-card">
-                                <div class="mentor-info">
-                                    <h2>Your AI Mentor</h2>
-                                    <h3>Christopher Buzaid</h3>
-                                    <p>I'll personally guide you through your AI learning journey. Together, we'll discover the best tools and strategies tailored specifically to your goals and experience level.</p>
-                                </div>
-                            </div>
+                    <div class="welcome-feature" style="animation-delay: 0.2s">
+                        <div class="feature-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="feature-text">
+                            <h3>Flexible Scheduling</h3>
+                            <p>30-90 minute sessions tailored to your needs</p>
                         </div>
                     </div>
-
-                    <div class="welcome-cta">
-                        <p class="cta-text">Ready to start your AI journey?</p>
-                        <button type="button" class="btn-welcome-start" onclick="closeWelcomeModal()">Schedule Your Free Session</button>
-                        <p class="welcome-note">This booking system was built with AI in just 5 hours. Imagine what you could create.</p>
+                    <div class="welcome-feature" style="animation-delay: 0.3s">
+                        <div class="feature-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="feature-text">
+                            <h3>Accelerated Learning</h3>
+                            <p>Curriculum tailored to your goals</p>
+                        </div>
                     </div>
+                </div>
+
+                <div class="welcome-cta">
+                    <button type="button" class="btn-welcome-start" data-action="closeWelcomeModal">
+                        <span>Get Started</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13 7l5 5m0 0l-5 5m5-5H6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <p class="welcome-note">Free for Monmouth University students</p>
                 </div>
             </div>
         </div>
@@ -762,33 +1124,38 @@
     <!-- View Booking Modal -->
     <div id="viewBookingModal" class="welcome-modal hidden">
         <div class="welcome-modal-content" style="max-width: 650px; overflow-y: auto; position: relative;">
-            <button onclick="closeViewBookingModal()" style="position: absolute; top: 1rem; right: 1rem; background: var(--bg); border: 2px solid var(--border); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 1.5rem; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.3s; z-index: 10;">×</button>
+            <button data-action="closeViewBookingModal" class="view-booking-close-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
             <div class="welcome-modal-header">
                 <h1>View My Booking</h1>
-                <p class="welcome-subtitle" id="viewBookingSubtitle">Loading your booking details...</p>
+                <p class="welcome-subtitle" id="viewBookingSubtitle">Enter your email to view your upcoming booking</p>
             </div>
 
             <div class="welcome-modal-body" style="padding: 2rem;">
                 <!-- Email input (hidden for authenticated users) -->
-                <div id="emailInputSection" style="margin-bottom: 1.5rem; display: none;">
+                <div id="emailInputSection" style="margin-bottom: 1.5rem;">
                     <label for="lookup_email" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Email Address</label>
                     <input type="email" id="lookup_email" placeholder="john@example.com" style="width: 100%; padding: 1rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1rem; background: var(--bg); color: var(--text-primary);" required>
                 </div>
 
-                <!-- Authenticated user display (shown for authenticated users) -->
+                <!-- Authenticated user display (hidden initially) -->
                 <div id="authenticatedUserSection" style="margin-bottom: 1.5rem; display: none;">
-                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 0.5rem;">Signed in as:</p>
-                    <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border: 2px solid var(--primary); border-radius: 0.75rem; padding: 1rem; color: var(--primary); font-weight: 600;">
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 0.5rem;">Loading your booking for:</p>
+                    <div style="background: var(--bg); border: 2px solid var(--border); border-radius: 0.75rem; padding: 1rem; color: var(--primary); font-weight: 600;">
                         <span id="authenticatedUserEmail"></span>
                     </div>
                 </div>
 
                 <!-- Button section - hidden for authenticated users, shown for non-authenticated -->
-                <div id="buttonSection" style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-                    <button onclick="closeViewBookingModal()" style="flex: 1; padding: 1rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                <div id="buttonSection" style="display: flex; gap: 1rem;">
+                    <button data-action="closeViewBookingModal" class="btn-modal-secondary" style="flex: 1;">
                         Cancel
                     </button>
-                    <button onclick="lookupBooking()" class="btn-welcome-start" id="viewBookingButton" style="flex: 1; padding: 1rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                    <button data-action="lookupBooking" class="btn-welcome-start" id="viewBookingButton" style="flex: 1;">
                         View Booking
                     </button>
                 </div>
@@ -806,28 +1173,28 @@
                 <p class="welcome-subtitle">Send me a message about your AI learning session</p>
             </div>
 
-            <div class="welcome-modal-body" style="padding: 2rem;">
-                <form id="contactForm" onsubmit="submitContactForm(event)">
-                    <div style="margin-bottom: 1.5rem;">
-                        <label for="contact_name" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Your Name</label>
-                        <input type="text" id="contact_name" placeholder="John Doe" style="width: 100%; padding: 1rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1rem; background: var(--bg); color: var(--text-primary);" required>
+            <div class="welcome-modal-body">
+                <form id="contactForm" data-action="submitContactForm">
+                    <div class="modal-form-group">
+                        <label for="contact_name" class="modal-label">Your Name</label>
+                        <input type="text" id="contact_name" class="modal-input" placeholder="John Doe" required>
                     </div>
 
-                    <div style="margin-bottom: 1.5rem;">
-                        <label for="contact_email" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Your Email</label>
-                        <input type="email" id="contact_email" placeholder="john@example.com" style="width: 100%; padding: 1rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1rem; background: var(--bg); color: var(--text-primary);" required>
+                    <div class="modal-form-group">
+                        <label for="contact_email" class="modal-label">Your Email</label>
+                        <input type="email" id="contact_email" class="modal-input" placeholder="john@example.com" required>
                     </div>
 
-                    <div style="margin-bottom: 1.5rem;">
-                        <label for="contact_message" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Message</label>
-                        <textarea id="contact_message" placeholder="I have a question about..." rows="5" style="width: 100%; padding: 1rem; border: 2px solid var(--border); border-radius: 0.75rem; font-size: 1rem; background: var(--bg); color: var(--text-primary); resize: vertical; font-family: inherit;" required></textarea>
+                    <div class="modal-form-group">
+                        <label for="contact_message" class="modal-label">Message</label>
+                        <textarea id="contact_message" class="modal-input" placeholder="I have a question about..." rows="5" style="resize: vertical;" required></textarea>
                     </div>
 
                     <div style="display: flex; gap: 1rem;">
-                        <button type="button" onclick="closeContactForm()" style="flex: 1; padding: 1rem; background: var(--bg); color: var(--text-primary); border: 2px solid var(--border); border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                        <button type="button" data-action="closeContactForm" class="btn-modal-secondary" style="flex: 1;">
                             Cancel
                         </button>
-                        <button type="submit" class="btn-welcome-start" style="flex: 1; padding: 1rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                        <button type="submit" class="btn-welcome-start" style="flex: 1;">
                             Send Message
                         </button>
                     </div>
@@ -838,67 +1205,10 @@
         </div>
     </div>
 
-    <!-- Subtle cursor tracker glow -->
-    <div class="cursor-tracker"></div>
-
-    {% if recaptcha_site_key %}
-    <script>
-        // reCAPTCHA site key for frontend
-        window.RECAPTCHA_SITE_KEY = '{{ recaptcha_site_key }}';
-    </script>
-    {% endif %}
-    <script>
-        // Close AI Banner function - only closes for current session
-        function closeAIBanner() {
-            const banner = document.getElementById('aiBanner');
-            banner.classList.add('hidden');
-        }
-
-        // Logout function
-        function logout() {
-            window.location.href = '/logout';
-        }
-
-        // Authentication check - runs when DOM is fully loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            const loadingScreen = document.getElementById('loadingScreen');
-            const authGate = document.getElementById('authGate');
-            const mainContent = document.getElementById('mainContent');
-            const isAuthenticated = document.body.dataset.authenticated === 'true';
-
-            console.log('Authentication check running...');
-            console.log('Is authenticated:', isAuthenticated);
-            console.log('User email:', document.body.dataset.userEmail);
-
-            // Hide loading screen after a brief moment
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-
-                if (isAuthenticated) {
-                    // User is authenticated - show main content
-                    console.log('Showing main content for authenticated user');
-                    mainContent.style.display = 'block';
-
-                    // Note: For authenticated users, email fields may not exist
-                    // as they are conditionally rendered in the template
-                    // The user's email is shown in a static display instead
-                } else {
-                    // User is not authenticated - show auth gate
-                    console.log('Showing auth gate for unauthenticated user');
-                    authGate.style.display = 'flex';
-                    authGate.style.pointerEvents = 'auto';
-                    // Fade in the auth gate
-                    setTimeout(() => {
-                        authGate.style.opacity = '1';
-                    }, 10);
-                }
-            }, 300);
-        });
-    </script>
-
+    
     <!-- Educational Popup for Coding Sessions -->
     <div id="codingEducationModal" class="modal hidden">
-        <div class="modal-overlay" onclick="closeCodingEducationModal()"></div>
+        <div class="modal-overlay" data-action="closeCodingEducationModal"></div>
 
         <!-- STOP Sign Initial Screen -->
         <div class="modal-content stop-sign-modal" id="stopSignScreen">
@@ -906,10 +1216,10 @@
                 <div class="stop-sign">STOP</div>
                 <h2>Quick Preparation Notice</h2>
                 <p>Before we proceed, let's make sure you're set up for success with coding projects.</p>
-                <button class="btn-primary" onclick="showFullEducationModal()">
+                <button class="btn-primary" data-action="showFullEducationModal">
                     Show Me What I Need
                 </button>
-                <button class="btn-secondary" onclick="closeCodingEducationModal('skip')">
+                <button class="btn-secondary" data-action="closeCodingEducationModal" data-param="skip">
                     I Don't Have Time Right Now
                 </button>
             </div>
@@ -917,7 +1227,7 @@
 
         <!-- Full Educational Content -->
         <div class="modal-content coding-education-modal hidden" id="fullEducationContent">
-            <button class="close-modal-btn" onclick="closeCodingEducationModal('close')">&times;</button>
+            <button class="close-modal-btn" data-action="closeCodingEducationModal" data-param="close">&times;</button>
 
             <div class="coding-education-header">
                 <h2>Recommended Setup for Coding Projects</h2>
@@ -1018,10 +1328,10 @@
 
                 <!-- Action Buttons -->
                 <div class="education-actions">
-                    <button class="btn-primary" onclick="acknowledgeAndContinue('ready')">
+                    <button class="btn-primary" data-action="acknowledgeAndContinue" data-param="ready">
                         Continue to Time Selection
                     </button>
-                    <button class="btn-secondary" onclick="closeCodingEducationModal('no_time')">
+                    <button class="btn-secondary" data-action="closeCodingEducationModal" data-param="no_time">
                         I Don't Have Time for This Right Now
                     </button>
                 </div>
@@ -1030,6 +1340,59 @@
     </div>
     </div> <!-- Close mainContent -->
 
-    <script src="/static/script.js"></script>
+    <!-- Admin Registration Modal (SSO) -->
+    <div id="adminRegistrationModal" class="modal" style="display: none;">
+        <div class="modal-overlay" data-action="closeAdminRegistrationModal"></div>
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Create Your Admin Account</h2>
+                <button class="modal-close" data-action="closeAdminRegistrationModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">
+                    Welcome! Your email has been recognized as an admin account. Please create a username and password to secure your admin access.
+                </p>
+                <p style="margin-bottom: 1.5rem; color: var(--text-secondary); font-weight: 600;">
+                    Email: <span id="adminEmailDisplay" style="color: var(--primary);"></span>
+                </p>
+
+                <form id="adminRegistrationForm" data-action="submitAdminRegistration">
+                    <div class="form-group">
+                        <label for="admin_username">Username *</label>
+                        <input type="text" id="admin_username" required minlength="3" placeholder="Choose a username">
+                        <small class="form-hint">Minimum 3 characters</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="admin_password">Password *</label>
+                        <input type="password" id="admin_password" required minlength="8" placeholder="Create a strong password">
+                        <small class="form-hint">Minimum 8 characters</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="admin_confirm_password">Confirm Password *</label>
+                        <input type="password" id="admin_confirm_password" required minlength="8" placeholder="Re-enter your password">
+                    </div>
+
+                    <div id="adminRegError" style="display: none; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;"></div>
+
+                    <div class="button-group" style="margin-top: 1.5rem;">
+                        <button type="button" class="btn-secondary" data-action="closeAdminRegistrationModal">Cancel</button>
+                        <button type="submit" class="btn-primary" id="adminRegSubmitBtn">
+                            <span class="btn-text">Create Account</span>
+                            <span class="btn-spinner hidden"></span>
+                        </button>
+                    </div>
+                </form>
+
+                <p style="margin-top: 1.5rem; font-size: 0.875rem; color: var(--text-tertiary); text-align: center;">
+                    Your password will be encrypted with industry-standard security (pbkdf2:sha256)
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/script.js"></script>
+    <script src="/static/js/index.js"></script>
 </body>
 </html>

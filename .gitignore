@@ -54,5 +54,45 @@ dist/
 build/
 *.egg-info/
 
+# Testing (DO NOT COMMIT TEST ARTIFACTS)
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+*.cover
+.hypothesis/
+.pytest_cache/
+nosetests.xml
+coverage/
+
+# Local test scripts (not the main test suite)
+test_local_*.py
+*_test_local.py
+
+# Migration and fix scripts (one-time use)
+fix_admin_account.py
+fix_admin_accounts.py
+migrate_*.py
+check_*.py
+
+# Temporary documentation files
+CODE_REVIEW_SUMMARY.md
+SECURITY_FIXES_COMPLETED.md
+FIXES_SUMMARY.md
+changelog/
+
+# Backup files
+*.backup
+*.bak
+
+# Security scan reports
+bandit-report.json
+safety-report.json
+
+# CI/CD temporary files
+.ci/
+.github/workflows/local-*.yml
+
 .claude/*
 __pycache__/*

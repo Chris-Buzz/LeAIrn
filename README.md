@@ -1,4 +1,4 @@
-# 🎓 AI Mentor Hub - LeAIrn Booking System
+# 🎓 AI Mentor Hub - LearnAI Booking System
 
 A professional AI learning session booking system built with Flask and Firestore.
 
@@ -177,7 +177,7 @@ vercel
 
 ## 🎯 Future Integration
 
-This booking system is designed to integrate with the full **LeAIrn** AI learning platform:
+This booking system is designed to integrate with the full **LearnAI** AI learning platform:
 - Shared Firestore database
 - Unified user management
 - Integrated scheduling

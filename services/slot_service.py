@@ -30,28 +30,48 @@ class SlotService:
         if len(slots) == 0:
             print("No time slots found. Admin can generate slots from dashboard.")
 
-    def generate_slots(self, weeks_ahead: int = 6) -> List[Dict]:
+    def generate_slots(self, weeks_ahead: int = 6, weekly_schedule: Optional[Dict] = None,
+                      tutor_id: str = None, tutor_name: str = None, tutor_email: str = None,
+                      location_type: str = 'user_choice', location_value: str = '') -> List[Dict]:
         """
-        Generate ONLY the specific weekly time slots in Eastern time
-        
+        Generate time slots in Eastern time with optional tutor-specific parameters
+
         Args:
             weeks_ahead: Number of weeks to generate slots for
-            
+            weekly_schedule: Optional custom schedule {weekday: [(hour, minute), ...]}
+                           If None, uses default schedule
+            tutor_id: Tutor ID to assign slots to
+            tutor_name: Tutor name to assign slots to
+            tutor_email: Tutor email to assign slots to
+            location_type: Meeting location type (zoom, room, user_choice)
+            location_value: Zoom link or room name if applicable
+
         Returns:
-            List of slot dictionaries with datetime, day, date, time, etc.
+            List of slot dictionaries with datetime, day, date, time, tutor info, etc.
         """
+        # DEBUG: Log received parameters
+        print(f"[DEBUG] SlotService.generate_slots called with:")
+        print(f"[DEBUG]   tutor_id: {tutor_id}")
+        print(f"[DEBUG]   tutor_name: {tutor_name}")
+        print(f"[DEBUG]   tutor_email: {tutor_email}")
+
         slots = []
-        
+
         # Start from today in Eastern time
         start_date = self.tz.get_eastern_now().replace(hour=0, minute=0, second=0, microsecond=0)
 
-        # ONLY specific requested times
-        weekly_schedule = {
-            1: [(11, 0), (12, 0), (13, 0)],  # Tuesday
-            2: [(14, 0), (15, 0)],            # Wednesday
-            3: [(12, 0), (13, 0)],            # Thursday
-            4: [(11, 0), (12, 0), (13, 0)]   # Friday
-        }
+        # Use custom schedule if provided, otherwise use default
+        if weekly_schedule is None:
+            # Default schedule (backward compatibility)
+            weekly_schedule = {
+                1: [(11, 0), (12, 0), (13, 0)],  # Tuesday
+                2: [(14, 0), (15, 0)],            # Wednesday
+                3: [(12, 0), (13, 0)],            # Thursday
+                4: [(11, 0), (12, 0), (13, 0)]   # Friday
+            }
+        else:
+            # Convert string keys to integers (JSON converts dict keys to strings)
+            weekly_schedule = {int(k): v for k, v in weekly_schedule.items()}
 
         # Generate slots for specified number of weeks ahead
         for week in range(weeks_ahead):
@@ -72,16 +92,33 @@ class SlotService:
 
                         # Only add future slots (compare in Eastern time)
                         if slot_time > self.tz.get_eastern_now():
-                            slots.append({
-                                'id': slot_time.strftime('%Y%m%d%H%M'),
+                            # Generate slot ID with tutor_id to prevent conflicts
+                            base_slot_id = slot_time.strftime('%Y%m%d%H%M')
+                            slot_id = f"{base_slot_id}_{tutor_id}" if tutor_id else base_slot_id
+
+                            slot_data = {
+                                'id': slot_id,
                                 'datetime': slot_time.isoformat(),
                                 'day': slot_time.strftime('%A'),
                                 'date': slot_time.strftime('%B %d, %Y'),
                                 'time': slot_time.strftime('%I:%M %p'),
                                 'booked': False,
                                 'booked_by': None,
-                                'room': None
-                            })
+                                'room': None,
+                                'location_type': location_type,
+                                'location_value': location_value
+                            }
+
+                            # Add tutor information if provided
+                            if tutor_id:
+                                slot_data['tutor_id'] = tutor_id
+                            if tutor_name:
+                                slot_data['tutor_name'] = tutor_name
+                                print(f"[DEBUG] Setting tutor_name to: {tutor_name} for slot {slot_id}")
+                            if tutor_email:
+                                slot_data['tutor_email'] = tutor_email
+
+                            slots.append(slot_data)
 
         return slots
 
