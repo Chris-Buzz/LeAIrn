@@ -3,11 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Password Verification - LearnAI</title>
+    <title>{% if error %}Verification Error{% else %}Password Verification{% endif %} - LearnAI</title>
     <link rel="icon" type="image/png" href="/static/icon.png">
     <link rel="stylesheet" href="/static/css/admin-verify.css">
+    <style>
+        /* Additional styles for error state */
+        .error-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .error-icon svg {
+            width: 40px;
+            height: 40px;
+            stroke: white;
+        }
+        .error-state .verify-card {
+            text-align: center;
+        }
+        .error-state .error-message {
+            display: block !important;
+            text-align: left;
+        }
+        .btn-back {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            margin-top: 1rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-back:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+        }
+    </style>
 </head>
 <body>
+    {% if error %}
+    <!-- Error State - Show when verification failed -->
+    <div class="verify-container error-state">
+        <div class="error-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+        </div>
+
+        <div class="verify-card">
+            <h2>Verification Failed</h2>
+            <p class="subtitle">We couldn't complete the verification process.</p>
+
+            <div class="error-message" id="errorMessage">{{ error }}</div>
+
+            <a href="/admin/login" class="btn-back">Back to Login</a>
+
+            <div class="security-note">
+                <p>If you continue to experience issues, please contact the administrator.</p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Password Re-verification State -->
     <div class="verify-container">
         <div class="verify-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -23,12 +94,12 @@
                 Logged in as: <span class="username-display">{{ username }}</span>
             </p>
 
-            <div class="error-message" id="errorMessage"></div>
+            <div class="error-message" id="errorMessage" style="display: none;"></div>
 
             <form id="verifyForm" onsubmit="verifyPassword(event)">
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" required autofocus>
+                    <input type="password" id="password" required autofocus placeholder="Enter your password">
                 </div>
 
                 <button type="submit" class="btn-verify" id="verifyButton">
@@ -44,5 +115,6 @@
     </div>
 
     <script src="/static/js/admin-verify.js"></script>
+    {% endif %}
 </body>
 </html>

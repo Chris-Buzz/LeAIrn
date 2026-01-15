@@ -11,7 +11,13 @@ async function verifyPassword(event) {
     errorMessage.style.display = 'none';
     errorMessage.textContent = '';
 
-    // Disable button
+    // Validate input
+    if (!password) {
+        showVerifyError(errorMessage, 'Please enter your password');
+        return;
+    }
+
+    // Disable button and show loading
     button.disabled = true;
     button.textContent = 'Verifying...';
 
@@ -26,23 +32,42 @@ async function verifyPassword(event) {
 
         const result = await response.json();
 
-        if (result.success) {
-            // Redirect to admin dashboard
+        if (response.ok && result.success) {
+            // Show success and redirect
+            button.textContent = 'Verified! Redirecting...';
             window.location.href = '/admin';
+        } else if (response.status === 401) {
+            // Wrong password
+            showVerifyError(errorMessage, result.message || 'Incorrect password. Please try again.');
+            resetVerifyButton(button);
+            document.getElementById('password').value = '';
+            document.getElementById('password').focus();
+        } else if (response.status === 400) {
+            // Missing data
+            showVerifyError(errorMessage, result.message || 'Password is required.');
+            resetVerifyButton(button);
         } else {
-            // Show error
-            errorMessage.textContent = result.message || 'Verification failed. Please try again.';
-            errorMessage.style.display = 'block';
-            button.disabled = false;
-            button.textContent = 'Verify & Continue';
+            // Other error
+            showVerifyError(errorMessage, result.message || 'Verification failed. Please try again.');
+            resetVerifyButton(button);
             document.getElementById('password').value = '';
             document.getElementById('password').focus();
         }
     } catch (error) {
         console.error('Verification error:', error);
-        errorMessage.textContent = 'An error occurred. Please try again.';
-        errorMessage.style.display = 'block';
-        button.disabled = false;
-        button.textContent = 'Verify & Continue';
+        showVerifyError(errorMessage, 'Unable to connect to the server. Please check your connection and try again.');
+        resetVerifyButton(button);
     }
+}
+
+function showVerifyError(errorEl, message) {
+    errorEl.textContent = message;
+    errorEl.style.display = 'block';
+    // Scroll into view if needed
+    errorEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function resetVerifyButton(btn) {
+    btn.disabled = false;
+    btn.textContent = 'Verify & Continue';
 }
