@@ -44,6 +44,18 @@ class RateLimiter:
             'requests': 50,
             'window': 3600,  # 1 hour
             'message': 'Too many slot operations. Please wait.'
+        },
+        # Contact form (strict to prevent spam)
+        'contact': {
+            'requests': 3,
+            'window': 3600,  # 1 hour
+            'message': 'Too many contact submissions. Please wait an hour before trying again.'
+        },
+        # Feedback form
+        'feedback': {
+            'requests': 5,
+            'window': 3600,  # 1 hour
+            'message': 'Too many feedback submissions. Please wait before trying again.'
         }
     }
 

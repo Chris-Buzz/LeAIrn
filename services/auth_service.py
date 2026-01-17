@@ -299,7 +299,7 @@ class AuthService:
             return False, None, f"Token verification error: {str(e)}"
 
     @staticmethod
-    def exchange_google_code_for_token(code: str, redirect_uri: Optional[str] = None) -> Optional[Dict]:
+    def exchange_google_code_for_token(code: str, redirect_uri: Optional[str] = None) -> Dict:
         """
         Exchange Google authorization code for tokens
 
@@ -308,7 +308,7 @@ class AuthService:
             redirect_uri: Optional override for redirect URI
 
         Returns:
-            Token response dictionary or None if failed
+            Token response dictionary. On error, contains 'error' and 'error_description' keys.
         """
         import requests
 
@@ -317,13 +317,13 @@ class AuthService:
         # Debug: Check if credentials are configured
         if not GOOGLE_CLIENT_ID:
             print("[ERROR] GOOGLE_CLIENT_ID is not set")
-            return None
+            return {'error': 'config_error', 'error_description': 'GOOGLE_CLIENT_ID not configured'}
         if not GOOGLE_CLIENT_SECRET:
             print("[ERROR] GOOGLE_CLIENT_SECRET is not set")
-            return None
+            return {'error': 'config_error', 'error_description': 'GOOGLE_CLIENT_SECRET not configured'}
 
         print(f"[DEBUG] Google token exchange - redirect_uri: {uri}")
-        print(f"[DEBUG] Google token exchange - client_id configured: {bool(GOOGLE_CLIENT_ID)}")
+        print(f"[DEBUG] Google token exchange - client_id: {GOOGLE_CLIENT_ID[:20]}...")
         print(f"[DEBUG] Google token exchange - client_secret configured: {bool(GOOGLE_CLIENT_SECRET)}")
 
         try:
@@ -343,7 +343,11 @@ class AuthService:
             if response.status_code != 200:
                 print(f"[ERROR] Google token exchange failed with status {response.status_code}")
                 print(f"[ERROR] Response: {response.text}")
-                return None
+                error_data = response.json() if response.text else {}
+                return {
+                    'error': error_data.get('error', 'token_exchange_failed'),
+                    'error_description': error_data.get('error_description', f'HTTP {response.status_code}')
+                }
 
             token_response = response.json()
             print(f"[OK] Google token exchange successful")
@@ -351,4 +355,4 @@ class AuthService:
 
         except Exception as e:
             print(f"[ERROR] Google token exchange exception: {e}")
-            return None
+            return {'error': 'exception', 'error_description': str(e)}
