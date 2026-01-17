@@ -10,6 +10,7 @@ import csv
 import io
 import firestore_db as db
 from middleware.auth import login_required, cron_auth_required
+from middleware.rate_limit import rate_limit
 from utils import get_eastern_now
 from services.slot_service import SlotService
 from services.email_service import EmailService
@@ -648,8 +649,9 @@ def get_all_feedback():
 
 
 @api_bp.route('/api/feedback', methods=['POST'])
+@rate_limit('feedback')
 def submit_feedback():
-    """Submit feedback for a completed session"""
+    """Submit feedback for a completed session (rate limited: 5 per hour)"""
     try:
         data = request.json
 
@@ -805,8 +807,9 @@ def send_daily_reminders():
 # ============================================================================
 
 @api_bp.route('/api/submit', methods=['POST'])
+@rate_limit('contact')
 def submit_form():
-    """Handle general form submissions"""
+    """Handle general form submissions (rate limited: 3 per hour)"""
     try:
         data = request.json
         # Process form submission
@@ -816,8 +819,9 @@ def submit_form():
 
 
 @api_bp.route('/api/contact', methods=['POST'])
+@rate_limit('contact')
 def contact_form():
-    """Handle contact form submissions"""
+    """Handle contact form submissions (rate limited: 3 per hour)"""
     try:
         data = request.json
 
@@ -827,6 +831,10 @@ def contact_form():
 
         if not name or not email or not message:
             return jsonify({'success': False, 'message': 'All fields are required'}), 400
+
+        # Basic email validation
+        if '@' not in email or '.' not in email:
+            return jsonify({'success': False, 'message': 'Please enter a valid email address'}), 400
 
         # Send the contact message email
         from services.email_service import EmailService

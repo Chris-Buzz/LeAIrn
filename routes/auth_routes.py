@@ -210,9 +210,22 @@ def auth_google_callback():
         print(f"[DEBUG] Google callback - using redirect_uri: {redirect_uri}")
         token_response = AuthService.exchange_google_code_for_token(code, redirect_uri)
 
-        if not token_response:
-            print(f"[ERROR] Google token exchange returned None")
-            return redirect(url_for('api.index', error="Failed to exchange authorization code"))
+        # Check for error in response
+        if 'error' in token_response:
+            error_type = token_response.get('error', 'unknown')
+            error_desc = token_response.get('error_description', 'Unknown error')
+            print(f"[ERROR] Google token exchange failed: {error_type} - {error_desc}")
+            # Show specific error to help debugging
+            if error_type == 'redirect_uri_mismatch':
+                return redirect(url_for('api.index', error="OAuth: redirect_uri_mismatch - URI not registered in Google Console"))
+            elif error_type == 'invalid_client':
+                return redirect(url_for('api.index', error="OAuth: invalid_client - Check GOOGLE_CLIENT_SECRET"))
+            elif error_type == 'invalid_grant':
+                return redirect(url_for('api.index', error="OAuth: invalid_grant - Code expired or already used"))
+            elif error_type == 'config_error':
+                return redirect(url_for('api.index', error=f"OAuth config: {error_desc}"))
+            else:
+                return redirect(url_for('api.index', error=f"OAuth: {error_type}"))
 
         id_token_str = token_response.get('id_token')
         if not id_token_str:
