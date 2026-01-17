@@ -1774,22 +1774,19 @@ async function submitContactForm(event) {
         const result = await response.json();
 
         if (response.ok && result.success) {
-            resultDiv.innerHTML = '<p style="color: var(--success); text-align: center; font-weight: 600;">Message sent successfully! I\'ll get back to you soon.</p>';
-            resultDiv.style.display = 'block';
+            // Show toast notification
+            showNotification('Message sent successfully! I\'ll get back to you soon.', 'success');
             document.getElementById('contactForm').reset();
-
-            // Close modal after 2 seconds
-            setTimeout(() => {
-                closeContactForm();
-            }, 2000);
+            closeContactForm();
+        } else if (response.status === 429) {
+            // Rate limited
+            showNotification(result.message || 'Too many messages. Please wait before trying again.', 'error');
         } else {
-            resultDiv.innerHTML = `<p style="color: var(--error); text-align: center;">Error: ${result.message || 'Failed to send message'}</p>`;
-            resultDiv.style.display = 'block';
+            showNotification(result.message || 'Failed to send message. Please try again.', 'error');
         }
     } catch (error) {
         console.error('Error sending message:', error);
-        resultDiv.innerHTML = '<p style="color: var(--error); text-align: center;">Failed to send message. Please try again.</p>';
-        resultDiv.style.display = 'block';
+        showNotification('Failed to send message. Please try again.', 'error');
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnText;

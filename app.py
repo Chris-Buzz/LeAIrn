@@ -153,7 +153,7 @@ def add_security_headers(response):
     # TODO: Remove 'unsafe-inline' after refactoring remaining innerHTML SVG code
     csp_directives = [
         "default-src 'self'",
-        "script-src 'self' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://cdn.jsdelivr.net",
+        "script-src 'self' 'unsafe-inline' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://cdn.jsdelivr.net",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",  # unsafe-inline needed for dynamic styles
         "font-src 'self' https://fonts.gstatic.com data:",
         "img-src 'self' data: https: blob:",
