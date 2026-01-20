@@ -319,25 +319,14 @@ def verify_account():
 
         print(f"[OK] Admin account verified and created: {pending_account['email']} (username: {pending_account['username']})")
 
-        # Log the user in by setting up their session
-        session.clear()
-        session.permanent = True
-        session['logged_in'] = True
-        session['authenticated'] = True
-        session['is_admin'] = True
-        session['admin_username'] = pending_account['username']
-        session['tutor_id'] = pending_account['tutor_id']
-        session['tutor_role'] = pending_account['role']
-        session['tutor_name'] = pending_account['tutor_name']
-        session['tutor_email'] = pending_account['email']
-        session['user_email'] = pending_account['email']
-        session['user_name'] = pending_account['tutor_name']
-        session['auth_method'] = 'database'
-        session['needs_registration'] = False
-        session.modified = True
-
-        # Redirect to admin dashboard
-        return redirect(url_for('admin.admin'))
+        # Show success page instead of immediately redirecting
+        # This ensures the user sees confirmation and can proceed to login
+        # Immediate redirect after session setup can cause "session expired" issues
+        # due to cookie not being properly saved before redirect completes
+        return render_template('admin_verify_success.html',
+                             username=pending_account['username'],
+                             email=pending_account['email'],
+                             tutor_name=pending_account['tutor_name'])
 
     except Exception as e:
         print(f"ERROR in account verification: {e}")
