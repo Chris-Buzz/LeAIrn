@@ -280,7 +280,7 @@ class InputValidator:
             sanitized['full_name'] = InputValidator.sanitize_string(full_name, InputValidator.MAX_LENGTH_NAME)
 
         # Validate role
-        allowed_roles = ['student', 'faculty', 'staff', 'other']
+        allowed_roles = ['student', 'teacher', 'advisor', 'faculty', 'staff', 'other']
         role = data.get('role') or ''
         role = role.strip().lower() if role else ''
         is_valid, error = InputValidator.validate_choice(role, allowed_roles, "Role")

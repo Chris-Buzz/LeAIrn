@@ -36,12 +36,16 @@ def is_authorized_admin(email: str) -> bool:
 def login():
     """Microsoft OAuth login initiation - redirect directly to Microsoft"""
     try:
-        # Use fixed redirect URI from env if set (for domain migration)
+        # Generate the natural redirect URI first
+        natural_uri = url_for('auth.auth_callback', _external=True)
+        is_localhost = 'localhost' in natural_uri or '127.0.0.1' in natural_uri
+
+        # Use fixed redirect URI from env only in production (not localhost)
         fixed_uri = os.getenv('MICROSOFT_REDIRECT_URI')
-        if fixed_uri:
+        if fixed_uri and not is_localhost:
             redirect_uri = fixed_uri
         else:
-            redirect_uri = url_for('auth.auth_callback', _external=True)
+            redirect_uri = natural_uri
             # Force localhost instead of 127.0.0.1 for local development
             if '127.0.0.1' in redirect_uri:
                 redirect_uri = redirect_uri.replace('127.0.0.1', 'localhost')
@@ -164,12 +168,16 @@ def auth_callback():
 def login_google():
     """Google OAuth login initiation"""
     try:
-        # Use fixed redirect URI from env if set (for domain migration)
+        # Generate the natural redirect URI first
+        natural_uri = url_for('auth.auth_google_callback', _external=True)
+        is_localhost = 'localhost' in natural_uri or '127.0.0.1' in natural_uri
+
+        # Use fixed redirect URI from env only in production (not localhost)
         fixed_uri = os.getenv('GOOGLE_REDIRECT_URI')
-        if fixed_uri:
+        if fixed_uri and not is_localhost:
             redirect_uri = fixed_uri
         else:
-            redirect_uri = url_for('auth.auth_google_callback', _external=True)
+            redirect_uri = natural_uri
             if '127.0.0.1' in redirect_uri:
                 redirect_uri = redirect_uri.replace('127.0.0.1', 'localhost')
 
@@ -198,12 +206,16 @@ def auth_google_callback():
         if not code:
             return redirect(url_for('api.index', error="No authorization code received"))
 
-        # Use fixed redirect URI from env if set (must match what was used in login)
+        # Generate the natural redirect URI first
+        natural_uri = url_for('auth.auth_google_callback', _external=True)
+        is_localhost = 'localhost' in natural_uri or '127.0.0.1' in natural_uri
+
+        # Use fixed redirect URI from env only in production (not localhost)
         fixed_uri = os.getenv('GOOGLE_REDIRECT_URI')
-        if fixed_uri:
+        if fixed_uri and not is_localhost:
             redirect_uri = fixed_uri
         else:
-            redirect_uri = url_for('auth.auth_google_callback', _external=True)
+            redirect_uri = natural_uri
             if '127.0.0.1' in redirect_uri:
                 redirect_uri = redirect_uri.replace('127.0.0.1', 'localhost')
 
