@@ -5,7 +5,6 @@ Handles all booking-related operations (create, update, delete, lookup).
 
 from flask import Blueprint, request, session, jsonify
 from datetime import datetime
-import threading
 import firestore_db as db
 from utils import get_client_ip
 from utils.validators import InputValidator
@@ -13,16 +12,48 @@ from services.email_service import EmailService
 from middleware.auth import login_required
 
 
-def send_emails_async(email_func, *args, **kwargs):
-    """Send emails in a background thread to not block the response"""
-    def _send():
-        try:
-            email_func(*args, **kwargs)
-        except Exception as e:
-            print(f"[EMAIL ASYNC ERROR] {e}")
+def send_email_sync(email_func, *args, **kwargs):
+    """Send email synchronously - guaranteed delivery on serverless"""
+    try:
+        func_name = email_func.__name__ if hasattr(email_func, '__name__') else str(email_func)
+        print(f"[EMAIL] Sending: {func_name}")
+        result = email_func(*args, **kwargs)
+        if result:
+            print(f"[EMAIL OK] {func_name} sent successfully")
+        else:
+            print(f"[EMAIL FAILED] {func_name} returned False - check SMTP credentials")
+        return result
+    except Exception as e:
+        import traceback
+        print(f"[EMAIL ERROR] {func_name} failed: {e}")
+        traceback.print_exc()
+        return False
 
-    thread = threading.Thread(target=_send, daemon=True)
-    thread.start()
+
+def send_booking_emails(user_email, user_name, slot_data, user_data):
+    """Send both booking confirmation and admin notification emails"""
+    results = {'confirmation': False, 'admin': False}
+
+    # Send user confirmation email
+    try:
+        results['confirmation'] = send_email_sync(
+            EmailService.send_booking_confirmation,
+            user_email, user_name, slot_data
+        )
+    except Exception as e:
+        print(f"[EMAIL ERROR] Confirmation email failed: {e}")
+
+    # Send admin notification email
+    try:
+        results['admin'] = send_email_sync(
+            EmailService.send_admin_notification,
+            user_data, slot_data
+        )
+    except Exception as e:
+        print(f"[EMAIL ERROR] Admin notification failed: {e}")
+
+    print(f"[EMAIL SUMMARY] Confirmation: {'OK' if results['confirmation'] else 'FAILED'}, Admin: {'OK' if results['admin'] else 'FAILED'}")
+    return results
 
 booking_bp = Blueprint('booking', __name__)
 
@@ -57,6 +88,7 @@ def request_booking_verification():
         # Comprehensive input validation and sanitization
         is_valid, sanitized_data, error_message = InputValidator.sanitize_booking_data(data)
         if not is_valid:
+            print(f"[VALIDATION ERROR] {error_message} | Data: role={data.get('role')}, slot={data.get('selected_slot')}")
             return jsonify({
                 'success': False,
                 'message': f'Validation error: {error_message}'
@@ -245,11 +277,10 @@ def request_booking_verification():
                 'tutor_email': tutor_email
             }
 
-            # Send emails asynchronously to not block the response
-            send_emails_async(EmailService.send_booking_confirmation, email, sanitized_data['full_name'], slot_data)
-            send_emails_async(EmailService.send_admin_notification, user_data, slot_data)
+            # Send emails synchronously to guarantee delivery on serverless
+            send_booking_emails(email, sanitized_data['full_name'], slot_data, user_data)
         except Exception as e:
-            print(f"[ERROR] Email queuing failed")
+            print(f"[ERROR] Email sending failed: {e}")
 
         return jsonify({
             'success': True,
@@ -316,11 +347,11 @@ def delete_booking(booking_id):
         if not success:
             return jsonify({'success': False, 'message': 'Failed to delete booking'}), 500
 
-        # Send deletion notification email asynchronously
+        # Send deletion notification email
         try:
-            send_emails_async(EmailService.send_booking_deletion, deleted_user, slot_details)
+            send_email_sync(EmailService.send_booking_deletion, deleted_user, slot_details)
         except Exception as e:
-            print(f"[ERROR] Deletion email queuing failed")
+            print(f"[ERROR] Deletion email failed: {e}")
 
         return jsonify({'success': True, 'message': 'Booking deleted successfully'})
 
@@ -418,11 +449,11 @@ def update_booking(booking_id):
         if not success:
             return jsonify({'success': False, 'message': 'Failed to update booking'}), 500
 
-        # Send update notification email asynchronously
+        # Send update notification email
         try:
             booking_to_update.update(updates)
             new_slot_details = updates.get('slot_details', old_slot)
-            send_emails_async(
+            send_email_sync(
                 EmailService.send_booking_update,
                 booking_to_update,
                 old_slot,
@@ -431,7 +462,7 @@ def update_booking(booking_id):
                 new_room
             )
         except Exception as e:
-            print(f"[ERROR] Update email queuing failed")
+            print(f"[ERROR] Update email failed: {e}")
 
         return jsonify({'success': True, 'message': 'Booking updated successfully'})
 

@@ -292,6 +292,14 @@
                     ? `<span style="display: inline-block; background: rgba(16, 185, 129, 0.1); color: #10B981; font-size: 0.7rem; padding: 0.15rem 0.4rem; border-radius: 0.25rem; margin-left: 0.25rem;">${attendeeCount} people</span>`
                     : '';
 
+                // Format booked at timestamp
+                const bookedAt = user.timestamp || user.submission_date;
+                let bookedAtFormatted = 'N/A';
+                if (bookedAt) {
+                    const bookedDate = new Date(bookedAt);
+                    bookedAtFormatted = bookedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + bookedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                }
+
                 row.innerHTML = `
                     <td><strong>${user.full_name}</strong></td>
                     <td>${user.email}</td>
@@ -301,6 +309,7 @@
                     <td title="${primaryUse}">${primaryUse}</td>
                     <td style="white-space: nowrap;">${user.slot_details && user.slot_details.day && user.slot_details.date && user.slot_details.time ? `${user.slot_details.day}, ${user.slot_details.date} at ${user.slot_details.time}` : formatSlotId(user.selected_slot)}</td>
                     <td>${meetingTypeBadge}${user.selected_room || 'Not specified'}${attendeeBadge}</td>
+                    <td style="white-space: nowrap; font-size: 0.8rem; color: var(--text-secondary);">${bookedAtFormatted}</td>
                     <td>
                         <div style="display: flex; gap: 0.25rem; flex-wrap: nowrap;">
                             <button data-action="viewUserDetails" data-index="${index}" title="View Details" style="flex: 1; min-width: 50px; padding: 0.45rem 0.5rem; background: var(--primary); color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.75rem; font-weight: 600; white-space: nowrap; transition: all 0.2s;">

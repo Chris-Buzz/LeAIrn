@@ -20,6 +20,11 @@ EMAIL_USER = os.getenv('EMAIL_USER')
 EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
 EMAIL_FROM = os.getenv('EMAIL_FROM', EMAIL_USER)
 
+# Log email configuration status on module load
+print(f"[EMAIL CONFIG] EMAIL_USER: {'SET' if EMAIL_USER else 'NOT SET'}")
+print(f"[EMAIL CONFIG] EMAIL_PASSWORD: {'SET (' + str(len(EMAIL_PASSWORD)) + ' chars)' if EMAIL_PASSWORD else 'NOT SET'}")
+print(f"[EMAIL CONFIG] EMAIL_FROM: {EMAIL_FROM if EMAIL_FROM else 'NOT SET'}")
+
 
 class EmailService:
     """Service for sending various types of emails"""
