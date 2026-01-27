@@ -367,15 +367,32 @@ def update_booking(booking_id):
     try:
         data = request.json
 
-        # Validate and sanitize input data
+        # For updates, only validate fields that are actually being changed
+        # Don't require all fields like a new booking would
         if data:
-            is_valid, sanitized_data, error_message = InputValidator.sanitize_booking_data(data)
-            if not is_valid:
-                return jsonify({
-                    'success': False,
-                    'message': f'Validation error: {error_message}'
-                }), 400
-            data = sanitized_data
+            sanitized = {}
+
+            # Validate slot if provided
+            if 'selected_slot' in data and data['selected_slot']:
+                slot_id = str(data['selected_slot']).strip()
+                is_valid, error = InputValidator.validate_slot_id(slot_id)
+                if not is_valid:
+                    return jsonify({'success': False, 'message': f'Validation error: {error}'}), 400
+                sanitized['selected_slot'] = slot_id
+
+            # Validate room if provided
+            if 'selected_room' in data and data['selected_room']:
+                room = str(data['selected_room']).strip()
+                if len(room) > 200:
+                    return jsonify({'success': False, 'message': 'Room name too long'}), 400
+                sanitized['selected_room'] = room
+
+            # Copy other safe fields
+            for field in ['full_name', 'role', 'department', 'meeting_type', 'attendee_count']:
+                if field in data and data[field]:
+                    sanitized[field] = str(data[field]).strip() if isinstance(data[field], str) else data[field]
+
+            data = sanitized
 
         users = db.get_all_bookings()
 
@@ -558,8 +575,119 @@ def get_user_booking():
 
 @booking_bp.route('/api/booking/update-by-email', methods=['POST'])
 def update_booking_by_email():
-    """DEPRECATED: Use OAuth-authenticated update instead."""
-    return jsonify({
-        'success': False,
-        'message': 'This endpoint is deprecated. Please sign in to manage your bookings.'
-    }), 410
+    """Update a user's booking - requires OAuth authentication"""
+    try:
+        # Check if user is authenticated via OAuth
+        if not session.get('authenticated'):
+            return jsonify({
+                'success': False,
+                'message': 'Please sign in to update your booking.'
+            }), 401
+
+        # Get authenticated email from session
+        user_email = session.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'message': 'Session expired. Please sign in again.'
+            }), 401
+
+        data = request.json
+        new_slot_id = data.get('selected_slot')
+        new_building = data.get('selected_building', '')
+        new_room_number = data.get('room_number', '')
+
+        # Find the user's booking
+        user_bookings = db.get_user_bookings(user_email)
+        if not user_bookings:
+            return jsonify({'success': False, 'message': 'No booking found for your account'}), 404
+
+        # Get the most recent booking
+        booking = user_bookings[0]
+        booking_id = booking.get('id')
+
+        if not booking_id:
+            return jsonify({'success': False, 'message': 'Booking ID not found'}), 404
+
+        # Prepare updates
+        updates = {}
+
+        # Handle slot change
+        if new_slot_id:
+            old_slot_id = booking.get('selected_slot')
+            if isinstance(old_slot_id, dict):
+                old_slot_id = old_slot_id.get('id')
+
+            if new_slot_id != old_slot_id:
+                # Unbook old slot
+                if old_slot_id:
+                    db.unbook_slot(old_slot_id)
+
+                # Get new slot data and book it
+                slots = db.get_all_slots()
+                new_slot_data = None
+                for slot in slots:
+                    if slot.get('id') == new_slot_id:
+                        new_slot_data = slot
+                        break
+
+                if not new_slot_data:
+                    return jsonify({'success': False, 'message': 'Selected time slot not found'}), 404
+
+                if new_slot_data.get('is_booked'):
+                    return jsonify({'success': False, 'message': 'Selected time slot is no longer available'}), 400
+
+                # Book new slot
+                db.book_slot(new_slot_id, user_email)
+                updates['selected_slot'] = new_slot_id
+                updates['slot_details'] = new_slot_data
+
+        # Handle room change
+        if new_building or new_room_number:
+            if new_building == 'Zoom':
+                updates['selected_room'] = 'Zoom - Online'
+                updates['meeting_type'] = 'zoom'
+            else:
+                new_room = f"{new_building} - {new_room_number}" if new_building and new_room_number else booking.get('selected_room')
+                updates['selected_room'] = new_room
+                updates['meeting_type'] = 'in-person'
+
+        if not updates:
+            return jsonify({'success': False, 'message': 'No changes to update'}), 400
+
+        # Update the booking
+        success = db.update_booking(booking_id, updates)
+        if not success:
+            return jsonify({'success': False, 'message': 'Failed to update booking'}), 500
+
+        # Get updated booking
+        booking.update(updates)
+
+        # Send update notification email
+        try:
+            old_slot = booking.get('slot_details', {})
+            new_slot = updates.get('slot_details', old_slot)
+            old_room = booking.get('selected_room', '')
+            new_room = updates.get('selected_room', old_room)
+            send_email_sync(
+                EmailService.send_booking_update,
+                booking,
+                old_slot,
+                new_slot,
+                old_room,
+                new_room
+            )
+        except Exception as e:
+            print(f"[ERROR] Update email failed: {e}")
+
+        return jsonify({
+            'success': True,
+            'message': 'Booking updated successfully',
+            'booking': booking
+        })
+
+    except Exception as e:
+        print(f"Error updating booking by email: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
