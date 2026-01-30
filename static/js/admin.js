@@ -1,4 +1,19 @@
-// Registration Modal Functions
+// Helper: check if a fetch response is an auth error (401) and redirect if needed
+        function handleAuthError(response) {
+            if (response.status === 401) {
+                response.json().then(data => {
+                    alert(data.message || 'Session expired. Please log in again.');
+                    window.location.href = data.redirect || '/admin/login';
+                }).catch(() => {
+                    alert('Session expired. Please log in again.');
+                    window.location.href = '/admin/login';
+                });
+                return true; // Was an auth error
+            }
+            return false; // Not an auth error
+        }
+
+        // Registration Modal Functions
         function checkAndShowRegistrationModal() {
             // Check if the user needs to register (server sets this in session)
             fetch('/api/check-registration-needed')
@@ -436,6 +451,7 @@
                     })
                 });
 
+                if (handleAuthError(response)) return;
                 const result = await response.json();
 
                 if (response.ok && result.success) {
@@ -535,6 +551,7 @@
                     })
                 });
 
+                if (handleAuthError(response)) return;
                 const result = await response.json();
 
                 if (response.ok && result.success) {
@@ -577,6 +594,7 @@
                     })
                 });
 
+                if (handleAuthError(response)) return;
                 const result = await response.json();
 
                 if (response.ok && result.success) {
@@ -621,6 +639,7 @@
                     })
                 });
 
+                if (handleAuthError(response)) return;
                 const result = await response.json();
 
                 if (response.ok && result.success) {
@@ -2309,6 +2328,7 @@
         async function loadSessionOverviews() {
             try {
                 const response = await fetch('/api/session-overviews');
+                if (handleAuthError(response)) return;
                 const overviews = await response.json();
 
                 const tbody = document.getElementById('overviewsTable');
@@ -2452,6 +2472,7 @@
                     method: 'DELETE'
                 });
 
+                if (handleAuthError(response)) return;
                 const result = await response.json();
 
                 if (response.ok && result.success) {
@@ -2593,6 +2614,7 @@
                     })
                 });
 
+                if (handleAuthError(response)) return;
                 const result = await response.json();
 
                 if (response.ok && result.success) {
