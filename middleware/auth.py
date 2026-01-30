@@ -27,8 +27,13 @@ def login_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Determine if this is an API request (expects JSON, not HTML)
+        is_api = request.path.startswith('/api/')
+
         # Check for admin session
         if 'logged_in' not in session:
+            if is_api:
+                return jsonify({'success': False, 'message': 'Session expired. Please log in again.', 'redirect': '/admin/login'}), 401
             return redirect(url_for('admin.admin_login'))
 
         # Allow access if:
@@ -38,7 +43,8 @@ def login_required(f):
         needs_registration = session.get('needs_registration', False)
 
         if not has_account and not needs_registration:
-            # Not authenticated and not in pending registration state
+            if is_api:
+                return jsonify({'success': False, 'message': 'Not authenticated. Please log in again.', 'redirect': '/admin/login'}), 401
             return redirect(url_for('admin.admin_login'))
 
         # Check if password re-verification is needed (every 7 days / weekly)
@@ -54,7 +60,8 @@ def login_required(f):
 
                 # Check if verification is needed
                 if username and db.check_admin_password_verification_needed(username, days=7):
-                    # Redirect to password re-verification page
+                    if is_api:
+                        return jsonify({'success': False, 'message': 'Password re-verification required.', 'redirect': '/admin/verify-password'}), 401
                     return redirect(url_for('admin.admin_verify_password'))
 
         return f(*args, **kwargs)

@@ -123,8 +123,8 @@ class TestDeprecatedEndpoints:
     def test_update_by_email_deprecated(self, client):
         """Test that update by email endpoint is deprecated."""
         response = client.post('/api/booking/update-by-email', json={})
-        # 410 for deprecated, 429 if rate limited
-        assert response.status_code in [410, 429]
+        # 401 if not authenticated, 410 for deprecated, 429 if rate limited
+        assert response.status_code in [401, 410, 429]
 
 
 class TestUserBooking:
