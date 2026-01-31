@@ -482,8 +482,12 @@ def get_statistics():
         tutor_role = session.get('tutor_role', 'tutor_admin')
         tutor_id = session.get('tutor_id')
 
+        print(f"[STATS] Request from tutor_role='{tutor_role}', tutor_id='{tutor_id}'")
+
         # Get statistics from persistent storage (includes historical data)
         stats_summary = db.get_statistics_summary()
+
+        print(f"[STATS] Available tutor keys: {list(stats_summary.get('tutors', {}).keys())}")
 
         # Also count current active bookings (not yet completed)
         current_bookings = db.get_all_bookings()
@@ -492,6 +496,11 @@ def get_statistics():
         # If tutor_admin, only return their own stats
         if tutor_role == 'tutor_admin':
             tutor_stats = stats_summary.get('tutors', {}).get(tutor_id, {})
+
+            # If tutor_id not found in stats, log it clearly
+            if not tutor_stats and tutor_id:
+                print(f"[STATS WARNING] No stats found for tutor_id='{tutor_id}'. Available keys: {list(stats_summary.get('tutors', {}).keys())}")
+
             return jsonify({
                 'success': True,
                 'role': tutor_role,
@@ -512,7 +521,9 @@ def get_statistics():
         })
 
     except Exception as e:
-        print(f"Error fetching statistics: {e}")
+        print(f"[STATS ERROR] {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
