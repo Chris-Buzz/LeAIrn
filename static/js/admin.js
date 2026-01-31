@@ -1,4 +1,33 @@
-// Helper: check if a fetch response is an auth error (401) and redirect if needed
+// Admin theme toggle
+        function initAdminTheme() {
+            const savedTheme = localStorage.getItem('admin-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcons(savedTheme);
+        }
+
+        function toggleAdminTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const newTheme = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('admin-theme', newTheme);
+            updateThemeIcons(newTheme);
+        }
+
+        function updateThemeIcons(theme) {
+            const lightIcon = document.getElementById('admin-theme-light');
+            const darkIcon = document.getElementById('admin-theme-dark');
+            const label = document.getElementById('theme-label');
+            if (lightIcon && darkIcon) {
+                lightIcon.style.display = theme === 'dark' ? 'none' : 'block';
+                darkIcon.style.display = theme === 'dark' ? 'block' : 'none';
+            }
+            if (label) label.textContent = theme === 'dark' ? 'Light' : 'Dark';
+        }
+
+        // Initialize theme immediately
+        initAdminTheme();
+
+        // Helper: check if a fetch response is an auth error (401) and redirect if needed
         function handleAuthError(response) {
             if (response.status === 401) {
                 response.json().then(data => {
@@ -13,11 +42,23 @@
             return false; // Not an auth error
         }
 
+        // Safe JSON parser: handles auth errors and non-JSON responses gracefully
+        async function safeJson(response) {
+            if (handleAuthError(response)) return null;
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch {
+                console.error('Non-JSON response:', text.substring(0, 200));
+                throw new Error(`Server error (${response.status})`);
+            }
+        }
+
         // Registration Modal Functions
         function checkAndShowRegistrationModal() {
             // Check if the user needs to register (server sets this in session)
             fetch('/api/check-registration-needed')
-                .then(res => res.json())
+                .then(res => { if (handleAuthError(res)) throw new Error('auth'); return res.json(); })
                 .then(data => {
                     if (data.needs_registration) {
                         document.getElementById('registrationEmail').textContent = data.email || 'Unknown';
@@ -77,7 +118,7 @@
                     })
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response); if (!result) return;
 
                 if (response.ok && result.success) {
                     // Email verification flow - SECURE (no bypass)
@@ -168,9 +209,10 @@
         async function loadUsers() {
             try {
                 const response = await fetch('/api/users');
+                if (handleAuthError(response)) return;
                 if (!response.ok) throw new Error('Failed to load data');
 
-                allUsers = await response.json();
+                allUsers = await safeJson(response);
                 displayUsers(allUsers);
             } catch (error) {
                 console.error('Error loading users:', error);
@@ -192,8 +234,10 @@
             // Fetch and update all-time statistics
             try {
                 const statsResponse = await fetch('/api/statistics');
+                if (handleAuthError(statsResponse)) return;
                 if (statsResponse.ok) {
                     const stats = await statsResponse.json();
+                    console.log('[STATS] Response:', JSON.stringify(stats));
 
                     // Check if this is a super_admin (Master) or tutor_admin
                     if (stats.role === 'super_admin' && stats.master_total) {
@@ -671,7 +715,7 @@
                     method: 'DELETE'
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response); if (!result) return;
 
                 console.log('Delete response:', response.ok, result);
 
@@ -745,7 +789,7 @@
             // Load available time slots
             try {
                 const response = await fetch('/api/slots');
-                const slots = await response.json();
+                const slots = await safeJson(response); if (!slots) return;
                 const select = document.getElementById('edit_slot');
                 const small = select.nextElementSibling;
 
@@ -777,7 +821,7 @@
                     body: JSON.stringify(updatedData)
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response); if (!result) return;
 
                 if (response.ok && result.success) {
                     alert('Booking updated successfully!');
@@ -989,7 +1033,7 @@
                         method: 'POST'
                     });
 
-                    const result = await response.json();
+                    const result = await safeJson(response); if (!result) return;
 
                     if (response.ok && result.success) {
                         const insightsContainer = document.getElementById('insights-container');
@@ -1038,7 +1082,7 @@
                     method: 'POST'
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response); if (!result) return;
 
                 if (response.ok && result.success) {
                     insightsContainer.style.whiteSpace = 'pre-wrap';
@@ -1093,9 +1137,10 @@
         async function loadTimeSlots() {
             try {
                 const response = await fetch('/api/slots/manage');
+                if (handleAuthError(response)) return;
                 if (!response.ok) throw new Error('Failed to load slots');
 
-                allSlots = await response.json();
+                allSlots = await safeJson(response);
                 displayTimeSlots(allSlots);
             } catch (error) {
                 console.error('Error loading time slots:', error);
@@ -1341,7 +1386,7 @@
 
             try {
                 const statsResponse = await fetch('/api/statistics');
-                const stats = await statsResponse.json();
+                const stats = await safeJson(statsResponse); if (!stats) return;
 
                 const data = {
                     isSuperAdmin: stats.role === 'super_admin',
@@ -1351,7 +1396,7 @@
 
                 if (data.isSuperAdmin) {
                     const tutorsResponse = await fetch('/api/tutors');
-                    const tutorsData = await tutorsResponse.json();
+                    const tutorsData = await safeJson(tutorsResponse); if (!tutorsData) return;
                     if (tutorsData.success) {
                         data.tutorsList = tutorsData.tutors;
                     }
@@ -1642,7 +1687,7 @@
                     body: JSON.stringify(requestBody)
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response); if (!result) return;
 
                 if (response.ok && result.success) {
                     alert(result.message || 'Slots generated successfully!');
@@ -1831,7 +1876,7 @@
                     body: JSON.stringify(slotData)
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response); if (!result) return;
 
                 if (response.ok && result.success) {
                     alert('Time slot added successfully!');
@@ -1866,7 +1911,7 @@
                     method: 'POST'
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response); if (!result) return;
 
                 if (response.ok && result.success) {
                     alert(result.message);
@@ -1894,7 +1939,7 @@
                     method: 'DELETE'
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response); if (!result) return;
 
                 if (response.ok && result.success) {
                     alert('Time slot deleted successfully!');
@@ -1996,7 +2041,7 @@
         async function loadSelectableSlots() {
             try {
                 const response = await fetch('/api/slots/manage');
-                const slots = await response.json();
+                const slots = await safeJson(response); if (!slots) return;
 
                 const now = new Date();
                 const availableSlots = slots.filter(s => !s.booked && new Date(s.datetime) > now)
@@ -2053,7 +2098,7 @@
                         body: JSON.stringify({ mode: 'last_weeks', weeks: weeks })
                     });
 
-                    const result = await response.json();
+                    const result = await safeJson(response); if (!result) return;
 
                     if (response.ok && result.success) {
                         alert(result.message);
@@ -2097,7 +2142,7 @@
                         body: JSON.stringify({ slot_ids: slotIds })
                     });
 
-                    const result = await response.json();
+                    const result = await safeJson(response); if (!result) return;
                     console.log('[BULK DELETE] Response:', result);
 
                     if (response.ok && result.success) {
@@ -2124,6 +2169,7 @@
         async function loadFeedback() {
             try {
                 const response = await fetch('/api/feedback');
+                if (handleAuthError(response)) return;
                 const feedbackList = await response.json();
 
                 const tbody = document.getElementById('feedbackTable');
