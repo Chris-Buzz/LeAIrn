@@ -7,6 +7,7 @@ from flask import Blueprint, request, session, render_template, redirect, url_fo
 from datetime import datetime
 import firestore_db as db
 from middleware.auth import login_required
+from middleware.rate_limit import rate_limit
 from services.email_service import EmailService
 from services.ai_service import AIService
 from routes.auth_routes import get_authorized_admin_info  # Database-driven admin config
@@ -136,6 +137,11 @@ def admin_setup():
 
     pending_email = session.get('pending_registration_email', session.get('user_email', ''))
     admin_info = get_authorized_admin_info(pending_email)
+
+    # Verify user is actually authorized in the database
+    if not admin_info:
+        session.clear()
+        return redirect(url_for('admin.admin_login'))
     tutor_name = admin_info.get('tutor_name', '') if admin_info else ''
 
     return render_template('admin_setup.html',
@@ -166,10 +172,17 @@ def admin_register():
                 'message': 'Passwords do not match.'
             }), 400
 
-        if len(password) < 8:
+        if len(password) < 10:
             return jsonify({
                 'success': False,
-                'message': 'Password must be at least 8 characters long.'
+                'message': 'Password must be at least 10 characters long.'
+            }), 400
+
+        import re
+        if not re.search(r'[A-Z]', password) or not re.search(r'[a-z]', password) or not re.search(r'[0-9]', password):
+            return jsonify({
+                'success': False,
+                'message': 'Password must contain uppercase, lowercase, and at least one number.'
             }), 400
 
         if len(username) < 3:
@@ -335,6 +348,7 @@ def verify_account():
 
 
 @admin_bp.route('/admin/verify-password', methods=['GET', 'POST'])
+@rate_limit('auth')
 def admin_verify_password():
     """Password re-verification page for admins (required every 3 days)"""
     # Check if user has a session
@@ -375,12 +389,7 @@ def admin_verify_password():
 @admin_bp.route('/admin/logout')
 def admin_logout():
     """Admin logout - clear all admin session data"""
-    session.pop('logged_in', None)
-    session.pop('admin_username', None)
-    session.pop('tutor_id', None)
-    session.pop('tutor_role', None)
-    session.pop('tutor_name', None)
-    session.pop('auth_method', None)
+    session.clear()
     return redirect(url_for('admin.admin_login'))
 
 
@@ -439,9 +448,10 @@ def delete_admin_account(email):
             }), 404
 
     except Exception as e:
+        print(f"[ERROR] {request.path}: {e}")
         return jsonify({
             'success': False,
-            'message': str(e)
+            'message': 'An internal error occurred. Please try again.'
         }), 500
 
 
@@ -470,8 +480,8 @@ def get_users():
         # Default: return all (for legacy admin accounts)
         return jsonify(all_users)
     except Exception as e:
-        print(f"Error fetching users: {e}")
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/api/statistics', methods=['GET'])
@@ -482,6 +492,9 @@ def get_statistics():
         tutor_role = session.get('tutor_role', 'tutor_admin')
         tutor_id = session.get('tutor_id')
 
+        # Normalize the tutor_id for lookup (handles christopher_buzaid -> christopher)
+        normalized_id = db.normalize_tutor_id(tutor_id) if tutor_id else tutor_id
+
         # Get statistics from persistent storage (includes historical data)
         stats_summary = db.get_statistics_summary()
 
@@ -489,9 +502,16 @@ def get_statistics():
         current_bookings = db.get_all_bookings()
         active_count = len(current_bookings)
 
+        print(f"[STATS] Role: {tutor_role}, Tutor ID: '{tutor_id}' -> normalized: '{normalized_id}', Active bookings: {active_count}")
+        print(f"[STATS] Available tutor keys: {list(stats_summary.get('tutors', {}).keys())}")
+        print(f"[STATS] Master total: {stats_summary.get('master_total', {})}")
+
         # If tutor_admin, only return their own stats
         if tutor_role == 'tutor_admin':
-            tutor_stats = stats_summary.get('tutors', {}).get(tutor_id, {})
+            # Try both raw and normalized tutor_id for lookup
+            tutor_stats = stats_summary.get('tutors', {}).get(normalized_id, {})
+            if not tutor_stats:
+                tutor_stats = stats_summary.get('tutors', {}).get(tutor_id, {})
             return jsonify({
                 'success': True,
                 'role': tutor_role,
@@ -508,12 +528,13 @@ def get_statistics():
             'role': tutor_role,
             'tutor_stats': stats_summary.get('tutors', {}),
             'master_total': stats_summary.get('master_total', {'total_bookings': 0, 'unique_clients': 0}),
-            'active_bookings': active_count
+            'active_bookings': active_count,
+            'archived_count': stats_summary.get('archived_count', 0)
         })
 
     except Exception as e:
-        print(f"Error fetching statistics: {e}")
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/api/tutors', methods=['GET'])
@@ -527,8 +548,25 @@ def get_tutors():
             'tutors': tutors
         })
     except Exception as e:
-        print(f"Error fetching tutors: {e}")
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
+
+
+@admin_bp.route('/api/statistics/recalculate', methods=['POST'])
+@login_required
+def recalculate_statistics():
+    """Recalculate booking statistics from actual data (active + archived bookings)"""
+    try:
+        result = db.recalculate_booking_statistics()
+
+        if 'error' in result:
+            return jsonify({'success': False, 'message': result['error']}), 500
+
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/api/booking/<booking_id>/complete', methods=['POST'])
@@ -607,7 +645,15 @@ def mark_booking_complete(booking_id):
             'user_email': completed_user.get('email', 'Unknown')
         })
 
-        # Delete the booking
+        # Archive the booking BEFORE deleting (preserves all user data permanently)
+        db.archive_completed_booking(
+            booking_data=completed_user,
+            session_notes=session_notes,
+            enhanced_notes=enhanced_notes,
+            completed_by=session.get('admin_email', 'admin')
+        )
+
+        # Delete the booking (now safe since it's archived)
         success = db.delete_booking(booking_id)
         if not success:
             return jsonify({'success': False, 'message': 'Failed to delete booking'}), 500
@@ -626,8 +672,8 @@ def mark_booking_complete(booking_id):
         return jsonify({'success': True, 'message': 'Session marked complete'})
 
     except Exception as e:
-        print(f"Error marking booking complete: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/api/session-overviews', methods=['GET'])
@@ -638,8 +684,8 @@ def get_session_overviews():
         overviews = db.get_all_session_overviews()
         return jsonify(overviews)
     except Exception as e:
-        print(f"Error getting session overviews: {e}")
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/api/session-overviews/<booking_id>', methods=['DELETE'])
@@ -653,8 +699,35 @@ def delete_session_overview(booking_id):
         else:
             return jsonify({'success': False, 'message': 'Failed to delete'}), 500
     except Exception as e:
-        print(f"Error deleting session overview: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
+
+
+@admin_bp.route('/api/archived-bookings', methods=['GET'])
+@login_required
+def get_archived_bookings():
+    """Get all archived (completed) bookings for admin view"""
+    try:
+        limit = request.args.get('limit', 100, type=int)
+        archived = db.get_archived_bookings(limit=limit)
+        return jsonify(archived)
+    except Exception as e:
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
+
+
+@admin_bp.route('/api/archived-bookings/<booking_id>', methods=['GET'])
+@login_required
+def get_archived_booking(booking_id):
+    """Get a single archived booking by ID"""
+    try:
+        booking = db.get_archived_booking(booking_id)
+        if booking:
+            return jsonify(booking)
+        return jsonify({'error': 'Archived booking not found'}), 404
+    except Exception as e:
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/api/session-overviews/manual', methods=['POST'])
@@ -712,8 +785,8 @@ def create_manual_overview():
         })
 
     except Exception as e:
-        print(f"Error creating manual overview: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/api/session-overviews/preview', methods=['POST'])
@@ -741,8 +814,8 @@ def preview_session_overview():
         return jsonify({'success': True, 'enhanced_notes': enhanced_notes or notes})
 
     except Exception as e:
-        print(f"Error previewing session overview: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/api/generate-insights/<booking_id>', methods=['POST'])
@@ -774,8 +847,8 @@ def generate_insights_for_booking(booking_id):
         return jsonify({'success': True, 'insights': ai_insights})
 
     except Exception as e:
-        print(f"Error generating insights: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/api/users/missed-session', methods=['POST'])
@@ -806,8 +879,8 @@ def record_user_missed_session():
         })
 
     except Exception as e:
-        print(f"Error recording missed session: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/api/users/<email>/ban', methods=['POST'])
@@ -829,8 +902,8 @@ def ban_user_endpoint(email):
         })
 
     except Exception as e:
-        print(f"Error banning user: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/api/users/<email>/unban', methods=['POST'])
@@ -849,8 +922,8 @@ def unban_user_endpoint(email):
         })
 
     except Exception as e:
-        print(f"Error unbanning user: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/api/users/<email>/reset-misses', methods=['POST'])
@@ -869,8 +942,8 @@ def reset_user_misses_endpoint(email):
         })
 
     except Exception as e:
-        print(f"Error resetting misses: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/api/users/<email>/status', methods=['GET'])
@@ -891,8 +964,8 @@ def get_user_status(email):
         })
 
     except Exception as e:
-        print(f"Error getting user status: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/api/admin/test-email', methods=['POST'])
@@ -941,7 +1014,7 @@ def test_email_configuration():
         html_content = f"""
         <html>
             <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h1 style="color: #6366F1;">LearnAI Email Test</h1>
+                <h1 style="color: #FF5A1F;">LearnAI Email Test</h1>
                 <p>This is a test email from your LearnAI booking system.</p>
                 <p><strong>If you received this email, your email configuration is working correctly!</strong></p>
                 <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
@@ -984,5 +1057,5 @@ def test_email_configuration():
         traceback.print_exc()
         return jsonify({
             'success': False,
-            'message': f'Error testing email: {str(e)}'
+            'message': 'An internal error occurred. Please try again.'
         }), 500

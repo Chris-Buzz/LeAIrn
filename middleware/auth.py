@@ -29,6 +29,8 @@ def login_required(f):
     def decorated_function(*args, **kwargs):
         # Check for admin session
         if 'logged_in' not in session:
+            if request.path.startswith('/api/'):
+                return jsonify({'success': False, 'message': 'Authentication required', 'redirect': '/admin/login'}), 401
             return redirect(url_for('admin.admin_login'))
 
         # Allow access if:
@@ -39,6 +41,8 @@ def login_required(f):
 
         if not has_account and not needs_registration:
             # Not authenticated and not in pending registration state
+            if request.path.startswith('/api/'):
+                return jsonify({'success': False, 'message': 'Authentication required', 'redirect': '/admin/login'}), 401
             return redirect(url_for('admin.admin_login'))
 
         # Check if password re-verification is needed (every 7 days / weekly)
@@ -55,6 +59,8 @@ def login_required(f):
                 # Check if verification is needed
                 if username and db.check_admin_password_verification_needed(username, days=7):
                     # Redirect to password re-verification page
+                    if request.path.startswith('/api/'):
+                        return jsonify({'success': False, 'message': 'Authentication required', 'redirect': '/admin/login'}), 401
                     return redirect(url_for('admin.admin_verify_password'))
 
         return f(*args, **kwargs)

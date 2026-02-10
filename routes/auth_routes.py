@@ -7,8 +7,14 @@ from flask import Blueprint, request, session, redirect, url_for, jsonify, rende
 from services.auth_service import AuthService
 import firestore_db as db
 import random
+import secrets
+import re
 import os
-from datetime import datetime, timedelta
+import hmac
+import hashlib
+import base64
+import json
+from datetime import datetime, timedelta, timezone
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -63,7 +69,9 @@ def login():
         return redirect(auth_url)
 
     except Exception as e:
-        return f"Failed to initiate login: {str(e)}", 500
+        import traceback
+        traceback.print_exc()
+        return "Failed to initiate login. Please try again later.", 500
 
 
 @auth_bp.route('/auth/callback', methods=['GET', 'POST'])
@@ -82,8 +90,13 @@ def auth_callback():
             return redirect(url_for('api.index', error="No authorization code received"))
 
         flow = session.get('auth_flow')
+        stored_state = session.get('auth_state')
         if not flow:
             return redirect(url_for('api.index', error="Session expired. Please try again."))
+
+        # Validate OAuth state parameter to prevent CSRF
+        if not stored_state or not hmac.compare_digest(stored_state, state):
+            return redirect(url_for('api.index', error="Invalid authentication state. Please try again."))
 
         token_response = AuthService.acquire_token_by_code(code, state, flow)
 
@@ -127,7 +140,8 @@ def auth_callback():
                 session['is_admin'] = True
                 session['admin_username'] = db_admin.get('username')
                 session['tutor_id'] = db_admin.get('tutor_id') or admin_info['tutor_id']
-                session['tutor_role'] = db_admin.get('role', 'tutor_admin')
+                # Use authorized_admins role as source of truth, fall back to admin_accounts
+                session['tutor_role'] = admin_info.get('tutor_role') or db_admin.get('role', 'tutor_admin')
                 session['tutor_name'] = db_admin.get('tutor_name') or admin_info['tutor_name']
                 session['tutor_email'] = email
                 session['user_email'] = email
@@ -160,7 +174,10 @@ def auth_callback():
 
         return redirect(url_for('api.index'))
 
-    except Exception:
+    except Exception as e:
+        print(f"[ERROR] Auth callback failed: {e}")
+        import traceback
+        traceback.print_exc()
         return redirect(url_for('api.index', error="Authentication failed. Please try again."))
 
 
@@ -186,6 +203,13 @@ def login_google():
         if not auth_url:
             return "Google OAuth service temporarily unavailable. Please try again later.", 503
 
+        # Generate CSRF state token for Google OAuth
+        state = secrets.token_urlsafe(32)
+        session['google_oauth_state'] = state
+
+        # Append state parameter to the authorization URL
+        auth_url = auth_url + f'&state={state}'
+
         return redirect(auth_url)
 
     except Exception as e:
@@ -205,6 +229,14 @@ def auth_google_callback():
 
         if not code:
             return redirect(url_for('api.index', error="No authorization code received"))
+
+        # Validate CSRF state parameter to prevent cross-site request forgery
+        state = request.args.get('state')
+        stored_state = session.pop('google_oauth_state', None)
+        if not stored_state or not state:
+            return redirect(url_for('api.index', error='Authentication failed: missing state parameter'))
+        if not hmac.compare_digest(stored_state, state):
+            return redirect(url_for('api.index', error='Authentication failed: invalid state parameter'))
 
         # Generate the natural redirect URI first
         natural_uri = url_for('auth.auth_google_callback', _external=True)
@@ -274,7 +306,8 @@ def auth_google_callback():
                 session['is_admin'] = True
                 session['admin_username'] = db_admin.get('username')
                 session['tutor_id'] = db_admin.get('tutor_id') or admin_info['tutor_id']
-                session['tutor_role'] = db_admin.get('role', 'tutor_admin')
+                # Use authorized_admins role as source of truth, fall back to admin_accounts
+                session['tutor_role'] = admin_info.get('tutor_role') or db_admin.get('role', 'tutor_admin')
                 session['tutor_name'] = db_admin.get('tutor_name') or admin_info['tutor_name']
                 session['tutor_email'] = email
                 session['user_email'] = email
@@ -298,8 +331,163 @@ def auth_google_callback():
 
         return redirect(url_for('api.index'))
 
-    except Exception:
+    except Exception as e:
+        print(f"[ERROR] Google auth callback failed: {e}")
+        import traceback
+        traceback.print_exc()
         return redirect(url_for('api.index', error="Authentication failed. Please try again."))
+
+
+SSO_SHARED_SECRET = os.getenv("SSO_SHARED_SECRET", "")
+ALLOWED_SSO_ORIGIN = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+
+
+@auth_bp.route('/auth/sso', methods=['POST'])
+def sso_login():
+    """SSO bridge from React MVP.
+
+    Validates an HMAC-signed token generated by Backend-MVP and creates a
+    Flask session identical to what the standard OAuth flow would produce.
+    Token is delivered via hidden form POST (not URL) to avoid leaking in
+    browser history, Referer headers, and server logs.
+    """
+    if not SSO_SHARED_SECRET:
+        return redirect(url_for('api.index', error="Authentication unavailable"))
+
+    # Validate Origin (prevents cross-origin form submission from malicious sites)
+    origin = (request.headers.get('Origin') or '').rstrip('/')
+    if not origin:
+        # Fallback to Referer (some browsers omit Origin on form POST)
+        referer = request.headers.get('Referer', '')
+        origin = '/'.join(referer.split('/')[:3]) if referer else ''
+    if origin and origin != ALLOWED_SSO_ORIGIN:
+        print(f"[AUTH SSO] Rejected: invalid origin")
+        return redirect(url_for('api.index', error="Authentication failed"))
+
+    # Token comes via POST form body (hidden form submission from React)
+    sso_token = request.form.get('token', '')
+    if not sso_token:
+        return redirect(url_for('api.index', error="Authentication failed"))
+
+    # Validate size and format before any processing
+    if len(sso_token) > 2000 or sso_token.count('.') != 1:
+        print("[AUTH SSO] Rejected: invalid token size or format")
+        return redirect(url_for('api.index', error="Authentication failed"))
+
+    try:
+        payload_b64, sig_b64 = sso_token.split('.')
+
+        # Verify HMAC-SHA256 signature (timing-safe comparison)
+        expected_sig = hmac.new(
+            SSO_SHARED_SECRET.encode(), payload_b64.encode(), hashlib.sha256
+        ).digest()
+
+        try:
+            provided_sig = base64.urlsafe_b64decode(sig_b64.encode())
+        except Exception:
+            print("[AUTH SSO] Rejected: bad signature encoding")
+            return redirect(url_for('api.index', error="Authentication failed"))
+
+        if not hmac.compare_digest(expected_sig, provided_sig):
+            print("[AUTH SSO] Rejected: signature mismatch")
+            return redirect(url_for('api.index', error="Authentication failed"))
+
+        # Decode payload
+        try:
+            payload_json = base64.urlsafe_b64decode(payload_b64.encode()).decode('utf-8')
+            payload = json.loads(payload_json)
+        except Exception:
+            print("[AUTH SSO] Rejected: bad payload encoding")
+            return redirect(url_for('api.index', error="Authentication failed"))
+
+        email = (payload.get('email') or '').lower()
+        # Basic email format validation (must have exactly one @ with content on both sides)
+        if not email or not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+            print("[AUTH SSO] Rejected: invalid email format")
+            return redirect(url_for('api.index', error="Authentication failed"))
+        # Sanitize name: strip HTML tags, limit length
+        raw_name = payload.get('name', email.split('@')[0])
+        name = re.sub(r'<[^>]+>', '', str(raw_name)).strip()[:100] or 'User'
+        # Whitelist valid providers (prevents arbitrary values in session)
+        allowed_providers = {'email', 'google', 'azure', 'microsoft', 'github', 'apple'}
+        provider = payload.get('provider', 'email')
+        if provider not in allowed_providers:
+            provider = 'unknown'
+        exp = payload.get('exp', 0)
+        nonce = str(payload.get('jti', ''))
+
+        # Validate nonce format (secrets.token_urlsafe(32) produces ~43 chars)
+        if not nonce or len(nonce) < 20 or len(nonce) > 100 or not re.match(r'^[A-Za-z0-9_-]+$', nonce):
+            print("[AUTH SSO] Rejected: invalid nonce format")
+            return redirect(url_for('api.index', error="Authentication failed"))
+
+        # Validate expiry is a reasonable integer
+        if not isinstance(exp, (int, float)) or exp <= 0:
+            print("[AUTH SSO] Rejected: invalid expiry")
+            return redirect(url_for('api.index', error="Authentication failed"))
+        exp = int(exp)
+
+        # Check expiry (must be in the past-to-near-future window)
+        now_ts = int(datetime.now(timezone.utc).timestamp())
+        if now_ts > exp:
+            print("[AUTH SSO] Rejected: token expired")
+            return redirect(url_for('api.index', error="Authentication failed"))
+        # Reject tokens expiring too far in the future (max 120s leeway for clock skew)
+        if exp > now_ts + 120:
+            print("[AUTH SSO] Rejected: expiry too far in future")
+            return redirect(url_for('api.index', error="Authentication failed"))
+
+        # Atomic nonce check-and-store (replay prevention)
+        if not db.claim_sso_nonce(nonce, exp):
+            print(f"[AUTH SSO] Rejected: nonce already used or DB error")
+            return redirect(url_for('api.index', error="Authentication failed"))
+
+        # Build session (identical to OAuth callback)
+        session.permanent = True
+        session['logged_in'] = True
+        session['authenticated'] = True
+        session['user_email'] = email
+        session['user_name'] = name
+        session['oauth_provider'] = f'sso_{provider}'
+        session['session_created'] = datetime.now().isoformat()
+
+        # Monmouth email → free internal user
+        is_monmouth = email.endswith('@monmouth.edu')
+        session['user_type'] = 'internal' if is_monmouth else 'external'
+
+        print(f"[AUTH SSO] OK: session created (type={'internal' if is_monmouth else 'external'})")
+
+        # Handle admin users (same logic as Google/Microsoft OAuth callbacks)
+        admin_info = get_authorized_admin_info(email)
+        if admin_info:
+            db_admin = db.get_admin_by_email(email)
+            if db_admin:
+                session['is_admin'] = True
+                session['admin_username'] = db_admin.get('username')
+                session['tutor_id'] = db_admin.get('tutor_id') or admin_info['tutor_id']
+                session['tutor_role'] = admin_info.get('tutor_role') or db_admin.get('role', 'tutor_admin')
+                session['tutor_name'] = db_admin.get('tutor_name') or admin_info['tutor_name']
+                session['tutor_email'] = email
+                session['auth_method'] = 'sso_database'
+                session['needs_registration'] = False
+                db.update_admin_last_password_verification(db_admin.get('username'))
+                return redirect('/admin')
+            else:
+                session['is_admin'] = True
+                session['tutor_id'] = admin_info['tutor_id']
+                session['tutor_role'] = admin_info['tutor_role']
+                session['tutor_name'] = admin_info['tutor_name']
+                session['tutor_email'] = email
+                session['auth_method'] = 'sso_pending'
+                session['needs_registration'] = True
+                session['pending_registration_email'] = email
+                return redirect('/admin')
+
+        return redirect(url_for('api.index'))
+
+    except Exception as e:
+        print(f"[AUTH SSO] Validation error: {e}")
+        return redirect(url_for('api.index', error="Authentication failed"))
 
 
 @auth_bp.route('/logout')
@@ -327,7 +515,8 @@ def check_access():
                 'message': 'Please sign in with your Monmouth University account'
             }), 200
 
-    except Exception:
+    except Exception as e:
+        print(f"[ERROR] Auth check failed: {e}")
         return jsonify({
             'has_access': False,
             'message': 'Error checking authentication'
@@ -349,7 +538,7 @@ def admin_verify():
         code = request.form.get('code', '').strip()
         stored = db.get_admin_verification_code(pending_email)
 
-        if stored and stored.get('code') == code:
+        if stored and hmac.compare_digest(stored.get('code', ''), code):
             db.verify_admin_oauth(pending_email)
 
             session['admin_username'] = pending_admin_info['admin_username']
@@ -366,7 +555,7 @@ def admin_verify():
             error = 'Invalid or expired verification code. Please try again.'
 
     if request.method == 'GET' or error:
-        code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        code = ''.join([str(secrets.choice(range(10))) for _ in range(6)])
         db.store_admin_verification_code(pending_email, code)
 
         from services.email_service import EmailService

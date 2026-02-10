@@ -4,6 +4,7 @@ Professional modular Flask application with OAuth 2.0 SSO
 """
 
 from flask import Flask
+from flask_cors import CORS
 import os
 import threading
 from dotenv import load_dotenv
@@ -27,7 +28,15 @@ load_dotenv()
 # ============================================================================
 
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY')
+
+# Validate SECRET_KEY at startup - reject weak or default values
+_secret = os.getenv('SECRET_KEY')
+if not _secret or len(_secret) < 32 or _secret == 'your-secret-key-change-this-in-production':
+    raise RuntimeError("SECRET_KEY must be set to a strong random value (>= 32 chars)")
+app.secret_key = _secret
+
+# CORS - allow MVP frontend to call public API endpoints (e.g. /api/slots/count)
+CORS(app, resources={r"/api/slots/count": {"origins": "*"}})
 
 # ============================================================================
 # SECURITY CONFIGURATION
@@ -130,10 +139,21 @@ def enforce_session_timeout():
             session['session_created'] = datetime.now().isoformat()
 
 
+_last_nonce_cleanup = None
+
 @app.before_request
 def periodic_maintenance():
     """Run automatic cleanup and slot generation periodically"""
+    global _last_nonce_cleanup
     slot_service.periodic_maintenance()
+    # Clean up expired SSO nonces (hourly, aligned with slot maintenance)
+    now = datetime.now()
+    if _last_nonce_cleanup is None or (now - _last_nonce_cleanup) > timedelta(hours=1):
+        try:
+            db.cleanup_expired_sso_nonces()
+            _last_nonce_cleanup = now
+        except Exception:
+            pass
 
 
 @app.before_request
@@ -160,7 +180,7 @@ def add_security_headers(response):
         "connect-src 'self' https://www.google.com/recaptcha/ https://login.microsoftonline.com https://accounts.google.com",
         "frame-src 'self' https://www.google.com/recaptcha/ https://login.microsoftonline.com",
         "frame-ancestors 'none'",
-        "form-action 'self'",
+        f"form-action 'self' {os.getenv('FRONTEND_URL', 'http://localhost:3000')}",
         "base-uri 'self'",
         "object-src 'none'",
         "upgrade-insecure-requests" if is_production else ""
@@ -292,7 +312,7 @@ def service_unavailable(error):
 # ============================================================================
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
+    port = int(os.getenv('PORT', 5001))
     debug = os.getenv('FLASK_ENV') == 'development'
     
     print("=" * 60)

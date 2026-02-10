@@ -26,6 +26,118 @@ print(f"[EMAIL CONFIG] EMAIL_PASSWORD: {'SET (' + str(len(EMAIL_PASSWORD)) + ' c
 print(f"[EMAIL CONFIG] EMAIL_FROM: {EMAIL_FROM if EMAIL_FROM else 'NOT SET'}")
 
 
+# Brand colors (matching MVP dark brutalist theme)
+PRIMARY_COLOR = "#FF5A1F"
+BACKGROUND_COLOR = "#0A0A0A"
+SURFACE_COLOR = "#111111"
+BORDER_COLOR = "#1a1a1a"
+TEXT_PRIMARY = "#FFFFFF"
+TEXT_SECONDARY = "#888888"
+TEXT_TERTIARY = "#555555"
+
+
+def _dark_email_wrapper(title: str, subtitle: str, body_html: str, accent_color: str = PRIMARY_COLOR) -> str:
+    """
+    Wrap email content in the MVP-style dark brutalist template.
+    Provides consistent branding across all user-facing emails.
+    """
+    return f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title} - LearnAI</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: {BACKGROUND_COLOR}; font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: {BACKGROUND_COLOR};">
+        <tr>
+            <td align="center" style="padding: 48px 24px;">
+                <table role="presentation" style="max-width: 520px; width: 100%; border-collapse: collapse;">
+
+                    <!-- Logo -->
+                    <tr>
+                        <td align="center" style="padding-bottom: 32px;">
+                            <table role="presentation" style="border-collapse: collapse;">
+                                <tr>
+                                    <td style="background-color: {SURFACE_COLOR}; border: 1px solid {BORDER_COLOR}; padding: 12px 20px;">
+                                        <span style="font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace; font-size: 14px; font-weight: 700; letter-spacing: 3px; color: {TEXT_PRIMARY};">LEARN_AI</span><span style="color: {PRIMARY_COLOR}; font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace; font-size: 14px; font-weight: 700;">.</span><span style="font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace; font-size: 14px; font-weight: 700; letter-spacing: 3px; color: {TEXT_TERTIARY};">V1</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Main Card -->
+                    <tr>
+                        <td style="background-color: {SURFACE_COLOR}; border: 1px solid {BORDER_COLOR};">
+                            <div style="height: 3px; background: linear-gradient(90deg, {accent_color} 0%, transparent 100%);"></div>
+                            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 40px 32px;">
+                                        <h1 style="color: {TEXT_PRIMARY}; font-size: 28px; font-weight: 700; margin: 0 0 8px 0; letter-spacing: -0.5px;">
+                                            {title}
+                                        </h1>
+                                        <p style="color: {TEXT_TERTIARY}; font-size: 13px; margin: 0 0 32px 0; text-transform: uppercase; letter-spacing: 2px;">
+                                            {subtitle}
+                                        </p>
+                                        {body_html}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td align="center" style="padding-top: 32px;">
+                            <p style="color: {TEXT_TERTIARY}; font-size: 12px; margin: 0 0 8px 0; letter-spacing: 0.5px;">
+                                <strong style="color: {TEXT_SECONDARY};">LearnAI</strong> &mdash; Master AI, One Module at a Time
+                            </p>
+                            <p style="color: #333333; font-size: 10px; margin: 0;">
+                                This is an automated email from lainow.com
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+"""
+
+
+def _info_box(content: str, color: str = PRIMARY_COLOR) -> str:
+    """Create a styled info box for email content."""
+    return f"""
+    <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+            <td style="background-color: rgba(255, 90, 31, 0.08); border-left: 3px solid {color}; padding: 16px 20px;">
+                {content}
+            </td>
+        </tr>
+    </table>
+    """
+
+
+def _cta_button(url: str, label: str) -> str:
+    """Create a styled CTA button for email content."""
+    return f"""
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td align="center" style="padding: 8px 0 24px 0;">
+                <a href="{url}"
+                   style="display: inline-block; background-color: {PRIMARY_COLOR}; color: #000000; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; text-decoration: none; padding: 16px 48px; border-radius: 0;">
+                    {label}
+                </a>
+            </td>
+        </tr>
+    </table>
+    """
+
+
 class EmailService:
     """Service for sending various types of emails"""
 
@@ -104,45 +216,49 @@ class EmailService:
         tutor_name = slot_data.get('tutor_name', 'Christopher Buzaid')
         tutor_email = slot_data.get('tutor_email', 'cjpbuzaid@gmail.com')
 
-        html = f"""
-        <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #6366F1;">You're All Set!</h1>
-                    <p>Hi {name},</p>
-                    <p>Your AI learning session with {tutor_name} has been confirmed. I'm looking forward to meeting you and helping you discover the best way to use AI for your goals!</p>
+        body = f"""
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+                    Hi {name},
+                </p>
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                    Your AI learning session with <span style="color: {PRIMARY_COLOR}; font-weight: 600;">{tutor_name}</span> has been confirmed. Looking forward to helping you discover the best way to use AI!
+                </p>
 
-                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
-                        <h2 style="margin-top: 0;">Session Details</h2>
-                        <p><strong>Date & Time:</strong> {slot_data.get('day', '')}, {slot_data.get('date', '')} at {slot_data.get('time', '')}</p>
-                        <p><strong>Location:</strong> {slot_data.get('location', 'To be confirmed')}</p>
-                        <p><strong>Duration:</strong> 30-90 minutes</p>
-                        <p><strong>Your AI Mentor:</strong> {tutor_name}</p>
-                    </div>
+                {_info_box(f'''
+                    <p style="color: {TEXT_SECONDARY}; font-size: 14px; line-height: 1.8; margin: 0;">
+                        <strong style="color: {TEXT_PRIMARY};">Date & Time:</strong> {slot_data.get('day', '')}, {slot_data.get('date', '')} at {slot_data.get('time', '')}<br>
+                        <strong style="color: {TEXT_PRIMARY};">Location:</strong> {slot_data.get('location', 'To be confirmed')}<br>
+                        <strong style="color: {TEXT_PRIMARY};">Duration:</strong> 30-90 minutes<br>
+                        <strong style="color: {TEXT_PRIMARY};">Your AI Mentor:</strong> {tutor_name}
+                    </p>
+                ''')}
 
-                    <h3>What to Bring:</h3>
-                    <ul>
-                        <li>Any specific questions or topics you'd like to cover</li>
-                        <li>Your laptop if you want hands-on practice</li>
-                        <li>An open mind and curiosity!</li>
-                    </ul>
+                <p style="color: {TEXT_PRIMARY}; font-size: 15px; font-weight: 600; margin: 24px 0 8px 0;">What to Bring:</p>
+                <p style="color: {TEXT_SECONDARY}; font-size: 14px; line-height: 1.8; margin: 0 0 24px 0;">
+                    &bull; Any specific questions or topics you'd like to cover<br>
+                    &bull; Your laptop if you want hands-on practice<br>
+                    &bull; An open mind and curiosity!
+                </p>
 
-                    <p style="margin-top: 30px;">See you soon!</p>
-                    <p style="color: #6B7280;">- {tutor_name}<br>LearnAI<br><a href="mailto:{tutor_email}" style="color: #6366F1;">{tutor_email}</a></p>
+                <div style="height: 1px; background-color: {BORDER_COLOR}; margin: 24px 0;"></div>
 
-                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
-                        <p style="font-size: 0.9rem; color: #9CA3AF;">
-                            <strong>Need to cancel or reschedule?</strong><br>
-                            Visit <a href="https://lainow.com" style="color: #6366F1;">lainow.com</a>, click the "View My Booking" button, and you can manage your booking from there.
-                        </p>
-                        <p style="font-size: 0.85rem; color: #9CA3AF; margin-top: 20px;">
-                            <strong>🔒 Security Notice:</strong> LearnAI will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
-                        </p>
-                    </div>
-                </div>
-            </body>
-        </html>
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; margin: 0 0 8px 0;">See you soon!</p>
+                <p style="color: {TEXT_TERTIARY}; font-size: 13px; margin: 0 0 24px 0;">
+                    - {tutor_name}, LearnAI<br>
+                    <a href="mailto:{tutor_email}" style="color: {PRIMARY_COLOR}; text-decoration: none;">{tutor_email}</a>
+                </p>
+
+                <p style="color: {TEXT_TERTIARY}; font-size: 13px; line-height: 1.6; margin: 0;">
+                    <strong style="color: {TEXT_SECONDARY};">Need to cancel or reschedule?</strong>
+                    Visit <a href="https://lainow.com" style="color: {PRIMARY_COLOR}; text-decoration: none;">lainow.com</a> and click "View My Booking."
+                </p>
         """
+
+        html = _dark_email_wrapper(
+            title="Session Confirmed",
+            subtitle="Your AI learning session is booked",
+            body_html=body
+        )
 
         return EmailService._send_email(
             to_email=email,
@@ -171,12 +287,12 @@ class EmailService:
 
         html = f"""
         <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #171717;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #6366F1;">New AI Learning Session Booked</h1>
+                    <h1 style="color: #FF5A1F;">New AI Learning Session Booked</h1>
                     <p>A new session has been scheduled on LearnAI with <strong>{tutor_name}</strong>.</p>
 
-                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
+                    <div style="background: #FCFAF7; border-left: 4px solid #FF5A1F; padding: 20px; margin: 20px 0;">
                         <h2 style="margin-top: 0;">Participant Information</h2>
                         <p><strong>Name:</strong> {user_data.get('full_name', 'N/A')}</p>
                         <p><strong>Email:</strong> <a href="mailto:{user_data.get('email', '')}">{user_data.get('email', 'N/A')}</a></p>
@@ -184,7 +300,7 @@ class EmailService:
                         <p><strong>Department/Major:</strong> {user_data.get('department', 'Not specified')}</p>
                     </div>
 
-                    <div style="background: #f0fdf4; border-left: 4px solid #10B981; padding: 20px; margin: 20px 0;">
+                    <div style="background: #FFF7ED; border-left: 4px solid #16A34A; padding: 20px; margin: 20px 0;">
                         <h2 style="margin-top: 0;">Session Details</h2>
                         <p><strong>Tutor:</strong> {tutor_name}</p>
                         <p><strong>Date & Time:</strong> {slot_data.get('day', '')}, {slot_data.get('date', '')} at {slot_data.get('time', '')}</p>
@@ -192,7 +308,7 @@ class EmailService:
                         <p><strong>Duration:</strong> 30-90 minutes</p>
                     </div>
 
-                    <div style="background: #fef3c7; border-left: 4px solid #F59E0B; padding: 20px; margin: 20px 0;">
+                    <div style="background: #FFF7ED; border-left: 4px solid #F59E0B; padding: 20px; margin: 20px 0;">
                         <h2 style="margin-top: 0;">AI Experience Profile</h2>
                         <p><strong>Experience Level:</strong> {user_data.get('ai_familiarity', 'Not specified')}</p>
                         <p><strong>Tools Used:</strong> {user_data.get('ai_tools', 'None')}</p>
@@ -201,9 +317,9 @@ class EmailService:
                         {f"<p><strong>Personal Comments:</strong> {user_data.get('personal_comments')}</p>" if user_data.get('personal_comments') else ""}
                     </div>
 
-                    <p style="margin-top: 30px; color: #6B7280; font-size: 0.9rem;">
+                    <p style="margin-top: 30px; color: #888888; font-size: 0.9rem;">
                         This is an automated notification from LearnAI. You can view and manage all bookings in your
-                        <a href="https://lainow.com/admin" style="color: #6366F1;">admin dashboard</a>.
+                        <a href="https://lainow.com/admin" style="color: #FF5A1F;">admin dashboard</a>.
                     </p>
                 </div>
             </body>
@@ -250,51 +366,50 @@ class EmailService:
         tutor_name = user_data.get('tutor_name') or slot_details.get('tutor_name', 'Christopher Buzaid')
         tutor_email = user_data.get('tutor_email') or slot_details.get('tutor_email', 'cjpbuzaid@gmail.com')
 
-        html = f"""
-        <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #6366F1;">Your AI Learning Session is Today!</h1>
-                    <p>Hi {user_name},</p>
-                    <p>Just a friendly reminder that your AI learning session with {tutor_name} is happening today!</p>
+        body = f"""
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+                    Hi {user_name},
+                </p>
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                    Just a friendly reminder that your AI learning session with <span style="color: {PRIMARY_COLOR}; font-weight: 600;">{tutor_name}</span> is happening today!
+                </p>
 
-                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
-                        <h2 style="margin-top: 0;">Session Details</h2>
-                        <p style="margin: 10px 0;"><strong>📅 Date:</strong> {session_date}</p>
-                        <p style="margin: 10px 0;"><strong>⏰ Time:</strong> {session_time}</p>
-                        <p style="margin: 10px 0;"><strong>📍 Location:</strong> {session_location}</p>
-                        <p style="margin: 10px 0;"><strong>⏱️ Duration:</strong> 30-90 minutes</p>
-                        <p style="margin: 10px 0;"><strong>👤 Your AI Mentor:</strong> {tutor_name}</p>
-                    </div>
+                {_info_box(f'''
+                    <p style="color: {TEXT_SECONDARY}; font-size: 14px; line-height: 1.8; margin: 0;">
+                        <strong style="color: {TEXT_PRIMARY};">Date:</strong> {session_date}<br>
+                        <strong style="color: {TEXT_PRIMARY};">Time:</strong> {session_time}<br>
+                        <strong style="color: {TEXT_PRIMARY};">Location:</strong> {session_location}<br>
+                        <strong style="color: {TEXT_PRIMARY};">Duration:</strong> 30-90 minutes<br>
+                        <strong style="color: {TEXT_PRIMARY};">Your AI Mentor:</strong> {tutor_name}
+                    </p>
+                ''')}
 
-                    <h3>📌 Tips Before You Come:</h3>
-                    <ul>
-                        <li>Arrive 5 minutes early</li>
-                        <li>Bring any questions or projects you're working on</li>
-                        <li>Have your laptop ready if we're doing hands-on work</li>
-                        <li>Let me know if you need to reschedule</li>
-                    </ul>
+                <p style="color: {TEXT_PRIMARY}; font-size: 15px; font-weight: 600; margin: 24px 0 8px 0;">Tips Before You Come:</p>
+                <p style="color: {TEXT_SECONDARY}; font-size: 14px; line-height: 1.8; margin: 0 0 24px 0;">
+                    &bull; Arrive 5 minutes early<br>
+                    &bull; Bring any questions or projects you're working on<br>
+                    &bull; Have your laptop ready if we're doing hands-on work
+                </p>
 
-                    <div style="background: #fff7ed; border-left: 4px solid #F59E0B; padding: 20px; margin: 20px 0;">
-                        <h3 style="margin-top: 0; color: #F59E0B;">Need to Reschedule?</h3>
-                        <p style="margin: 10px 0;">If something came up, please let me know as soon as possible.</p>
-                        <p style="margin: 10px 0;">
-                            <a href="https://lainow.com" style="color: #F59E0B; font-weight: 600;">Visit LearnAI to manage your booking</a>
-                        </p>
-                    </div>
+                {_info_box(f'''
+                    <p style="color: {TEXT_SECONDARY}; font-size: 13px; line-height: 1.5; margin: 0;">
+                        <strong style="color: #F59E0B;">Need to reschedule?</strong> Visit
+                        <a href="https://lainow.com" style="color: {PRIMARY_COLOR}; text-decoration: none;">lainow.com</a> to manage your booking.
+                    </p>
+                ''', '#F59E0B')}
 
-                    <p style="margin-top: 30px;">Looking forward to seeing you today!</p>
-                    <p style="color: #6B7280;">- {tutor_name}<br>LearnAI<br><a href="mailto:{tutor_email}" style="color: #6366F1;">{tutor_email}</a></p>
-
-                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
-                        <p style="font-size: 0.85rem; color: #9CA3AF;">
-                            <strong>🔒 Security Notice:</strong> LearnAI will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
-                        </p>
-                    </div>
-                </div>
-            </body>
-        </html>
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; margin: 0 0 8px 0;">Looking forward to seeing you today!</p>
+                <p style="color: {TEXT_TERTIARY}; font-size: 13px; margin: 0;">
+                    - {tutor_name}, LearnAI<br>
+                    <a href="mailto:{tutor_email}" style="color: {PRIMARY_COLOR}; text-decoration: none;">{tutor_email}</a>
+                </p>
         """
+
+        html = _dark_email_wrapper(
+            title="Session Today",
+            subtitle="Your AI learning session reminder",
+            body_html=body
+        )
 
         return EmailService._send_email(
             to_email=user_email,
@@ -334,41 +449,43 @@ class EmailService:
         changes_html = ''.join(changes) if changes else '<li>Booking details updated</li>'
         current_room = new_room if new_room else old_room
 
-        html = f"""
-        <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #F59E0B;">Your Session Has Been Updated</h1>
-                    <p>Hi {user_data.get('full_name', 'there')},</p>
-                    <p>Your AI learning session with {tutor_name} has been updated by an administrator.</p>
+        # Build changes list in dark theme style
+        changes_items = ''.join(f'<p style="color: {TEXT_SECONDARY}; font-size: 14px; line-height: 1.6; margin: 4px 0;">&bull; {c.replace("<li>", "").replace("</li>", "")}</p>' for c in changes) if changes else f'<p style="color: {TEXT_SECONDARY}; font-size: 14px; margin: 0;">Booking details updated</p>'
 
-                    <div style="background: #fef3c7; border-left: 4px solid #F59E0B; padding: 20px; margin: 20px 0;">
-                        <h2 style="margin-top: 0;">What Changed</h2>
-                        <ul style="margin: 0; padding-left: 20px;">
-                            {changes_html}
-                        </ul>
-                    </div>
+        body = f"""
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+                    Hi {user_data.get('full_name', 'there')},
+                </p>
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                    Your AI learning session with <span style="color: {PRIMARY_COLOR}; font-weight: 600;">{tutor_name}</span> has been updated.
+                </p>
 
-                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
-                        <h2 style="margin-top: 0;">Updated Session Details</h2>
-                        <p><strong>Date & Time:</strong> {current_slot.get('day', '')}, {current_slot.get('date', '')} at {current_slot.get('time', '')}</p>
-                        <p><strong>Location:</strong> {current_room}</p>
-                        <p><strong>Duration:</strong> 30-90 minutes</p>
-                        <p><strong>Your AI Mentor:</strong> {tutor_name}</p>
-                    </div>
+                {_info_box(changes_items, '#F59E0B')}
 
-                    <p style="margin-top: 30px;">If you have any questions or concerns about this change, please contact me directly.</p>
-                    <p style="color: #6B7280;">- {tutor_name}<br>LearnAI<br><a href="mailto:{tutor_email}" style="color: #6366F1;">{tutor_email}</a></p>
+                {_info_box(f'''
+                    <p style="color: {TEXT_SECONDARY}; font-size: 14px; line-height: 1.8; margin: 0;">
+                        <strong style="color: {TEXT_PRIMARY};">Date & Time:</strong> {current_slot.get('day', '')}, {current_slot.get('date', '')} at {current_slot.get('time', '')}<br>
+                        <strong style="color: {TEXT_PRIMARY};">Location:</strong> {current_room}<br>
+                        <strong style="color: {TEXT_PRIMARY};">Duration:</strong> 30-90 minutes<br>
+                        <strong style="color: {TEXT_PRIMARY};">Your AI Mentor:</strong> {tutor_name}
+                    </p>
+                ''')}
 
-                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
-                        <p style="font-size: 0.85rem; color: #9CA3AF;">
-                            <strong>🔒 Security Notice:</strong> LearnAI will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
-                        </p>
-                    </div>
-                </div>
-            </body>
-        </html>
+                <p style="color: {TEXT_SECONDARY}; font-size: 14px; line-height: 1.6; margin: 0 0 8px 0;">
+                    If you have any questions, please contact me directly.
+                </p>
+                <p style="color: {TEXT_TERTIARY}; font-size: 13px; margin: 0;">
+                    - {tutor_name}, LearnAI<br>
+                    <a href="mailto:{tutor_email}" style="color: {PRIMARY_COLOR}; text-decoration: none;">{tutor_email}</a>
+                </p>
         """
+
+        html = _dark_email_wrapper(
+            title="Session Updated",
+            subtitle="Your booking details have changed",
+            body_html=body,
+            accent_color="#F59E0B"
+        )
 
         return EmailService._send_email(
             to_email=user_data.get('email', ''),
@@ -392,41 +509,40 @@ class EmailService:
         tutor_name = user_data.get('tutor_name') or slot_data.get('tutor_name', 'Christopher Buzaid')
         tutor_email = user_data.get('tutor_email') or slot_data.get('tutor_email', 'cjpbuzaid@gmail.com')
 
-        html = f"""
-        <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #EF4444;">Your Session Has Been Cancelled</h1>
-                    <p>Hi {user_data.get('full_name', 'there')},</p>
-                    <p>Your AI learning session with {tutor_name} has been cancelled.</p>
+        body = f"""
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+                    Hi {user_data.get('full_name', 'there')},
+                </p>
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                    Your AI learning session with <span style="color: {PRIMARY_COLOR}; font-weight: 600;">{tutor_name}</span> has been cancelled.
+                </p>
 
-                    <div style="background: #fee2e2; border-left: 4px solid #EF4444; padding: 20px; margin: 20px 0;">
-                        <h2 style="margin-top: 0;">Cancelled Session Details</h2>
-                        <p><strong>Date & Time:</strong> {slot_data.get('day', '')}, {slot_data.get('date', '')} at {slot_data.get('time', '')}</p>
-                        <p><strong>Location:</strong> {user_data.get('selected_room', 'N/A')}</p>
-                        <p><strong>AI Mentor:</strong> {tutor_name}</p>
-                    </div>
-
-                    <h3>Want to Reschedule?</h3>
-                    <p>We'd still love to meet with you! You can book a new session anytime that works for you.</p>
-                    <p style="margin-top: 15px;">
-                        <a href="https://lainow.com" style="display: inline-block; padding: 12px 24px; background: #6366F1; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                            Book a New Session
-                        </a>
+                {_info_box(f'''
+                    <p style="color: {TEXT_SECONDARY}; font-size: 14px; line-height: 1.8; margin: 0;">
+                        <strong style="color: {TEXT_PRIMARY};">Date & Time:</strong> {slot_data.get('day', '')}, {slot_data.get('date', '')} at {slot_data.get('time', '')}<br>
+                        <strong style="color: {TEXT_PRIMARY};">Location:</strong> {user_data.get('selected_room', 'N/A')}<br>
+                        <strong style="color: {TEXT_PRIMARY};">AI Mentor:</strong> {tutor_name}
                     </p>
+                ''', '#DC2626')}
 
-                    <p style="margin-top: 30px;">If you have any questions, please don't hesitate to reach out.</p>
-                    <p style="color: #6B7280;">- {tutor_name}<br>LearnAI<br><a href="mailto:{tutor_email}" style="color: #6366F1;">{tutor_email}</a></p>
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+                    We'd still love to meet with you! Book a new session anytime.
+                </p>
 
-                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
-                        <p style="font-size: 0.85rem; color: #9CA3AF;">
-                            <strong>🔒 Security Notice:</strong> LearnAI will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
-                        </p>
-                    </div>
-                </div>
-            </body>
-        </html>
+                {_cta_button('https://lainow.com', 'Book a New Session')}
+
+                <p style="color: {TEXT_TERTIARY}; font-size: 13px; margin: 0;">
+                    - {tutor_name}, LearnAI<br>
+                    <a href="mailto:{tutor_email}" style="color: {PRIMARY_COLOR}; text-decoration: none;">{tutor_email}</a>
+                </p>
         """
+
+        html = _dark_email_wrapper(
+            title="Session Cancelled",
+            subtitle="Your booking has been cancelled",
+            body_html=body,
+            accent_color="#DC2626"
+        )
 
         return EmailService._send_email(
             to_email=user_data.get('email', ''),
@@ -454,44 +570,42 @@ class EmailService:
         tutor_name = user_data.get('tutor_name') or slot_details.get('tutor_name', 'Christopher Buzaid')
         tutor_email = user_data.get('tutor_email') or slot_details.get('tutor_email', 'cjpbuzaid@gmail.com')
 
-        html = f"""
-        <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #6366F1;">Thanks for Your Session!</h1>
-                    <p>Hi {user_data['full_name']},</p>
-                    <p>I hope you enjoyed your AI learning session with {tutor_name}! Your feedback helps us improve and provide better experiences for future students.</p>
+        body = f"""
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+                    Hi {user_data['full_name']},
+                </p>
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                    Hope you enjoyed your session with <span style="color: {PRIMARY_COLOR}; font-weight: 600;">{tutor_name}</span>! Your feedback helps us improve for future students.
+                </p>
 
-                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
-                        <h2 style="margin-top: 0;">Share Your Feedback</h2>
-                        <p>It'll only take a minute - rate your experience and optionally share any comments.</p>
-                        <p style="margin-top: 20px; margin-bottom: 0;">
-                            <a href="https://lainow.com/feedback?token={feedback_token}" style="display: inline-block; padding: 14px 28px; background: #6366F1; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
-                                Leave Feedback
-                            </a>
-                        </p>
-                    </div>
-
-                    <h3>Want to Learn More?</h3>
-                    <p>Feel free to book another session anytime. We're always happy to help you dive deeper into AI!</p>
-                    <p style="margin-top: 15px;">
-                        <a href="https://lainow.com" style="display: inline-block; padding: 12px 24px; background: #10B981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                            Book Another Session
-                        </a>
+                {_info_box(f'''
+                    <p style="color: {TEXT_SECONDARY}; font-size: 14px; line-height: 1.5; margin: 0 0 4px 0;">
+                        <strong style="color: {TEXT_PRIMARY};">Share Your Feedback</strong>
                     </p>
+                    <p style="color: {TEXT_TERTIARY}; font-size: 13px; margin: 0;">
+                        It only takes a minute &mdash; rate your experience and optionally share comments.
+                    </p>
+                ''')}
 
-                    <p style="margin-top: 30px;">Thank you for taking the time to learn with us!</p>
-                    <p style="color: #6B7280;">- {tutor_name}<br>LearnAI<br><a href="mailto:{tutor_email}" style="color: #6366F1;">{tutor_email}</a></p>
+                {_cta_button(f'https://lainow.com/feedback?token={feedback_token}', 'Leave Feedback')}
 
-                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
-                        <p style="font-size: 0.85rem; color: #9CA3AF;">
-                            <strong>🔒 Security Notice:</strong> LearnAI will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
-                        </p>
-                    </div>
-                </div>
-            </body>
-        </html>
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+                    Want to keep learning? Book another session anytime.
+                </p>
+
+                {_cta_button('https://lainow.com', 'Book Another Session')}
+
+                <p style="color: {TEXT_TERTIARY}; font-size: 13px; margin: 0;">
+                    - {tutor_name}, LearnAI<br>
+                    <a href="mailto:{tutor_email}" style="color: {PRIMARY_COLOR}; text-decoration: none;">{tutor_email}</a>
+                </p>
         """
+
+        html = _dark_email_wrapper(
+            title="Thanks for Your Session",
+            subtitle="We'd love your feedback",
+            body_html=body
+        )
 
         return EmailService._send_email(
             to_email=user_data.get('email', ''),
@@ -516,38 +630,35 @@ class EmailService:
         tutor_name = user_data.get('tutor_name') or slot_details.get('tutor_name', 'Christopher Buzaid')
         tutor_email = user_data.get('tutor_email') or slot_details.get('tutor_email', 'cjpbuzaid@gmail.com')
 
-        html = f"""
-        <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #6366F1;">Your Session Summary</h1>
-                    <p>Hi {user_data['full_name']},</p>
-                    <p>Here's a summary of what we covered in your AI learning session with {tutor_name}. Keep this for your reference!</p>
+        body = f"""
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+                    Hi {user_data['full_name']},
+                </p>
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                    Here's a summary of what we covered in your session with <span style="color: {PRIMARY_COLOR}; font-weight: 600;">{tutor_name}</span>. Keep this for reference!
+                </p>
 
-                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0;">
-                        <pre style="white-space: pre-wrap; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.8; margin: 0;">{overview}</pre>
-                    </div>
+                {_info_box(f'''
+                    <pre style="white-space: pre-wrap; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; line-height: 1.8; margin: 0; color: {TEXT_SECONDARY};">{overview}</pre>
+                ''')}
 
-                    <h3>Keep Learning!</h3>
-                    <p>Feel free to book another session anytime if you have questions or want to dive deeper.</p>
-                    <p style="margin-top: 15px;">
-                        <a href="https://lainow.com" style="display: inline-block; padding: 12px 24px; background: #10B981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                            Book Another Session
-                        </a>
-                    </p>
+                <p style="color: {TEXT_SECONDARY}; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+                    Want to keep learning? Book another session anytime.
+                </p>
 
-                    <p style="margin-top: 30px;">Happy learning!</p>
-                    <p style="color: #6B7280;">- {tutor_name}<br>LearnAI<br><a href="mailto:{tutor_email}" style="color: #6366F1;">{tutor_email}</a></p>
+                {_cta_button('https://lainow.com', 'Book Another Session')}
 
-                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
-                        <p style="font-size: 0.85rem; color: #9CA3AF;">
-                            <strong>🔒 Security Notice:</strong> LearnAI will NEVER ask for your password. Always verify this email came from <strong>leairn.notifications@gmail.com</strong>
-                        </p>
-                    </div>
-                </div>
-            </body>
-        </html>
+                <p style="color: {TEXT_TERTIARY}; font-size: 13px; margin: 0;">
+                    - {tutor_name}, LearnAI<br>
+                    <a href="mailto:{tutor_email}" style="color: {PRIMARY_COLOR}; text-decoration: none;">{tutor_email}</a>
+                </p>
         """
+
+        html = _dark_email_wrapper(
+            title="Session Summary",
+            subtitle="Your AI learning session recap",
+            body_html=body
+        )
 
         return EmailService._send_email(
             to_email=user_data.get('email', ''),
@@ -575,14 +686,14 @@ class EmailService:
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
             </head>
-            <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #11111B;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #11111B; padding: 40px 20px;">
+            <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0A0A0A;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0A0A0A; padding: 40px 20px;">
                     <tr>
                         <td align="center">
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #1E1E2E; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #111111; border-radius: 0; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
                                 <!-- Header with gradient -->
                                 <tr>
-                                    <td style="background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%); padding: 40px 40px 30px; text-align: center;">
+                                    <td style="background: linear-gradient(135deg, #FF5A1F 0%, #FF8C5A 100%); padding: 40px 40px 30px; text-align: center;">
                                         <div style="width: 70px; height: 70px; background: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 20px; line-height: 70px;">
                                             <span style="font-size: 32px;">&#128274;</span>
                                         </div>
@@ -594,25 +705,25 @@ class EmailService:
                                 <!-- Body content -->
                                 <tr>
                                     <td style="padding: 35px 40px;">
-                                        <p style="color: #CDD6F4; font-size: 15px; line-height: 1.7; margin: 0 0 25px;">
-                                            Hi <strong style="color: #A6E3A1;">{admin_name}</strong>, enter the verification code below to confirm your identity.
+                                        <p style="color: #FFFFFF; font-size: 15px; line-height: 1.7; margin: 0 0 25px;">
+                                            Hi <strong style="color: #FF8C5A;">{admin_name}</strong>, enter the verification code below to confirm your identity.
                                         </p>
 
                                         <!-- Code display box -->
-                                        <div style="background: rgba(99, 102, 241, 0.1); border: 2px solid rgba(99, 102, 241, 0.3); border-radius: 16px; padding: 30px; margin: 25px 0; text-align: center;">
-                                            <p style="color: #A6ADC8; margin: 0 0 12px; font-size: 13px;">Your verification code:</p>
-                                            <p style="font-size: 40px; font-weight: 700; letter-spacing: 12px; color: #A6E3A1; margin: 15px 0; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;">{code}</p>
-                                            <p style="color: #6C7086; font-size: 12px; margin: 15px 0 0;">Expires in 10 minutes</p>
+                                        <div style="background: rgba(255, 90, 31, 0.1); border: 2px solid rgba(255, 90, 31, 0.3); border-radius: 0; padding: 30px; margin: 25px 0; text-align: center;">
+                                            <p style="color: #888888; margin: 0 0 12px; font-size: 13px;">Your verification code:</p>
+                                            <p style="font-size: 40px; font-weight: 700; letter-spacing: 12px; color: #FF8C5A; margin: 15px 0; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;">{code}</p>
+                                            <p style="color: #555555; font-size: 12px; margin: 15px 0 0;">Expires in 10 minutes</p>
                                         </div>
 
                                         <!-- Security warning -->
                                         <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; border-radius: 0 8px 8px 0; padding: 14px 16px; margin-top: 20px;">
-                                            <p style="color: #FCD34D; font-size: 13px; margin: 0;">
-                                                <strong>Security Notice:</strong> <span style="color: #A6ADC8;">If you didn't request this code, someone may have tried to access your account. Please ignore this email.</span>
+                                            <p style="color: #FF8C5A; font-size: 13px; margin: 0;">
+                                                <strong>Security Notice:</strong> <span style="color: #888888;">If you didn't request this code, someone may have tried to access your account. Please ignore this email.</span>
                                             </p>
                                         </div>
 
-                                        <p style="color: #6C7086; font-size: 12px; text-align: center; margin: 25px 0 0;">
+                                        <p style="color: #555555; font-size: 12px; text-align: center; margin: 25px 0 0;">
                                             This verification is required periodically as a security measure.
                                         </p>
                                     </td>
@@ -620,9 +731,9 @@ class EmailService:
 
                                 <!-- Footer -->
                                 <tr>
-                                    <td style="background: #181825; padding: 25px 40px; text-align: center; border-top: 1px solid #313244;">
-                                        <p style="color: #6C7086; font-size: 12px; margin: 0;">
-                                            LearnAI Admin Security &bull; <a href="https://lainow.com" style="color: #818CF8; text-decoration: none;">lainow.com</a>
+                                    <td style="background: #0A0A0A; padding: 25px 40px; text-align: center; border-top: 1px solid #1a1a1a;">
+                                        <p style="color: #555555; font-size: 12px; margin: 0;">
+                                            LearnAI Admin Security &bull; <a href="https://lainow.com" style="color: #FF8C5A; text-decoration: none;">lainow.com</a>
                                         </p>
                                     </td>
                                 </tr>
@@ -660,14 +771,14 @@ class EmailService:
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
             </head>
-            <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #11111B;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #11111B; padding: 40px 20px;">
+            <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0A0A0A;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0A0A0A; padding: 40px 20px;">
                     <tr>
                         <td align="center">
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #1E1E2E; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #111111; border-radius: 0; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
                                 <!-- Header with gradient -->
                                 <tr>
-                                    <td style="background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); padding: 40px 40px 30px; text-align: center;">
+                                    <td style="background: linear-gradient(135deg, #FF5A1F 0%, #EA580C 100%); padding: 40px 40px 30px; text-align: center;">
                                         <div style="width: 70px; height: 70px; background: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 20px; line-height: 70px;">
                                             <span style="font-size: 32px;">&#9989;</span>
                                         </div>
@@ -679,39 +790,39 @@ class EmailService:
                                 <!-- Body content -->
                                 <tr>
                                     <td style="padding: 35px 40px;">
-                                        <p style="color: #CDD6F4; font-size: 15px; line-height: 1.7; margin: 0 0 25px;">
-                                            Hi <strong style="color: #A6E3A1;">{admin_name}</strong>, you're almost there! Click the button below to verify your email and activate your admin account.
+                                        <p style="color: #FFFFFF; font-size: 15px; line-height: 1.7; margin: 0 0 25px;">
+                                            Hi <strong style="color: #FF8C5A;">{admin_name}</strong>, you're almost there! Click the button below to verify your email and activate your admin account.
                                         </p>
 
                                         <!-- CTA Button -->
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 30px 0;">
                                             <tr>
                                                 <td align="center">
-                                                    <a href="{verification_link}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); color: #ffffff; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px;">
+                                                    <a href="{verification_link}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #FF5A1F 0%, #EA580C 100%); color: #ffffff; text-decoration: none; border-radius: 0; font-weight: 700; font-size: 16px;">
                                                         Verify Email & Create Account
                                                     </a>
                                                 </td>
                                             </tr>
                                         </table>
 
-                                        <p style="color: #A6ADC8; font-size: 13px; text-align: center; margin: 0 0 30px;">
+                                        <p style="color: #888888; font-size: 13px; text-align: center; margin: 0 0 30px;">
                                             This link expires in 1 hour
                                         </p>
 
                                         <!-- Link fallback box -->
-                                        <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
-                                            <p style="color: #A6ADC8; font-size: 13px; margin: 0 0 8px;">
-                                                <strong style="color: #CDD6F4;">Can't click the button?</strong> Copy and paste this link:
+                                        <div style="background: rgba(255, 90, 31, 0.1); border: 1px solid rgba(255, 90, 31, 0.25); border-radius: 0; padding: 16px 20px; margin-bottom: 20px;">
+                                            <p style="color: #888888; font-size: 13px; margin: 0 0 8px;">
+                                                <strong style="color: #FFFFFF;">Can't click the button?</strong> Copy and paste this link:
                                             </p>
-                                            <p style="color: #818CF8; font-size: 12px; margin: 0; word-break: break-all;">
+                                            <p style="color: #FF8C5A; font-size: 12px; margin: 0; word-break: break-all;">
                                                 {verification_link}
                                             </p>
                                         </div>
 
                                         <!-- Security warning -->
                                         <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; border-radius: 0 8px 8px 0; padding: 14px 16px;">
-                                            <p style="color: #FCD34D; font-size: 13px; margin: 0;">
-                                                <strong>Security Notice:</strong> <span style="color: #A6ADC8;">If you didn't request this, ignore this email. No account will be created.</span>
+                                            <p style="color: #FF8C5A; font-size: 13px; margin: 0;">
+                                                <strong>Security Notice:</strong> <span style="color: #888888;">If you didn't request this, ignore this email. No account will be created.</span>
                                             </p>
                                         </div>
                                     </td>
@@ -719,12 +830,12 @@ class EmailService:
 
                                 <!-- Footer -->
                                 <tr>
-                                    <td style="background: #181825; padding: 25px 40px; text-align: center; border-top: 1px solid #313244;">
-                                        <p style="color: #6C7086; font-size: 12px; margin: 0 0 8px;">
+                                    <td style="background: #0A0A0A; padding: 25px 40px; text-align: center; border-top: 1px solid #1a1a1a;">
+                                        <p style="color: #555555; font-size: 12px; margin: 0 0 8px;">
                                             LearnAI will NEVER ask for your password in an email.
                                         </p>
-                                        <p style="color: #6C7086; font-size: 12px; margin: 0;">
-                                            LearnAI Admin Security &bull; <a href="https://lainow.com" style="color: #818CF8; text-decoration: none;">lainow.com</a>
+                                        <p style="color: #555555; font-size: 12px; margin: 0;">
+                                            LearnAI Admin Security &bull; <a href="https://lainow.com" style="color: #FF8C5A; text-decoration: none;">lainow.com</a>
                                         </p>
                                     </td>
                                 </tr>
@@ -760,33 +871,33 @@ class EmailService:
             <head>
                 <meta charset="UTF-8">
             </head>
-            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1F2937; background-color: #f3f4f6; margin: 0; padding: 20px;">
-                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1A1A1A; background-color: #FCFAF7; margin: 0; padding: 20px;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 0; padding: 40px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                     <div style="text-align: center; margin-bottom: 30px;">
-                        <h1 style="color: #6366F1; margin-bottom: 10px;">New Contact Form Message</h1>
-                        <p style="color: #6B7280; font-size: 0.95rem;">Received on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</p>
+                        <h1 style="color: #FF5A1F; margin-bottom: 10px;">New Contact Form Message</h1>
+                        <p style="color: #888888; font-size: 0.95rem;">Received on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</p>
                     </div>
 
-                    <div style="background: #f9fafb; border-left: 4px solid #6366F1; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
-                        <h2 style="margin-top: 0; color: #374151;">Sender Information</h2>
+                    <div style="background: #FCFAF7; border-left: 4px solid #FF5A1F; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                        <h2 style="margin-top: 0; color: #282828;">Sender Information</h2>
                         <p><strong>Name:</strong> {sender_name}</p>
-                        <p><strong>Email:</strong> <a href="mailto:{sender_email}" style="color: #6366F1;">{sender_email}</a></p>
+                        <p><strong>Email:</strong> <a href="mailto:{sender_email}" style="color: #FF5A1F;">{sender_email}</a></p>
                     </div>
 
                     <div style="background: #fefce8; border-left: 4px solid #EAB308; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
-                        <h2 style="margin-top: 0; color: #374151;">Message</h2>
+                        <h2 style="margin-top: 0; color: #282828;">Message</h2>
                         <p style="white-space: pre-wrap; margin: 0;">{message}</p>
                     </div>
 
                     <p style="margin-top: 30px;">
-                        <a href="mailto:{sender_email}?subject=Re: Your LearnAI Inquiry" style="display: inline-block; padding: 12px 24px; background: #6366F1; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                        <a href="mailto:{sender_email}?subject=Re: Your LearnAI Inquiry" style="display: inline-block; padding: 12px 24px; background: #FF5A1F; color: #000000; text-decoration: none; border-radius: 0; font-weight: 600;">
                             Reply to {sender_name}
                         </a>
                     </p>
 
-                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB; text-align: center;">
-                        <p style="font-size: 0.85rem; color: #9CA3AF;">
-                            LearnAI Contact Form &bull; <a href="https://lainow.com" style="color: #6366F1;">lainow.com</a>
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E1DC; text-align: center;">
+                        <p style="font-size: 0.85rem; color: #888888;">
+                            LearnAI Contact Form &bull; <a href="https://lainow.com" style="color: #FF5A1F;">lainow.com</a>
                         </p>
                     </div>
                 </div>

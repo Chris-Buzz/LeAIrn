@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LearnAI - Schedule Your AI Learning Session</title>
@@ -97,6 +98,16 @@
 
         {% if session.get('authenticated') %}
         <div class="nav-divider"></div>
+
+        <!-- Monmouth Login Link -->
+        <a href="/login" class="nav-btn" title="Sign in with Monmouth University account">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                <polyline points="10 17 15 12 10 7"/>
+                <line x1="15" y1="12" x2="3" y2="12"/>
+            </svg>
+            <span class="nav-label">Monmouth Login</span>
+        </a>
 
         <!-- Sign Out Button -->
         <button class="nav-btn nav-btn-danger" data-action="logout" title="Sign Out" aria-label="Sign out">
@@ -267,7 +278,7 @@
 
         <div style="padding: 1.5rem;">
             <!-- Monmouth Students -->
-            <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1)); border-left: 4px solid var(--primary); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+            <div style="background: linear-gradient(135deg, rgba(255, 90, 31, 0.1), rgba(234, 88, 12, 0.1)); border-left: 4px solid var(--primary); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
                 <h4 style="margin-top: 0; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
@@ -333,14 +344,14 @@
     </div>
 
     <!-- Invite Code Gate (hidden initially, shown after check) -->
-    <div id="authGate" class="invite-gate-wrapper" style="display: none; position: fixed; inset: 0; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); backdrop-filter: blur(10px); align-items: center; justify-content: center; z-index: 9000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none;">
+    <div id="authGate" class="invite-gate-wrapper" style="display: none; position: fixed; inset: 0; background: linear-gradient(135deg, rgba(255, 90, 31, 0.1) 0%, rgba(194, 65, 12, 0.1) 100%); backdrop-filter: blur(10px); align-items: center; justify-content: center; z-index: 9000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none;">
         <div class="invite-gate-bg" style="position: absolute; inset: 0;"></div>
         <div class="invite-gate-container" style="position: relative; z-index: 10; background: var(--surface); border-radius: 16px; padding: 3rem; max-width: 450px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); border: 1px solid var(--border); animation: slideUp 0.5s ease;">
             <!-- Logo and Header -->
             <div class="invite-gate-header" style="text-align: center; margin-bottom: 2rem;">
                 <div class="invite-logo-pulse" style="margin-bottom: 1rem;">
-                    <h1 class="invite-logo" style="font-size: 2rem; font-weight: 800; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin: 0;">
-                        Learn<span style="display: inline-block; font-weight: 900; font-size: 1.2em; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.3));">AI</span>
+                    <h1 class="invite-logo" style="font-family: 'Space Mono', monospace; font-size: 1.75rem; font-weight: 700; color: var(--text-primary); -webkit-text-fill-color: var(--text-primary); letter-spacing: 0.1em; margin: 0;">
+                        LEARN<span style="color: var(--primary); -webkit-text-fill-color: var(--primary);">_AI</span>
                     </h1>
                 </div>
                 <p class="invite-subtitle" style="color: var(--text-secondary); margin: 0.5rem 0 0 0; font-size: 0.95rem; font-weight: 500;">AI Learning Sessions</p>
@@ -390,7 +401,7 @@
             </a>
 
             <!-- Security Notice -->
-            <div class="invite-security-notice" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center;">
+            <div class="invite-security-notice" style="background: linear-gradient(135deg, rgba(255, 90, 31, 0.1) 0%, rgba(194, 65, 12, 0.1) 100%); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center;">
                 <div class="security-icon" style="margin-bottom: 0.75rem;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px; color: var(--primary); margin: 0 auto; display: block;">
                         <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -410,7 +421,7 @@
             <!-- Header -->
         <header class="header">
             <h1 class="logo">
-                <span class="logo-text">Learn<span class="logo-ai">AI</span></span>
+                <span class="logo-text">LEARN<span class="logo-ai">_AI</span></span>
             </h1>
             <p class="tagline">Schedule a Meeting</p>
             <a href="/projects" class="ai-badge-link">
@@ -478,7 +489,7 @@
         <div class="form-card">
             <!-- Step 1: Personal Information -->
             <div id="step1" class="step active">
-                <h2>Book Your Session with Christopher</h2>
+                <h2>Book Your Session</h2>
                 <p class="step-description">Let's personalize your AI learning experience. Tell me about yourself so I can prepare the best session for you.</p>
 
                 <div class="form-grid">
@@ -513,14 +524,14 @@
                     </div>
                     
                     {% if is_external_user %}
-                    <div class="form-group" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border: 1px solid var(--primary); border-radius: 0.5rem; padding: 1rem; grid-column: 1 / -1;">
+                    <div class="form-group" style="background: linear-gradient(135deg, rgba(255, 90, 31, 0.1) 0%, rgba(194, 65, 12, 0.1) 100%); border: 1px solid var(--primary); border-radius: 0.5rem; padding: 1rem; grid-column: 1 / -1;">
                         <p style="margin: 0; font-size: 0.875rem; color: var(--text); display: flex; align-items: center; gap: 0.5rem;">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="10"/>
                                 <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
                                 <path d="M12 18V6"/>
                             </svg>
-                            <strong>Pricing:</strong> Starting at $30/person for groups, $80 for individual sessions
+                            <strong>Pricing:</strong> Starting at $27/person for groups, $80 for individual sessions
                         </p>
                         <p style="margin: 0.5rem 0 0 1.75rem; font-size: 0.875rem; color: var(--text-secondary);">
                             Group discounts available! $10 off per person for Zoom sessions.

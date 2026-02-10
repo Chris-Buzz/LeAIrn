@@ -1,15 +1,15 @@
 /* Admin Password Verification Page Styles */
 
 :root {
-    --primary: #6366F1;
-    --primary-dark: #4F46E5;
-    --error: #EF4444;
-    --bg: #F9FAFB;
+    --primary: #FF5A1F;
+    --primary-dark: #EA580C;
+    --error: #DC2626;
+    --bg: #FCFAF7;
     --surface: #FFFFFF;
-    --border: #E5E7EB;
-    --text-primary: #111827;
-    --text-secondary: #6B7280;
-    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --border: #E5E1DC;
+    --text-primary: #171717;
+    --text-secondary: #404040;
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.06), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
 }
 
 * {
@@ -28,6 +28,7 @@ body {
     justify-content: center;
     padding: 2rem;
 }
+h1, h2, h3, h4, h5, h6 {    font-family: 'Space Grotesk', 'Inter', sans-serif;}
 
 .verify-container {
     width: 100%;
@@ -38,7 +39,7 @@ body {
     width: 80px;
     height: 80px;
     margin: 0 auto 1.5rem;
-    background: linear-gradient(135deg, var(--primary) 0%, #818CF8 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, #FF8C5A 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -53,7 +54,7 @@ body {
 
 .verify-card {
     background: var(--surface);
-    border-radius: 1.5rem;
+    border-radius: 10px;
     box-shadow: var(--shadow-lg);
     padding: 3rem;
     border: 1px solid var(--border);
@@ -80,7 +81,7 @@ body {
 .error-message {
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    color: #DC2626;
     padding: 1rem;
     border-radius: 0.75rem;
     margin-bottom: 1.5rem;
@@ -104,7 +105,7 @@ input {
     width: 100%;
     padding: 0.875rem 1rem;
     border: 2px solid var(--border);
-    border-radius: 0.75rem;
+    border-radius: 6px;
     background: var(--bg);
     font-size: 1rem;
     transition: all 0.3s;
@@ -115,27 +116,31 @@ input:focus {
     outline: none;
     border-color: var(--primary);
     background: white;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 4px rgba(255, 90, 31, 0.1);
 }
 
 .btn-verify {
     width: 100%;
     padding: 1rem 2rem;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    background: var(--primary);
     color: white;
-    border: none;
-    border-radius: 0.75rem;
+    border: 2px solid var(--primary);
+    border-radius: 6px;
     font-size: 1.05rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.3s;
     font-family: inherit;
     margin-top: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .btn-verify:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 90, 31, 0.25);
 }
 
 .btn-verify:disabled {

@@ -424,7 +424,7 @@ function showConsentModal(nextStep) {
 
     // Consent box
     const consentBox = document.createElement('div');
-    consentBox.style.cssText = 'background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--primary); padding: 1rem; border-radius: 0.5rem; margin: 1.5rem 0;';
+    consentBox.style.cssText = 'background: rgba(255, 90, 31, 0.1); border-left: 4px solid var(--primary); padding: 1rem; border-radius: 0.5rem; margin: 1.5rem 0;';
     
     const consentP1 = document.createElement('p');
     consentP1.style.cssText = 'margin: 0; font-weight: 600;';
@@ -1387,7 +1387,7 @@ async function lookupBooking() {
 
     try {
         // Show loading state
-        resultDiv.innerHTML = '<div style="text-align: center; padding: 2rem;"><div class="spinner" style="margin: 0 auto; border-color: rgba(99, 102, 241, 0.3); border-top-color: var(--primary);"></div><p style="margin-top: 1rem; color: var(--text-secondary);">Loading your booking...</p></div>';
+        resultDiv.innerHTML = '<div style="text-align: center; padding: 2rem;"><div class="spinner" style="margin: 0 auto; border-color: rgba(255, 90, 31, 0.3); border-top-color: var(--primary);"></div><p style="margin-top: 1rem; color: var(--text-secondary);">Loading your booking...</p></div>';
         resultDiv.style.display = 'block';
 
         if (isAuthenticated) {
@@ -1574,7 +1574,7 @@ async function verifyCode() {
 
     try {
         // Show loading state
-        resultDiv.innerHTML = '<div style="text-align: center; padding: 2rem;"><div class="spinner" style="margin: 0 auto; border-color: rgba(99, 102, 241, 0.3); border-top-color: var(--primary);"></div><p style="margin-top: 1rem; color: var(--text-secondary);">Verifying code...</p></div>';
+        resultDiv.innerHTML = '<div style="text-align: center; padding: 2rem;"><div class="spinner" style="margin: 0 auto; border-color: rgba(255, 90, 31, 0.3); border-top-color: var(--primary);"></div><p style="margin-top: 1rem; color: var(--text-secondary);">Verifying code...</p></div>';
 
         const response = await fetch('/api/booking/verify', {
             method: 'POST',
@@ -2157,14 +2157,14 @@ async function showEditBookingForm(email, bookingDataStr) {
             <div style="margin-bottom: 1.5rem;">
                 <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: var(--text-primary);">Meeting Type *</label>
                 <div style="display: flex; gap: 1rem;">
-                    <label style="flex: 1; display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border: 2px solid ${isZoom ? 'var(--border)' : 'var(--primary)'}; border-radius: 0.75rem; cursor: pointer; transition: all 0.3s; background: ${isZoom ? 'var(--bg)' : 'rgba(99, 102, 241, 0.1)'};" id="inperson-option">
+                    <label style="flex: 1; display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border: 2px solid ${isZoom ? 'var(--border)' : 'var(--primary)'}; border-radius: 0.75rem; cursor: pointer; transition: all 0.3s; background: ${isZoom ? 'var(--bg)' : 'rgba(255, 90, 31, 0.1)'};" id="inperson-option">
                         <input type="radio" name="edit_meeting_type" value="inperson" ${!isZoom ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: var(--primary);">
                         <div>
                             <div style="font-weight: 600; color: var(--text-primary);">In-Person</div>
                             <div style="font-size: 0.85rem; color: var(--text-secondary);">Meet on campus</div>
                         </div>
                     </label>
-                    <label style="flex: 1; display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border: 2px solid ${isZoom ? 'var(--primary)' : 'var(--border)'}; border-radius: 0.75rem; cursor: pointer; transition: all 0.3s; background: ${isZoom ? 'rgba(99, 102, 241, 0.1)' : 'var(--bg)'};" id="zoom-option">
+                    <label style="flex: 1; display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border: 2px solid ${isZoom ? 'var(--primary)' : 'var(--border)'}; border-radius: 0.75rem; cursor: pointer; transition: all 0.3s; background: ${isZoom ? 'rgba(255, 90, 31, 0.1)' : 'var(--bg)'};" id="zoom-option">
                         <input type="radio" name="edit_meeting_type" value="zoom" ${isZoom ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: var(--primary);">
                         <div>
                             <div style="font-weight: 600; color: var(--text-primary);">Zoom</div>
@@ -2198,7 +2198,7 @@ async function showEditBookingForm(email, bookingDataStr) {
             </div>
 
             <!-- Zoom Info (shown when Zoom selected) -->
-            <div id="edit-zoom-info" style="display: ${isZoom ? 'block' : 'none'}; margin-bottom: 1.5rem; padding: 1rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border: 2px solid rgba(99, 102, 241, 0.3); border-radius: 0.75rem;">
+            <div id="edit-zoom-info" style="display: ${isZoom ? 'block' : 'none'}; margin-bottom: 1.5rem; padding: 1rem; background: linear-gradient(135deg, rgba(255, 90, 31, 0.1) 0%, rgba(234, 88, 12, 0.1) 100%); border: 2px solid rgba(255, 90, 31, 0.3); border-radius: 0.75rem;">
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
                         <path d="M15.6 11.6L22 7v10l-6.4-4.5v-1z"></path>
@@ -2238,7 +2238,7 @@ async function showEditBookingForm(email, bookingDataStr) {
                 zoomInfo.style.display = 'block';
                 // Update styling
                 zoomOption.style.border = '2px solid var(--primary)';
-                zoomOption.style.background = 'rgba(99, 102, 241, 0.1)';
+                zoomOption.style.background = 'rgba(255, 90, 31, 0.1)';
                 inpersonOption.style.border = '2px solid var(--border)';
                 inpersonOption.style.background = 'var(--bg)';
             } else {
@@ -2246,7 +2246,7 @@ async function showEditBookingForm(email, bookingDataStr) {
                 zoomInfo.style.display = 'none';
                 // Update styling
                 inpersonOption.style.border = '2px solid var(--primary)';
-                inpersonOption.style.background = 'rgba(99, 102, 241, 0.1)';
+                inpersonOption.style.background = 'rgba(255, 90, 31, 0.1)';
                 zoomOption.style.border = '2px solid var(--border)';
                 zoomOption.style.background = 'var(--bg)';
             }
@@ -2918,12 +2918,12 @@ let attendeeCount = 1;
 // Pricing tiers based on group size
 const PRICING = {
     // Base price per person based on group size tiers (before Zoom discount)
+    // Must match MVP/src/pages/Pricing.jsx tutoringTiers
     getBaseTierPrice: function(count) {
-        if (count === 1) return 80;       // 1 student: $80/person
-        if (count >= 2 && count <= 3) return 50;   // 2-3 students: $50/person
-        if (count >= 4 && count <= 6) return 38;   // 4-6 students: $38/person
-        if (count >= 7 && count <= 9) return 33;   // 7-9 students: $33/person
-        return 30;                         // 10+ students: $30/person
+        if (count === 1) return 80;                    // Individual: $80/person
+        if (count >= 2 && count <= 5) return 50;       // Small Group (2-5): $50/person
+        if (count >= 6 && count <= 9) return 38;       // Medium Group (6-9): $38/person
+        return 27;                                      // Team/Class (10+): $27/person
     },
     zoomDiscountPerPerson: 10,  // $10 off per person for Zoom sessions
 

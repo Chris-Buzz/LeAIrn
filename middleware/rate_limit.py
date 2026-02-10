@@ -27,9 +27,15 @@ class RateLimiter:
             'window': 900,  # 15 minutes
             'message': 'Too many authentication attempts. Please wait 15 minutes.'
         },
+        # SSO token validation (very strict — tokens are one-time use)
+        'sso': {
+            'requests': 5,
+            'window': 60,  # 1 minute
+            'message': 'Too many SSO attempts. Please wait a moment.'
+        },
         # Booking endpoints
         'booking': {
-            'requests': 5,
+            'requests': 30,
             'window': 3600,  # 1 hour
             'message': 'Too many booking attempts. Please wait before trying again.'
         },
@@ -65,13 +71,13 @@ class RateLimiter:
         Get unique client identifier for rate limiting
         Uses IP address with X-Forwarded-For support
         """
-        if request.headers.get('X-Forwarded-For'):
-            # Behind proxy - get real IP
-            ip = request.headers.get('X-Forwarded-For').split(',')[0].strip()
-        elif request.headers.get('X-Real-IP'):
-            ip = request.headers.get('X-Real-IP')
-        else:
-            ip = request.remote_addr or 'unknown'
+        # Use remote_addr as primary source
+        # Only trust X-Forwarded-For when coming from localhost (behind reverse proxy)
+        ip = request.remote_addr or 'unknown'
+
+        forwarded = request.headers.get('X-Forwarded-For')
+        if forwarded and ip in ('127.0.0.1', '::1', 'unknown'):
+            ip = forwarded.split(',')[0].strip()
 
         return ip
 
@@ -100,15 +106,14 @@ class RateLimiter:
             # Check current request count from database
             # Note: This is a simplified implementation
             # In production, consider using Redis for better performance
-            current_count = db.get_rate_limit_count(rate_key, config['window'])
+            # Atomically check and increment to prevent race conditions
+            count_before = db.check_and_increment_rate_limit(rate_key, config['window'])
 
-            if current_count >= config['requests']:
-                # Rate limit exceeded
+            if count_before >= config['requests']:
+                # Rate limit exceeded (count was already at/over limit before increment)
                 retry_after = config['window']  # Simplified - return full window
                 return False, retry_after
 
-            # Increment counter
-            db.increment_rate_limit(rate_key, config['window'])
             return True, None
 
         except Exception as e:
@@ -205,8 +210,8 @@ def apply_global_rate_limit():
     from flask import session
     from routes.auth_routes import is_authorized_admin
 
-    # Only apply to API endpoints
-    if not request.path.startswith('/api/'):
+    # Only apply to API endpoints and SSO auth
+    if not request.path.startswith('/api/') and request.path != '/auth/sso':
         return None
 
     # Skip rate limiting for certain paths (health checks, static files, etc.)
@@ -229,7 +234,9 @@ def apply_global_rate_limit():
     # Determine rate limit type based on endpoint
     limit_type = 'global'
 
-    if '/auth/' in request.path or '/login' in request.path:
+    if request.path == '/auth/sso':
+        limit_type = 'sso'
+    elif '/auth/' in request.path or '/login' in request.path:
         limit_type = 'auth'
     elif '/booking' in request.path:
         # Use admin rate limit for admin panel users doing booking operations (delete, update)

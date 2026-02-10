@@ -6,6 +6,7 @@ Supports Monmouth University email verification and general Google sign-in.
 
 import os
 import jwt
+from jwt import PyJWKClient
 from typing import Optional, Dict, Tuple
 from msal import ConfidentialClientApplication
 from google.oauth2 import id_token
@@ -29,6 +30,17 @@ GOOGLE_REDIRECT_URI = os.getenv('GOOGLE_REDIRECT_URI')
 
 # Lazy-loaded MSAL app instance
 _msal_app = None
+
+# Lazy-loaded JWKS client for Microsoft JWT signature verification
+_ms_jwks_client = None
+
+
+def _get_ms_jwks_client():
+    """Get or create a cached PyJWKClient for Microsoft's public signing keys."""
+    global _ms_jwks_client
+    if _ms_jwks_client is None:
+        _ms_jwks_client = PyJWKClient("https://login.microsoftonline.com/common/discovery/v2.0/keys")
+    return _ms_jwks_client
 
 
 class AuthService:
@@ -130,15 +142,29 @@ class AuthService:
                 print(f"[ERROR] Token acquisition error: {error_msg}")
                 return {'error_message': error_msg}
 
-            # Extract and decode id_token to get claims
+            # Extract and decode id_token to get claims (verify signature when possible)
             id_token = result.get('id_token')
             if id_token:
                 try:
-                    id_token_claims = jwt.decode(id_token, options={"verify_signature": False})
+                    jwks_client = _get_ms_jwks_client()
+                    signing_key = jwks_client.get_signing_key_from_jwt(id_token)
+                    id_token_claims = jwt.decode(
+                        id_token,
+                        signing_key.key,
+                        algorithms=["RS256"],
+                        options={"verify_aud": False}
+                    )
                     result['id_token_claims'] = id_token_claims
                 except Exception as e:
-                    print(f"[WARNING] Warning: Could not decode id_token claims: {e}")
-                    result['id_token_claims'] = {}
+                    # MSAL already validated the token at the HTTP level, so
+                    # falling back to unverified decode is acceptable here
+                    print(f"[AUTH] JWT verification fallback (MSAL validated): {e}")
+                    try:
+                        id_token_claims = jwt.decode(id_token, options={"verify_signature": False})
+                        result['id_token_claims'] = id_token_claims
+                    except Exception as e2:
+                        print(f"[WARNING] Could not decode id_token claims: {e2}")
+                        result['id_token_claims'] = {}
             else:
                 print("[WARNING] Warning: No id_token in token response")
                 result['id_token_claims'] = {}
@@ -165,25 +191,33 @@ class AuthService:
             - error_message: Error description or None
         """
         try:
-            # Decode without verification (Microsoft already verified)
-            # In production, you should verify signature with Microsoft's public keys
-            decoded = jwt.decode(token, options={"verify_signature": False})
-            
+            # Verify JWT signature using Microsoft's public JWKS keys
+            jwks_client = _get_ms_jwks_client()
+            signing_key = jwks_client.get_signing_key_from_jwt(token)
+            decoded = jwt.decode(
+                token,
+                signing_key.key,
+                algorithms=["RS256"],
+                options={"verify_aud": False}  # We verify audience manually below
+            )
+        except Exception as e:
+            print(f"[AUTH] JWT signature verification failed: {e}")
+            return False, None, f"Token signature verification failed: {str(e)}"
+
+        try:
             # Extract email from preferred_username or email claim
             email = decoded.get('preferred_username') or decoded.get('email')
-            
+
             if not email:
                 return False, None, "No email found in token"
-            
+
             # Verify @monmouth.edu domain
             if not email.lower().endswith('@monmouth.edu'):
                 return False, None, f"Email {email} is not a Monmouth University address"
-            
+
             print(f"[OK] Verified Monmouth email: {email}")
             return True, email, None
-            
-        except jwt.DecodeError as e:
-            return False, None, f"Token decode error: {str(e)}"
+
         except Exception as e:
             return False, None, f"Token verification error: {str(e)}"
 

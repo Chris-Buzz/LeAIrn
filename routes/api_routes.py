@@ -4,6 +4,7 @@ Handles slots management, feedback, exports, cron jobs, and public pages.
 """
 
 from flask import Blueprint, request, session, render_template, jsonify, send_file, send_from_directory
+from markupsafe import escape
 from datetime import datetime
 import os
 import csv
@@ -101,11 +102,17 @@ def serve_media(filename):
         media_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'media')
         
         # Security: prevent directory traversal
-        if '..' in filename or filename.startswith('/'):
+        if '..' in filename or filename.startswith('/') or '\\' in filename:
             return "Access denied", 403
-        
-        # Check if file exists
+
         file_path = os.path.join(media_dir, filename)
+
+        # Verify resolved path is within media directory
+        safe_path = os.path.realpath(file_path)
+        if not safe_path.startswith(os.path.realpath(media_dir)):
+            return "Access denied", 403
+
+        # Check if file exists
         if not os.path.isfile(file_path):
             print(f"Media file not found: {filename} (looked in {media_dir})")
             return "File not found", 404
@@ -138,8 +145,37 @@ def get_slots():
         available_slots = db.get_available_slots()
         return jsonify(available_slots)
     except Exception as e:
-        print(f"Error in get_slots: {e}")
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
+
+
+@api_bp.route('/api/slots/count', methods=['GET'])
+def get_slot_counts():
+    """Get total and available slot counts (public, lightweight endpoint for MVP)"""
+    try:
+        all_slots = db.get_all_slots()
+
+        # Filter to future slots only
+        from utils.datetime_utils import get_eastern_now, get_eastern_datetime
+        now_eastern = get_eastern_now()
+
+        total = 0
+        available = 0
+        for slot in all_slots:
+            slot_dt_str = slot.get('datetime', '')
+            try:
+                slot_dt = get_eastern_datetime(slot_dt_str)
+                if slot_dt and slot_dt > now_eastern:
+                    total += 1
+                    if not slot.get('booked', False):
+                        available += 1
+            except Exception:
+                continue
+
+        return jsonify({'total': total, 'available': available})
+    except Exception as e:
+        print(f"Error in get_slot_counts: {e}")
+        return jsonify({'total': 0, 'available': 0})
 
 
 @api_bp.route('/api/slots/manage', methods=['GET'])
@@ -178,7 +214,8 @@ def manage_slots():
 
         return jsonify(future_slots)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
 
 
 @api_bp.route('/api/slots/add', methods=['POST'])
@@ -300,8 +337,8 @@ def add_slot():
         else:
             return jsonify({'success': False, 'message': 'Failed to add slot. Slot may already exist.'}), 500
     except Exception as e:
-        print(f'Error adding slot: {e}')
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
 
 
 @api_bp.route('/api/slots/cleanup', methods=['POST'])
@@ -330,7 +367,8 @@ def cleanup_slots():
             'deleted_count': deleted_count
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
 
 
 @api_bp.route('/api/slots/auto-maintain', methods=['POST'])
@@ -350,7 +388,8 @@ def auto_maintain_slots():
                 'message': 'Maintenance failed'
             }), 500
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
 
 
 @api_bp.route('/api/slots/generate', methods=['POST'])
@@ -461,8 +500,8 @@ def generate_slots():
             'tutor_name': tutor_name
         })
     except Exception as e:
-        print(f"[ERROR] Slot generation failed: {e}")
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
 
 
 @api_bp.route('/api/slots/<slot_id>', methods=['DELETE'])
@@ -476,7 +515,8 @@ def delete_slot(slot_id):
         else:
             return jsonify({'success': False, 'message': 'Failed to delete slot'}), 500
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
 
 
 @api_bp.route('/api/slots/<slot_id>/unbook', methods=['POST'])
@@ -490,7 +530,8 @@ def unbook_slot(slot_id):
         else:
             return jsonify({'success': False, 'message': 'Failed to unbook slot'}), 500
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
 
 
 @api_bp.route('/api/slots/bulk-delete', methods=['POST'])
@@ -567,7 +608,6 @@ def bulk_delete_slots():
         sys.stdout.flush()
         return jsonify({
             'success': False,
-            'error': str(e),
             'message': 'An error occurred during bulk deletion'
         }), 500
 
@@ -629,8 +669,8 @@ def delete_slots_range():
             'deleted_count': deleted_count
         })
     except Exception as e:
-        print(f"Error in delete_slots_range: {e}")
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
 
 
 # ============================================================================
@@ -645,7 +685,8 @@ def get_all_feedback():
         feedback_list = db.get_all_feedback()
         return jsonify(feedback_list)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
 
 
 @api_bp.route('/api/feedback', methods=['POST'])
@@ -726,7 +767,8 @@ def export_csv():
             download_name=f'leairn_bookings_{datetime.now().strftime("%Y%m%d")}.csv'
         )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'error': 'An internal error occurred. Please try again.'}), 500
 
 
 # ============================================================================
@@ -745,25 +787,19 @@ def manual_send_reminders():
             'reminders_sent': count
         })
     except Exception as e:
-        print(f"Error sending reminders: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'error': 'An internal error occurred. Please try again.'}), 500
 
 
 @api_bp.route('/api/cron/send-reminders', methods=['GET', 'POST'])
 def cron_send_reminders():
     """Cron endpoint to send morning reminders (8:30 AM EST)"""
     try:
-        # Check if this is an external cron request
+        # Always require a valid API key (prevents unauthenticated access)
         api_key = request.headers.get('X-Cron-API-Key') or request.args.get('api_key')
-        
-        # If API key is provided, validate it
-        if api_key is not None:
-            cron_api_key = os.getenv('CRON_API_KEY')
-            if not cron_api_key or api_key != cron_api_key:
-                return jsonify({
-                    'success': False,
-                    'message': 'Unauthorized - Invalid cron API key'
-                }), 401
+        cron_api_key = os.getenv('CRON_API_KEY')
+        if not api_key or not cron_api_key or api_key != cron_api_key:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 401
 
         # Send reminders
         count = slot_service.check_and_send_meeting_reminders()
@@ -775,10 +811,10 @@ def cron_send_reminders():
         })
 
     except Exception as e:
-        print(f"Error in cron_send_reminders: {e}")
+        print(f"[ERROR] {request.path}: {e}")
         return jsonify({
             'success': False,
-            'message': str(e),
+            'message': 'An internal error occurred. Please try again.',
             'error': 'Failed to process cron job'
         }), 500
 
@@ -795,10 +831,10 @@ def send_daily_reminders():
             'message': f'Successfully sent {count} reminder email(s)'
         })
     except Exception as e:
-        print(f"Error in send_daily_reminders: {e}")
+        print(f"[ERROR] {request.path}: {e}")
         return jsonify({
             'success': False,
-            'message': str(e)
+            'message': 'An internal error occurred. Please try again.'
         }), 500
 
 
@@ -815,7 +851,8 @@ def submit_form():
         # Process form submission
         return jsonify({'success': True, 'message': 'Form submitted successfully'})
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @api_bp.route('/api/contact', methods=['POST'])
@@ -825,9 +862,9 @@ def contact_form():
     try:
         data = request.json
 
-        name = data.get('name', '').strip()
-        email = data.get('email', '').strip()
-        message = data.get('message', '').strip()
+        name = str(escape(data.get('name', '').strip()))[:100]
+        email = data.get('email', '').strip()[:254]
+        message = str(escape(data.get('message', '').strip()))[:5000]
 
         if not name or not email or not message:
             return jsonify({'success': False, 'message': 'All fields are required'}), 400
@@ -845,7 +882,8 @@ def contact_form():
         else:
             return jsonify({'success': False, 'message': 'Failed to send message. Please try again.'}), 500
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @api_bp.route('/api/admin/pending-registration', methods=['GET'])
@@ -884,8 +922,8 @@ def get_payment_status():
         })
 
     except Exception as e:
-        print(f"Error getting payment status: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @api_bp.route('/api/payment/create-session', methods=['POST'])
@@ -917,8 +955,8 @@ def create_payment_session():
         }), 200
 
     except Exception as e:
-        print(f"Error in payment info endpoint: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @api_bp.route('/api/slots/<slot_id>/location', methods=['PUT'])
@@ -953,5 +991,5 @@ def update_slot_location(slot_id):
         })
 
     except Exception as e:
-        print(f"Error updating slot location: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500

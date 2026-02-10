@@ -104,5 +104,5 @@ def generate_verification_token() -> str:
     Returns:
         str: 6-digit verification code
     """
-    import random
-    return ''.join([str(random.randint(0, 9)) for _ in range(6)])
+    import secrets
+    return ''.join([str(secrets.choice(range(10))) for _ in range(6)])

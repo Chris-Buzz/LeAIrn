@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Click the link in the email to complete your account setup.<br>' +
                     'The link expires in 1 hour.' +
                 '</p>' +
-                '<div style="background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); padding: 1rem; border-radius: 0.75rem; text-align: left;">' +
+                '<div style="background: rgba(255, 90, 31, 0.15); border: 1px solid rgba(255, 90, 31, 0.3); padding: 1rem; border-radius: 0.75rem; text-align: left;">' +
                     '<p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">' +
                         '<strong style="color: var(--text-primary);">Didn\'t receive the email?</strong><br>' +
                         'Check your spam folder or <a href="/admin/setup" style="color: var(--primary);">try again</a>.' +

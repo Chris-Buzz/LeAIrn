@@ -10,6 +10,7 @@ from utils import get_client_ip
 from utils.validators import InputValidator
 from services.email_service import EmailService
 from middleware.auth import login_required
+from middleware.rate_limit import rate_limit
 
 
 def send_email_sync(email_func, *args, **kwargs):
@@ -59,6 +60,7 @@ booking_bp = Blueprint('booking', __name__)
 
 
 @booking_bp.route('/api/booking/request-verification', methods=['POST'])
+@rate_limit('booking')
 def request_booking_verification():
     """Create booking directly using OAuth-authenticated email (no verification code needed)"""
     try:
@@ -323,6 +325,21 @@ def delete_booking(booking_id):
         if not deleted_user:
             return jsonify({'success': False, 'message': 'Booking not found'}), 404
 
+        # Ownership check: tutor_admin can only delete their own bookings
+        tutor_role = session.get('tutor_role')
+        if tutor_role == 'tutor_admin':
+            if deleted_user.get('tutor_id') != session.get('tutor_id'):
+                return jsonify({'success': False, 'message': 'You can only delete your own bookings'}), 403
+
+        # Archive booking before deletion to preserve user intake data
+        try:
+            db.archive_cancelled_booking(
+                deleted_user,
+                cancelled_by=session.get('admin_email', 'admin')
+            )
+        except Exception as e:
+            print(f"[WARN] Failed to archive before delete: {e}")
+
         # Extract slot ID - handle both old (object) and new (string) formats
         slot_id = deleted_user.get('selected_slot')
         slot_details = deleted_user.get('slot_details', {})
@@ -356,8 +373,109 @@ def delete_booking(booking_id):
         return jsonify({'success': True, 'message': 'Booking deleted successfully'})
 
     except Exception as e:
-        print(f"Error deleting booking: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
+
+
+@booking_bp.route('/api/booking/rebook', methods=['POST'])
+@login_required
+def rebook_session():
+    """Create a new booking using the same user info from a previous booking (active or archived).
+    Requires admin login. Copies all user profile data and assigns a new time slot."""
+    try:
+        data = request.json
+        source_booking_id = data.get('source_booking_id')
+        new_slot_id = data.get('new_slot_id')
+        new_room = data.get('selected_room', '')
+        meeting_type = data.get('meeting_type', 'in-person')
+        source_type = data.get('source_type', 'active')  # 'active' or 'archived'
+
+        if not source_booking_id or not new_slot_id:
+            return jsonify({'success': False, 'message': 'Missing source booking ID or new slot ID'}), 400
+
+        # Get source booking data
+        if source_type == 'archived':
+            source = db.get_archived_booking(source_booking_id)
+        else:
+            # Look up from active bookings
+            users = db.get_all_bookings()
+            source = next((u for u in users if u.get('id') == source_booking_id), None)
+
+        if not source:
+            return jsonify({'success': False, 'message': 'Source booking not found'}), 404
+
+        # Validate the new slot exists and is available
+        slots = db.get_all_slots()
+        selected_slot_data = None
+        for slot in slots:
+            slot_ids = [str(slot.get('id') or ''), str(slot.get('doc_id') or '')]
+            if new_slot_id in slot_ids:
+                if slot.get('booked'):
+                    return jsonify({'success': False, 'message': 'This slot has already been booked'}), 400
+                selected_slot_data = slot.copy()
+                break
+
+        if not selected_slot_data:
+            return jsonify({'success': False, 'message': 'Invalid time slot'}), 400
+
+        # Get tutor info from the slot
+        tutor_id = selected_slot_data.get('tutor_id')
+        tutor_name = selected_slot_data.get('tutor_name', 'Christopher Buzaid')
+        tutor_email = selected_slot_data.get('tutor_email', '')
+        if not tutor_email and tutor_id:
+            tutor_info = db.get_tutor_by_id(tutor_id)
+            if tutor_info:
+                tutor_email = tutor_info.get('email', '')
+                tutor_name = tutor_info.get('full_name') or tutor_info.get('name') or tutor_name
+        if not tutor_email:
+            tutor_email = 'cjpbuzaid@gmail.com'
+
+        email = source.get('email', '')
+
+        # Create new booking with copied user profile data + new slot
+        booking_data = {
+            'full_name': source.get('full_name', ''),
+            'email': email,
+            'phone': source.get('phone', ''),
+            'role': source.get('role', ''),
+            'department': source.get('department', ''),
+            'ai_familiarity': source.get('ai_familiarity', ''),
+            'ai_tools': source.get('ai_tools', ''),
+            'primary_use': source.get('primary_use', ''),
+            'learning_goal': source.get('learning_goal', ''),
+            'confidence_level': source.get('confidence_level', 3),
+            'personal_comments': source.get('personal_comments', ''),
+            'research_consent': source.get('research_consent', None),
+            'selected_slot': selected_slot_data.get('id'),
+            'slot_details': selected_slot_data,
+            'selected_room': new_room or source.get('selected_room', ''),
+            'meeting_type': meeting_type,
+            'attendee_count': source.get('attendee_count', 1),
+            'tutor_id': tutor_id,
+            'tutor_name': tutor_name,
+            'tutor_email': tutor_email,
+            'timestamp': datetime.now().isoformat(),
+            'submission_date': datetime.now().isoformat(),
+            'status': 'confirmed',
+            'payment_pending': source.get('payment_pending', False),
+            'is_internal_user': source.get('is_internal_user', True),
+            'rebooked_from': source_booking_id
+        }
+
+        success = db.store_confirmed_booking(email, booking_data, selected_slot_data)
+        if not success:
+            return jsonify({'success': False, 'message': 'Failed to create rebooking'}), 500
+
+        print(f"[OK] Rebooked session for {source.get('full_name')} from booking {source_booking_id}")
+
+        return jsonify({
+            'success': True,
+            'message': f"New session booked for {source.get('full_name', 'user')}!"
+        })
+
+    except Exception as e:
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @booking_bp.route('/api/booking/<booking_id>', methods=['PUT'])
@@ -404,6 +522,12 @@ def update_booking(booking_id):
 
         if not booking_to_update:
             return jsonify({'success': False, 'message': 'Booking not found'}), 404
+
+        # Ownership check: tutor_admin can only update their own bookings
+        tutor_role = session.get('tutor_role')
+        if tutor_role == 'tutor_admin':
+            if booking_to_update.get('tutor_id') != session.get('tutor_id'):
+                return jsonify({'success': False, 'message': 'You can only update your own bookings'}), 403
 
         # Track changes for email notification
         old_slot = booking_to_update.get('slot_details', {})
@@ -484,8 +608,8 @@ def update_booking(booking_id):
         return jsonify({'success': True, 'message': 'Booking updated successfully'})
 
     except Exception as e:
-        print(f"Error updating booking: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @booking_bp.route('/api/booking/lookup', methods=['POST'])
@@ -569,8 +693,8 @@ def get_user_booking():
         })
         
     except Exception as e:
-        print(f"Error fetching user booking: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[ERROR] {request.path}: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500
 
 
 @booking_bp.route('/api/booking/update-by-email', methods=['POST'])
@@ -690,4 +814,4 @@ def update_booking_by_email():
         print(f"Error updating booking by email: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({'success': False, 'message': str(e)}), 500
+        return jsonify({'success': False, 'message': 'An internal error occurred. Please try again.'}), 500

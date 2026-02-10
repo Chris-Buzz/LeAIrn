@@ -1,8 +1,79 @@
+// Auth error handling helpers
+function handleAuthError() {
+    window.location.href = '/admin/login';
+}
+
+async function safeJson(response) {
+    if (response.status === 401) {
+        handleAuthError();
+        throw new Error('Authentication required');
+    }
+    const text = await response.text();
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        console.error('Non-JSON response:', text.substring(0, 200));
+        throw new Error('Server returned non-JSON response');
+    }
+}
+
+// Per-tutor breakdown display (used by both initial load and sync button)
+function displayTutorBreakdown(tutorStats) {
+    let breakdownSection = document.getElementById('tutor-breakdown-section');
+
+    if (!breakdownSection) {
+        // Insert after the stats-grid-container (after ALL TIME row, not inside ACTIVE row)
+        const statsContainer = document.querySelector('.stats-grid-container');
+        if (statsContainer && statsContainer.parentElement) {
+            breakdownSection = document.createElement('div');
+            breakdownSection.id = 'tutor-breakdown-section';
+            breakdownSection.style.marginTop = '2rem';
+            // Insert after the stats container, inside the stats-section
+            statsContainer.parentElement.insertBefore(breakdownSection, statsContainer.nextSibling);
+        }
+    }
+
+    if (!breakdownSection) return;
+
+    // Don't render if no tutor data
+    if (!tutorStats || Object.keys(tutorStats).length === 0) {
+        breakdownSection.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">No per-tutor data available</p>';
+        return;
+    }
+
+    let html = '<h3 style="color: var(--text-primary); margin-bottom: 1rem; font-size: 1.25rem;">Per-Tutor Breakdown</h3>';
+    html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">';
+
+    for (const [tutorId, stats] of Object.entries(tutorStats)) {
+        const name = stats.tutor_name || tutorId;
+        const bookings = stats.total_bookings || 0;
+        const clients = stats.unique_clients || 0;
+        html += `
+            <div style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 0.75rem; padding: 1.5rem;">
+                <div style="color: var(--brand-orange); font-weight: 600; margin-bottom: 0.75rem; font-size: 1.125rem;">${name}</div>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-secondary);">Total Sessions:</span>
+                        <span style="color: var(--text-primary); font-weight: 600;">${bookings}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-secondary);">Unique Clients:</span>
+                        <span style="color: var(--text-primary); font-weight: 600;">${clients}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    html += '</div>';
+    breakdownSection.innerHTML = html;
+}
+
 // Registration Modal Functions
         function checkAndShowRegistrationModal() {
             // Check if the user needs to register (server sets this in session)
             fetch('/api/check-registration-needed')
-                .then(res => res.json())
+                .then(res => safeJson(res))
                 .then(data => {
                     if (data.needs_registration) {
                         document.getElementById('registrationEmail').textContent = data.email || 'Unknown';
@@ -62,7 +133,7 @@
                     })
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response);
 
                 if (response.ok && result.success) {
                     // Email verification flow - SECURE (no bypass)
@@ -155,7 +226,7 @@
                 const response = await fetch('/api/users');
                 if (!response.ok) throw new Error('Failed to load data');
 
-                allUsers = await response.json();
+                allUsers = await safeJson(response);
                 displayUsers(allUsers);
             } catch (error) {
                 console.error('Error loading users:', error);
@@ -178,13 +249,20 @@
             try {
                 const statsResponse = await fetch('/api/statistics');
                 if (statsResponse.ok) {
-                    const stats = await statsResponse.json();
+                    const stats = await safeJson(statsResponse);
 
                     // Check if this is a super_admin (Master) or tutor_admin
                     if (stats.role === 'super_admin' && stats.master_total) {
                         // Master admin - show master totals
                         document.getElementById('totalBookingsAllTime').textContent = stats.master_total.total_bookings || 0;
                         document.getElementById('uniqueClients').textContent = stats.master_total.unique_clients || 0;
+
+                        // Update completed count in stats section and badge
+                        const archivedCount = stats.archived_count || 0;
+                        const completedEl = document.getElementById('completedCount');
+                        if (completedEl) completedEl.textContent = archivedCount;
+                        const archivedBadgeEl = document.getElementById('archivedBadgeCount');
+                        if (archivedBadgeEl) archivedBadgeEl.textContent = archivedCount;
 
                         // Show per-tutor breakdown if available
                         if (stats.tutor_stats) {
@@ -209,48 +287,7 @@
                 document.getElementById('uniqueClients').textContent = uniqueEmails.size;
             }
 
-            function displayTutorBreakdown(tutorStats) {
-                // Find or create tutor breakdown section
-                let breakdownSection = document.getElementById('tutor-breakdown-section');
-
-                if (!breakdownSection) {
-                    // Create breakdown section after the statistics cards
-                    const statsSection = document.querySelector('.stats-grid');
-                    if (statsSection && statsSection.parentElement) {
-                        breakdownSection = document.createElement('div');
-                        breakdownSection.id = 'tutor-breakdown-section';
-                        breakdownSection.style.marginTop = '2rem';
-                        statsSection.parentElement.insertBefore(breakdownSection, statsSection.nextSibling);
-                    }
-                }
-
-                if (!breakdownSection) return;
-
-                // Build tutor breakdown HTML
-                let html = '<h3 style="color: var(--text-primary); margin-bottom: 1rem; font-size: 1.25rem;">Per-Tutor Statistics</h3>';
-                html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">';
-
-                for (const [tutorId, stats] of Object.entries(tutorStats)) {
-                    html += `
-                        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.5rem;">
-                            <div style="color: var(--primary); font-weight: 600; margin-bottom: 0.75rem; font-size: 1.125rem;">${stats.tutor_name}</div>
-                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span style="color: var(--text-secondary);">Total Sessions:</span>
-                                    <span style="color: var(--text-primary); font-weight: 600;">${stats.total_bookings}</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span style="color: var(--text-secondary);">Unique Clients:</span>
-                                    <span style="color: var(--text-primary); font-weight: 600;">${stats.unique_clients}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                html += '</div>';
-                breakdownSection.innerHTML = html;
-            }
+            // displayTutorBreakdown is now a top-level function (defined at top of file)
 
             const now = new Date();
             const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
@@ -305,7 +342,7 @@
                     <td>${user.email}</td>
                     <td><span class="badge badge-role">${user.role}</span></td>
                     <td>${department}</td>
-                    <td><span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #8B5CF6;">${aiLevel}</span></td>
+                    <td><span class="badge" style="background: rgba(234, 88, 12, 0.1); color: #EA580C;">${aiLevel}</span></td>
                     <td title="${primaryUse}">${primaryUse}</td>
                     <td style="white-space: nowrap;">${user.slot_details && user.slot_details.day && user.slot_details.date && user.slot_details.time ? `${user.slot_details.day}, ${user.slot_details.date} at ${user.slot_details.time}` : formatSlotId(user.selected_slot)}</td>
                     <td>${meetingTypeBadge}${user.selected_room || 'Not specified'}${attendeeBadge}</td>
@@ -368,7 +405,7 @@
                         </label>
                     </div>
 
-                    <div style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 0.75rem; padding: 1rem; margin-bottom: 1.5rem;">
+                    <div style="background: rgba(234, 88, 12, 0.05); border: 1px solid rgba(234, 88, 12, 0.2); border-radius: 0.75rem; padding: 1rem; margin-bottom: 1.5rem;">
                         <strong style="color: var(--primary);">What happens next:</strong>
                         <ul style="margin: 0.5rem 0 0 1.5rem; color: var(--text-secondary);">
                             <li id="aiEnhanceText">Session notes will be enhanced with AI and emailed to student</li>
@@ -436,7 +473,7 @@
                     })
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response);
 
                 if (response.ok && result.success) {
                     // Show preview modal
@@ -535,7 +572,7 @@
                     })
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response);
 
                 if (response.ok && result.success) {
                     document.getElementById('editableOverview').value = result.enhanced_notes;
@@ -577,7 +614,7 @@
                     })
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response);
 
                 if (response.ok && result.success) {
                     previewModal.remove();
@@ -621,7 +658,7 @@
                     })
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response);
 
                 if (response.ok && result.success) {
                     modal.remove();
@@ -652,7 +689,7 @@
                     method: 'DELETE'
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response);
 
                 console.log('Delete response:', response.ok, result);
 
@@ -726,7 +763,7 @@
             // Load available time slots
             try {
                 const response = await fetch('/api/slots');
-                const slots = await response.json();
+                const slots = await safeJson(response);
                 const select = document.getElementById('edit_slot');
                 const small = select.nextElementSibling;
 
@@ -758,7 +795,7 @@
                     body: JSON.stringify(updatedData)
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response);
 
                 if (response.ok && result.success) {
                     alert('Booking updated successfully!');
@@ -920,7 +957,7 @@
                     </div>
 
                     <h3 style="margin: 2rem 0 1rem; color: var(--text-primary);">AI Experience Profile</h3>
-                    <div style="background: rgba(99, 102, 241, 0.05); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(99, 102, 241, 0.2); margin-bottom: 2rem;">
+                    <div style="background: rgba(255, 90, 31, 0.05); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(255, 90, 31, 0.2); margin-bottom: 2rem;">
                         <div style="display: grid; gap: 1rem;">
                             <div><strong>Experience Level:</strong> ${formatExperienceLevel(user.ai_familiarity)}</div>
                             <div><strong>AI Tools Used:</strong> ${formatAITools(user.ai_tools)}</div>
@@ -940,7 +977,7 @@
                     <div style="display: flex; align-items: center; justify-content: space-between; margin: 2rem 0 1rem;">
                         <h3 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 0.75rem;">
                             AI Teaching Insights
-                            <span style="background: linear-gradient(135deg, #6366F1, #8B5CF6); padding: 0.25rem 0.75rem; border-radius: 0.5rem; font-size: 0.75rem; color: white; font-weight: 700;">Powered by Gemini</span>
+                            <span style="background: linear-gradient(135deg, #FF5A1F, #EA580C); padding: 0.25rem 0.75rem; border-radius: 0.5rem; font-size: 0.75rem; color: white; font-weight: 700;">Powered by Gemini</span>
                         </h3>
                         <button id="refresh-insights-btn" data-action="regenerateInsights" data-index="${index}" style="padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; transition: all 0.3s;" title="Generate new insights">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -970,7 +1007,7 @@
                         method: 'POST'
                     });
 
-                    const result = await response.json();
+                    const result = await safeJson(response);
 
                     if (response.ok && result.success) {
                         const insightsContainer = document.getElementById('insights-container');
@@ -1019,7 +1056,7 @@
                     method: 'POST'
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response);
 
                 if (response.ok && result.success) {
                     insightsContainer.style.whiteSpace = 'pre-wrap';
@@ -1076,7 +1113,7 @@
                 const response = await fetch('/api/slots/manage');
                 if (!response.ok) throw new Error('Failed to load slots');
 
-                allSlots = await response.json();
+                allSlots = await safeJson(response);
                 displayTimeSlots(allSlots);
             } catch (error) {
                 console.error('Error loading time slots:', error);
@@ -1251,7 +1288,7 @@
                         </div>
 
                         <!-- Tutor Info -->
-                        <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); padding: 1rem; border-radius: 0.75rem; margin-bottom: 1.5rem; border: 1px solid rgba(99, 102, 241, 0.3);">
+                        <div style="background: linear-gradient(135deg, rgba(255, 90, 31, 0.1) 0%, rgba(234, 88, 12, 0.1) 100%); padding: 1rem; border-radius: 0.75rem; margin-bottom: 1.5rem; border: 1px solid rgba(255, 90, 31, 0.3);">
                             <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Tutor</div>
                             <div style="font-weight: 600; font-size: 1.1rem; color: var(--text-primary); margin-bottom: 0.25rem;">${slot.tutor_name || 'Unknown'}</div>
                             <div style="font-size: 0.85rem; color: var(--text-secondary);">ID: ${slot.tutor_id || 'N/A'}</div>
@@ -1322,7 +1359,7 @@
 
             try {
                 const statsResponse = await fetch('/api/statistics');
-                const stats = await statsResponse.json();
+                const stats = await safeJson(statsResponse);
 
                 const data = {
                     isSuperAdmin: stats.role === 'super_admin',
@@ -1332,7 +1369,7 @@
 
                 if (data.isSuperAdmin) {
                     const tutorsResponse = await fetch('/api/tutors');
-                    const tutorsData = await tutorsResponse.json();
+                    const tutorsData = await safeJson(tutorsResponse);
                     if (tutorsData.success) {
                         data.tutorsList = tutorsData.tutors;
                     }
@@ -1623,7 +1660,7 @@
                     body: JSON.stringify(requestBody)
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response);
 
                 if (response.ok && result.success) {
                     alert(result.message || 'Slots generated successfully!');
@@ -1812,7 +1849,7 @@
                     body: JSON.stringify(slotData)
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response);
 
                 if (response.ok && result.success) {
                     alert('Time slot added successfully!');
@@ -1847,7 +1884,7 @@
                     method: 'POST'
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response);
 
                 if (response.ok && result.success) {
                     alert(result.message);
@@ -1875,7 +1912,7 @@
                     method: 'DELETE'
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response);
 
                 if (response.ok && result.success) {
                     alert('Time slot deleted successfully!');
@@ -1977,7 +2014,7 @@
         async function loadSelectableSlots() {
             try {
                 const response = await fetch('/api/slots/manage');
-                const slots = await response.json();
+                const slots = await safeJson(response);
 
                 const now = new Date();
                 const availableSlots = slots.filter(s => !s.booked && new Date(s.datetime) > now)
@@ -2034,7 +2071,7 @@
                         body: JSON.stringify({ mode: 'last_weeks', weeks: weeks })
                     });
 
-                    const result = await response.json();
+                    const result = await safeJson(response);
 
                     if (response.ok && result.success) {
                         alert(result.message);
@@ -2078,7 +2115,7 @@
                         body: JSON.stringify({ slot_ids: slotIds })
                     });
 
-                    const result = await response.json();
+                    const result = await safeJson(response);
                     console.log('[BULK DELETE] Response:', result);
 
                     if (response.ok && result.success) {
@@ -2105,7 +2142,11 @@
         async function loadFeedback() {
             try {
                 const response = await fetch('/api/feedback');
-                const feedbackList = await response.json();
+                const feedbackList = await safeJson(response);
+
+                // Update badge count
+                const feedbackBadge = document.getElementById('feedbackBadgeCount');
+                if (feedbackBadge) feedbackBadge.textContent = feedbackList.length;
 
                 const tbody = document.getElementById('feedbackTable');
                 tbody.innerHTML = '';
@@ -2195,7 +2236,7 @@
             const positivePercent = ((positiveCount / totalFeedback) * 100).toFixed(0);
 
             summaryDiv.innerHTML = `
-                <div style="background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); padding: 1.5rem; border-radius: 0.75rem; color: white;">
+                <div style="background: linear-gradient(135deg, #FF5A1F 0%, #EA580C 100%); padding: 1.5rem; border-radius: 0.75rem; color: white;">
                     <div style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem;">Average Rating</div>
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                         <div style="font-size: 2.5rem; font-weight: 700;">${averageRating}</div>
@@ -2228,7 +2269,7 @@
                                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                                     <div style="min-width: 60px; font-size: 0.9rem;">${'⭐'.repeat(rating)}</div>
                                     <div style="flex: 1; background: var(--border); height: 8px; border-radius: 4px; overflow: hidden;">
-                                        <div style="background: linear-gradient(90deg, #6366F1, #8B5CF6); height: 100%; width: ${percentage}%; transition: width 0.3s;"></div>
+                                        <div style="background: linear-gradient(90deg, #FF5A1F, #EA580C); height: 100%; width: ${percentage}%; transition: width 0.3s;"></div>
                                     </div>
                                     <div style="min-width: 50px; text-align: right; font-size: 0.85rem; color: var(--text-secondary);">${count} (${percentage}%)</div>
                                 </div>
@@ -2309,7 +2350,11 @@
         async function loadSessionOverviews() {
             try {
                 const response = await fetch('/api/session-overviews');
-                const overviews = await response.json();
+                const overviews = await safeJson(response);
+
+                // Update badge count
+                const overviewsBadge = document.getElementById('overviewsBadgeCount');
+                if (overviewsBadge) overviewsBadge.textContent = overviews.length;
 
                 const tbody = document.getElementById('overviewsTable');
                 tbody.innerHTML = '';
@@ -2412,7 +2457,7 @@
                     ${enhancedNotes ? `
                     <div style="margin-bottom: ${rawNotes ? '1.5rem' : '0'};">
                         <label style="display: block; font-weight: 600; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.5rem;">AI-ENHANCED SUMMARY (Sent to Student)</label>
-                        <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); padding: 1rem; border-radius: 0.5rem; line-height: 1.8; white-space: pre-wrap; color: var(--text-primary);">${enhancedNotes}</div>
+                        <div style="background: rgba(255, 90, 31, 0.05); border: 1px solid rgba(255, 90, 31, 0.2); padding: 1rem; border-radius: 0.5rem; line-height: 1.8; white-space: pre-wrap; color: var(--text-primary);">${enhancedNotes}</div>
                     </div>
                     ` : ''}
 
@@ -2452,7 +2497,7 @@
                     method: 'DELETE'
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response);
 
                 if (response.ok && result.success) {
                     alert('Session overview deleted successfully');
@@ -2508,7 +2553,7 @@
                         <textarea id="manualNotes" placeholder="What did you cover? What tools did you teach? What prompting techniques? What should they practice?..." style="width: 100%; min-height: 200px; padding: 1rem; border: 2px solid var(--border); border-radius: 0.75rem; font-family: inherit; font-size: 0.95rem; resize: vertical; background: var(--bg); color: var(--text-primary);"></textarea>
                     </div>
 
-                    <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 0.75rem; padding: 1rem; margin-bottom: 1rem;">
+                    <div style="background: rgba(255, 90, 31, 0.05); border: 1px solid rgba(255, 90, 31, 0.2); border-radius: 0.75rem; padding: 1rem; margin-bottom: 1rem;">
                         <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
                             <input type="checkbox" id="manualSkipAI" style="width: 18px; height: 18px; cursor: pointer;">
                             <span style="color: var(--text-primary); font-weight: 500;">Send without AI enhancement (use raw notes as-is)</span>
@@ -2516,7 +2561,7 @@
                         <small style="display: block; margin-top: 0.5rem; margin-left: 1.75rem; color: var(--text-tertiary);" id="manualAiEnhanceText">Notes will be enhanced with AI for better formatting</small>
                     </div>
 
-                    <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 0.75rem; padding: 1rem; margin-bottom: 1.5rem;">
+                    <div style="background: rgba(255, 90, 31, 0.05); border: 1px solid rgba(255, 90, 31, 0.2); border-radius: 0.75rem; padding: 1rem; margin-bottom: 1.5rem;">
                         <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
                             <input type="checkbox" id="manualSendEmail" style="width: 18px; height: 18px; cursor: pointer;">
                             <span style="color: var(--text-primary); font-weight: 500;">Send overview email to participant</span>
@@ -2593,7 +2638,7 @@
                     })
                 });
 
-                const result = await response.json();
+                const result = await safeJson(response);
 
                 if (response.ok && result.success) {
                     modal.remove();
@@ -2612,13 +2657,323 @@
             }
         }
 
+        // ============================================================================
+        // ARCHIVED BOOKINGS (Past Sessions) Functions
+        // ============================================================================
+
+        let allArchivedBookings = [];
+        let feedbackExpanded = false;
+        let overviewsExpanded = false;
+        let archivedExpanded = false;
+
+        function toggleFeedbackSection() {
+            const content = document.getElementById('feedbackSection');
+            const chevron = document.getElementById('feedbackChevron');
+
+            feedbackExpanded = !feedbackExpanded;
+
+            if (feedbackExpanded) {
+                content.style.maxHeight = '800px';
+                content.style.overflowY = 'auto';
+                content.style.opacity = '1';
+                chevron.style.transform = 'rotate(180deg)';
+                // Load feedback when expanded for the first time
+                if (!content.dataset.loaded) {
+                    loadFeedback();
+                    content.dataset.loaded = 'true';
+                }
+            } else {
+                content.style.maxHeight = '0';
+                content.style.overflowY = 'hidden';
+                content.style.opacity = '0';
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function toggleOverviewsSection() {
+            const content = document.getElementById('overviewsSection');
+            const chevron = document.getElementById('overviewsChevron');
+
+            overviewsExpanded = !overviewsExpanded;
+
+            if (overviewsExpanded) {
+                content.style.maxHeight = '800px';
+                content.style.overflowY = 'auto';
+                content.style.opacity = '1';
+                chevron.style.transform = 'rotate(180deg)';
+                // Load overviews when expanded for the first time
+                if (!content.dataset.loaded) {
+                    loadSessionOverviews();
+                    content.dataset.loaded = 'true';
+                }
+            } else {
+                content.style.maxHeight = '0';
+                content.style.overflowY = 'hidden';
+                content.style.opacity = '0';
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function toggleArchivedSection() {
+            const archivedContent = document.getElementById('archivedSection');
+            const chevron = document.getElementById('archivedChevron');
+
+            archivedExpanded = !archivedExpanded;
+
+            if (archivedExpanded) {
+                archivedContent.style.maxHeight = '800px';
+                archivedContent.style.overflowY = 'auto';
+                archivedContent.style.opacity = '1';
+                chevron.style.transform = 'rotate(180deg)';
+                // Load archived bookings when expanded for the first time
+                if (allArchivedBookings.length === 0) {
+                    loadArchivedBookings();
+                }
+            } else {
+                archivedContent.style.maxHeight = '0';
+                archivedContent.style.overflowY = 'hidden';
+                archivedContent.style.opacity = '0';
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        async function loadArchivedBookings() {
+            try {
+                const response = await fetch('/api/archived-bookings');
+                if (!response.ok) throw new Error('Failed to load archived bookings');
+
+                allArchivedBookings = await safeJson(response);
+                displayArchivedBookings(allArchivedBookings);
+
+                // Update count badge
+                const countEl = document.getElementById('archivedCount');
+                if (countEl) countEl.textContent = allArchivedBookings.length;
+            } catch (error) {
+                console.error('Error loading archived bookings:', error);
+                document.getElementById('archivedTable').innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            <p style="color: var(--error);">Error loading past sessions</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function displayArchivedBookings(bookings) {
+            const tbody = document.getElementById('archivedTable');
+            tbody.innerHTML = '';
+
+            if (bookings.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <p>No past sessions yet. Sessions will appear here when marked as complete or deleted.</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            bookings.forEach((booking, index) => {
+                const row = document.createElement('tr');
+
+                // Format session date
+                let sessionDate = 'Not specified';
+                if (booking.slot_details) {
+                    sessionDate = `${booking.slot_details.day || ''}, ${booking.slot_details.date || ''} at ${booking.slot_details.time || ''}`.trim();
+                }
+
+                // Format archived date
+                let archivedDate = 'N/A';
+                if (booking.archived_at) {
+                    const date = new Date(booking.archived_at);
+                    archivedDate = date.toLocaleDateString();
+                }
+
+                const statusBadge = booking.status === 'cancelled'
+                    ? '<span class="badge cancelled">Cancelled</span>'
+                    : '<span class="badge completed">Completed</span>';
+
+                row.innerHTML = `
+                    <td style="font-weight: 600;">${booking.full_name || 'Unknown'}</td>
+                    <td>${booking.email || 'N/A'}</td>
+                    <td style="text-transform: capitalize;">${booking.role || 'N/A'}</td>
+                    <td>${sessionDate}</td>
+                    <td>${statusBadge}</td>
+                    <td style="font-size: 0.85rem; color: var(--text-secondary);">${archivedDate}</td>
+                    <td>
+                        <button data-action="viewArchivedBooking" data-index="${index}" style="padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.8rem; font-weight: 600;">
+                            View Details
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function viewArchivedBooking(index) {
+            const booking = allArchivedBookings[index];
+            if (!booking) return;
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                padding: 1rem;
+            `;
+            modal.classList.add('dynamic-modal');
+
+            // Format dates
+            let sessionDate = 'Not specified';
+            if (booking.slot_details) {
+                sessionDate = `${booking.slot_details.day || ''}, ${booking.slot_details.date || ''} at ${booking.slot_details.time || ''}`.trim();
+            }
+
+            let archivedDate = 'N/A';
+            if (booking.archived_at) {
+                const date = new Date(booking.archived_at);
+                archivedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+            }
+
+            modal.innerHTML = `
+                <div style="background: var(--surface); border-radius: 1rem; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; padding: 2rem; position: relative;">
+                    <button data-action="closeModal" style="position: absolute; top: 1rem; right: 1rem; background: var(--bg); border: 2px solid var(--border); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 1.5rem; color: var(--text-secondary);">×</button>
+
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;">
+                        ${booking.status === 'cancelled'
+                            ? '<span style="background: linear-gradient(135deg, #EF4444, #DC2626); padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; color: white; font-weight: 600;">CANCELLED</span>'
+                            : '<span style="background: linear-gradient(135deg, #10B981, #059669); padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; color: white; font-weight: 600;">COMPLETED</span>'
+                        }
+                        <h2 style="margin: 0; color: var(--text-primary);">${booking.full_name} - ${booking.status === 'cancelled' ? 'Cancelled Booking' : 'Past Session'}</h2>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                        <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                            <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Email</div>
+                            <div style="font-weight: 600;">${booking.email || 'N/A'}</div>
+                        </div>
+                        <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                            <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Role</div>
+                            <div style="font-weight: 600; text-transform: capitalize;">${booking.role || 'N/A'}</div>
+                        </div>
+                        <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                            <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">${booking.role === 'student' ? 'Major' : 'Department'}</div>
+                            <div style="font-weight: 600;">${booking.department || 'Not specified'}</div>
+                        </div>
+                        <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                            <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Session Date</div>
+                            <div style="font-weight: 600;">${sessionDate}</div>
+                        </div>
+                        <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                            <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Location</div>
+                            <div style="font-weight: 600;">${booking.selected_room || 'N/A'}</div>
+                        </div>
+                        <div style="background: var(--bg); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                            <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">${booking.status === 'cancelled' ? 'Cancelled' : 'Completed'}</div>
+                            <div style="font-weight: 600;">${archivedDate}</div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 2rem 0 1rem; color: var(--text-primary);">AI Experience Profile</h3>
+                    <div style="background: rgba(255, 90, 31, 0.05); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(255, 90, 31, 0.2); margin-bottom: 2rem;">
+                        <div style="display: grid; gap: 1rem;">
+                            <div><strong>Experience Level:</strong> ${formatExperienceLevel(booking.ai_familiarity)}</div>
+                            <div><strong>AI Tools Used:</strong> ${formatAITools(booking.ai_tools)}</div>
+                            <div><strong>Primary Use:</strong> ${formatPrimaryUse(booking.primary_use)}</div>
+                            <div><strong>Learning Goals:</strong> ${formatLearningGoals(booking.learning_goal)}</div>
+                        </div>
+                    </div>
+
+                    ${booking.personal_comments ? `
+                    <h3 style="margin: 2rem 0 1rem; color: var(--text-primary);">User's Comments</h3>
+                    <div style="background: rgba(245, 158, 11, 0.05); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(245, 158, 11, 0.2); margin-bottom: 2rem;">
+                        <div style="line-height: 1.6; white-space: pre-wrap;">${booking.personal_comments}</div>
+                    </div>
+                    ` : ''}
+
+                    ${booking.session_notes || booking.enhanced_notes ? `
+                    <h3 style="margin: 2rem 0 1rem; color: var(--text-primary);">Session Notes</h3>
+                    <div style="background: rgba(16, 185, 129, 0.05); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(16, 185, 129, 0.2); margin-bottom: 2rem;">
+                        <div style="line-height: 1.6; white-space: pre-wrap;">${booking.enhanced_notes || booking.session_notes}</div>
+                    </div>
+                    ` : ''}
+
+                    ${booking.ai_insights ? `
+                    <h3 style="margin: 2rem 0 1rem; color: var(--text-primary);">AI Teaching Insights</h3>
+                    <div style="background: var(--bg); padding: 1.5rem; border-radius: 0.75rem; border: 2px solid var(--border); margin-bottom: 2rem;">
+                        <div style="line-height: 1.8; white-space: pre-wrap;">${booking.ai_insights}</div>
+                    </div>
+                    ` : ''}
+
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 2rem;">
+                        <button data-action="rebookArchived" data-booking-id="${booking.id || booking.doc_id}" style="padding: 0.75rem 2rem; background: #2563EB; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                            Rebook Session
+                        </button>
+                        <button data-action="closeModal" style="padding: 0.75rem 2rem; background: var(--brand-orange); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+        }
+
         // Load everything on page load
         document.addEventListener('DOMContentLoaded', () => {
             loadUsers();
             // loadTimeSlots(); // Now loads only when section is expanded
-            loadFeedback();
-            loadSessionOverviews();
+            // loadFeedback(); // Now loads only when section is expanded
+            // loadSessionOverviews(); // Now loads only when section is expanded
+            // Load badge counts (but not content - that loads on expand)
+            loadFeedbackCount();
+            loadOverviewsCount();
+            loadArchivedCount();
         });
+
+        async function loadArchivedCount() {
+            try {
+                const response = await fetch('/api/archived-bookings?limit=1000');
+                const archived = await safeJson(response);
+                const countEl = document.getElementById('archivedCount');
+                if (countEl) countEl.textContent = archived.length;
+                const badgeEl = document.getElementById('archivedBadgeCount');
+                if (badgeEl) badgeEl.textContent = archived.length;
+            } catch (error) {
+                console.error('Error loading archived count:', error);
+            }
+        }
+
+        async function loadFeedbackCount() {
+            try {
+                const response = await fetch('/api/feedback');
+                const feedbackList = await safeJson(response);
+                const badgeEl = document.getElementById('feedbackBadgeCount');
+                if (badgeEl) badgeEl.textContent = feedbackList.length;
+            } catch (error) {
+                console.error('Error loading feedback count:', error);
+            }
+        }
+
+        async function loadOverviewsCount() {
+            try {
+                const response = await fetch('/api/session-overviews');
+                const overviews = await safeJson(response);
+                const badgeEl = document.getElementById('overviewsBadgeCount');
+                if (badgeEl) badgeEl.textContent = overviews.length;
+            } catch (error) {
+                console.error('Error loading overviews count:', error);
+            }
+        }
 
 // ============================================================================
 // GLOBAL EVENT DELEGATION SYSTEM FOR CSP COMPLIANCE
@@ -2653,6 +3008,25 @@ document.addEventListener('DOMContentLoaded', function() {
         event.stopPropagation();
     });
 
+    // Feedback Section
+    document.getElementById('feedback-header')?.addEventListener('click', function() {
+        toggleFeedbackSection();
+    });
+
+    // Session Overviews Section
+    document.getElementById('overviews-header')?.addEventListener('click', function() {
+        toggleOverviewsSection();
+    });
+
+    document.getElementById('overviewsActionButtons')?.addEventListener('click', function(event) {
+        event.stopPropagation();
+    });
+
+    // Archived Bookings (Past Sessions) Section
+    document.getElementById('archived-header')?.addEventListener('click', function() {
+        toggleArchivedSection();
+    });
+
     document.getElementById('btn-generate-slots')?.addEventListener('click', function() {
         showGenerateSlotsModal();
     });
@@ -2669,6 +3043,181 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btn-manual-overview')?.addEventListener('click', function() {
         showManualOverviewModal();
     });
+
+    // Sync Stats Button
+    document.getElementById('btn-sync-stats')?.addEventListener('click', async function() {
+        const btn = this;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" style="border-color: rgba(0,0,0,0.2); border-top-color: #000;"></span> Syncing...';
+
+        try {
+            // Recalculate then re-fetch stats (which includes per-tutor breakdown for super_admin)
+            const recalcResponse = await fetch('/api/statistics/recalculate', { method: 'POST' });
+            const recalcResult = await safeJson(recalcResponse);
+
+            if (!recalcResponse.ok || !recalcResult.success) {
+                alert('Failed to sync stats: ' + (recalcResult.message || 'Unknown error'));
+                return;
+            }
+
+            // Now re-fetch the full stats (handles super_admin vs tutor_admin display)
+            const statsResponse = await fetch('/api/statistics');
+            if (statsResponse.ok) {
+                const stats = await safeJson(statsResponse);
+
+                if (stats.role === 'super_admin' && stats.master_total) {
+                    document.getElementById('totalBookingsAllTime').textContent = stats.master_total.total_bookings || 0;
+                    document.getElementById('uniqueClients').textContent = stats.master_total.unique_clients || 0;
+                    const archivedCount = stats.archived_count || 0;
+                    const completedEl = document.getElementById('completedCount');
+                    if (completedEl) completedEl.textContent = archivedCount;
+                    const archivedBadgeEl = document.getElementById('archivedBadgeCount');
+                    if (archivedBadgeEl) archivedBadgeEl.textContent = archivedCount;
+                    if (stats.tutor_stats) displayTutorBreakdown(stats.tutor_stats);
+
+                    // Build per-tutor details for alert
+                    let tutorDetails = '';
+                    for (const [tid, ts] of Object.entries(stats.tutor_stats || {})) {
+                        tutorDetails += `\n  ${ts.tutor_name}: ${ts.total_bookings} sessions, ${ts.unique_clients} clients`;
+                    }
+                    alert(`Stats refreshed!\n\nMaster Total: ${stats.master_total.total_bookings} sessions, ${stats.master_total.unique_clients} unique clients\nActive: ${stats.active_bookings}\nArchived: ${archivedCount}\n\nPer-Tutor:${tutorDetails}`);
+                } else {
+                    document.getElementById('totalBookingsAllTime').textContent = stats.total_bookings || 0;
+                    document.getElementById('uniqueClients').textContent = stats.unique_clients || 0;
+                    alert(`Stats refreshed!\n\nTotal: ${stats.total_bookings}\nUnique clients: ${stats.unique_clients}\nActive: ${stats.active_bookings}`);
+                }
+            }
+        } catch (error) {
+            console.error('Error syncing stats:', error);
+            alert('Error syncing stats: ' + error.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+
+    // Rebook modal - pick a new slot for an existing user
+    async function showRebookModal(bookingId, sourceType) {
+        // Fetch available slots
+        let slots = [];
+        try {
+            const resp = await fetch('/api/slots');
+            const data = await safeJson(resp);
+            slots = (data.slots || data || []).filter(s => !s.booked);
+        } catch (e) {
+            alert('Failed to load available slots');
+            return;
+        }
+
+        if (slots.length === 0) {
+            alert('No available time slots. Please create slots first.');
+            return;
+        }
+
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000;padding:1rem;';
+        modal.classList.add('dynamic-modal');
+
+        // Group slots by day
+        const slotsByDay = {};
+        slots.forEach(s => {
+            const key = `${s.day || ''} ${s.date || ''}`.trim() || 'Unscheduled';
+            if (!slotsByDay[key]) slotsByDay[key] = [];
+            slotsByDay[key].push(s);
+        });
+
+        let slotOptionsHtml = '';
+        for (const [day, daySlots] of Object.entries(slotsByDay)) {
+            slotOptionsHtml += `<optgroup label="${day}">`;
+            daySlots.forEach(s => {
+                const label = `${s.day || ''} ${s.date || ''} at ${s.time || ''} (${s.tutor_name || 'TBD'})`;
+                slotOptionsHtml += `<option value="${s.id || s.doc_id}">${label}</option>`;
+            });
+            slotOptionsHtml += `</optgroup>`;
+        }
+
+        modal.innerHTML = `
+            <div style="background:var(--bg-card);border-radius:1rem;max-width:500px;width:90%;padding:2rem;position:relative;">
+                <button data-action="closeModal" style="position:absolute;top:1rem;right:1rem;background:none;border:2px solid var(--border-light);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:1.25rem;color:var(--text-secondary);">&times;</button>
+                <h2 style="margin:0 0 1.5rem;color:var(--text-primary);">Rebook Session</h2>
+                <p style="color:var(--text-secondary);margin-bottom:1.5rem;">Select a new time slot. All user info will be carried over.</p>
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;font-weight:600;margin-bottom:0.5rem;color:var(--text-primary);">Time Slot</label>
+                    <select id="rebook-slot" style="width:100%;padding:0.75rem;border:2px solid var(--border-light);border-radius:0.5rem;background:var(--bg-page);color:var(--text-primary);font-size:0.9rem;">
+                        ${slotOptionsHtml}
+                    </select>
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;font-weight:600;margin-bottom:0.5rem;color:var(--text-primary);">Meeting Type</label>
+                    <select id="rebook-meeting-type" style="width:100%;padding:0.75rem;border:2px solid var(--border-light);border-radius:0.5rem;background:var(--bg-page);color:var(--text-primary);">
+                        <option value="in-person">In-Person</option>
+                        <option value="zoom">Zoom</option>
+                    </select>
+                </div>
+                <div id="rebook-room-section" style="margin-bottom:1.5rem;">
+                    <label style="display:block;font-weight:600;margin-bottom:0.5rem;color:var(--text-primary);">Room / Location</label>
+                    <input id="rebook-room" type="text" placeholder="e.g. Howard Hall 123" style="width:100%;padding:0.75rem;border:2px solid var(--border-light);border-radius:0.5rem;background:var(--bg-page);color:var(--text-primary);">
+                </div>
+                <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+                    <button data-action="closeModal" style="padding:0.75rem 1.5rem;border:2px solid var(--border-light);background:transparent;color:var(--text-primary);border-radius:0.5rem;cursor:pointer;font-weight:600;">Cancel</button>
+                    <button id="rebook-submit-btn" style="padding:0.75rem 1.5rem;background:#2563EB;color:white;border:none;border-radius:0.5rem;cursor:pointer;font-weight:600;">Rebook</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Toggle room visibility based on meeting type
+        const meetingTypeEl = modal.querySelector('#rebook-meeting-type');
+        const roomSection = modal.querySelector('#rebook-room-section');
+        const roomInput = modal.querySelector('#rebook-room');
+        meetingTypeEl.addEventListener('change', () => {
+            if (meetingTypeEl.value === 'zoom') {
+                roomSection.style.display = 'none';
+                roomInput.value = 'Zoom - Online';
+            } else {
+                roomSection.style.display = 'block';
+                roomInput.value = '';
+            }
+        });
+
+        // Submit rebook
+        modal.querySelector('#rebook-submit-btn').addEventListener('click', async () => {
+            const btn = modal.querySelector('#rebook-submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Rebooking...';
+
+            try {
+                const resp = await fetch('/api/booking/rebook', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        source_booking_id: bookingId,
+                        source_type: sourceType,
+                        new_slot_id: modal.querySelector('#rebook-slot').value,
+                        selected_room: roomInput.value || 'Zoom - Online',
+                        meeting_type: meetingTypeEl.value
+                    })
+                });
+                const result = await safeJson(resp);
+                if (resp.ok && result.success) {
+                    modal.remove();
+                    alert(result.message || 'Session rebooked successfully!');
+                    loadUsers();
+                    loadTimeSlots();
+                } else {
+                    alert('Error: ' + (result.message || 'Failed to rebook'));
+                    btn.disabled = false;
+                    btn.textContent = 'Rebook';
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+                btn.disabled = false;
+                btn.textContent = 'Rebook';
+            }
+        });
+    }
 
     // Global click event delegation for dynamically created elements
     document.body.addEventListener('click', function(e) {
@@ -2693,6 +3242,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
             case 'deleteBooking':
                 deleteBooking(index);
+                break;
+
+            // Archived booking actions
+            case 'viewArchivedBooking':
+                viewArchivedBooking(index);
+                break;
+            case 'rebookArchived':
+                showRebookModal(target.dataset.bookingId, 'archived');
+                if (modal) modal.remove();
+                break;
+            case 'rebookActive':
+                showRebookModal(target.dataset.bookingId, 'active');
                 break;
 
             // Modal close actions

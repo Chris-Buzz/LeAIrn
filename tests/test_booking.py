@@ -18,7 +18,7 @@ class TestSlotRetrieval:
     def test_get_tutors_requires_auth(self, client):
         """Test that tutors endpoint requires authentication."""
         response = client.get('/api/tutors')
-        assert response.status_code in [401, 302]
+        assert response.status_code == 401
 
 
 class TestBookingCreation:
@@ -80,12 +80,12 @@ class TestBookingManagement:
     def test_delete_booking_requires_auth(self, client):
         """Test that deleting booking requires admin auth."""
         response = client.delete('/api/booking/test_id')
-        assert response.status_code in [401, 302]
+        assert response.status_code == 401
 
     def test_update_booking_requires_auth(self, client):
         """Test that updating booking requires admin auth."""
         response = client.put('/api/booking/test_id', json={})
-        assert response.status_code in [401, 302]
+        assert response.status_code == 401
 
     def test_get_user_booking_requires_auth(self, client):
         """Test that getting user booking requires auth."""

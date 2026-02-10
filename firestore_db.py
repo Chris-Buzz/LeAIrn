@@ -1405,7 +1405,7 @@ def record_ip_booking_request(ip_address: str) -> bool:
 
 def check_email_booking_rate_limit(email: str) -> dict:
     """
-    Check if email has exceeded booking rate limit (1 booking per 24 hours).
+    Check if email has exceeded booking rate limit (5 bookings per 24 hours).
 
     Args:
         email: User's email address
@@ -1413,23 +1413,27 @@ def check_email_booking_rate_limit(email: str) -> dict:
     Returns:
         dict: {'allowed': bool, 'wait_hours': int, 'has_active_booking': bool}
     """
+    MAX_ACTIVE_BOOKINGS = 5  # Maximum concurrent bookings per user
+    MAX_BOOKINGS_PER_DAY = 5  # Maximum booking requests per 24 hours
+
     try:
         initialize_firestore()
 
         email = str(email).strip().lower()
 
-        # First, check if user already has an active booking
+        # Check how many active bookings user has
         bookings = get_all_bookings()
-        for booking in bookings:
-            if booking.get('email', '').lower() == email:
-                return {
-                    'allowed': False,
-                    'wait_hours': 0,
-                    'has_active_booking': True,
-                    'message': 'You already have an active booking. Please cancel it first to book a new session.'
-                }
+        user_booking_count = sum(1 for b in bookings if b.get('email', '').lower() == email)
 
-        # Check rate limit record for 24-hour booking requests
+        if user_booking_count >= MAX_ACTIVE_BOOKINGS:
+            return {
+                'allowed': False,
+                'wait_hours': 0,
+                'has_active_booking': True,
+                'message': f'You already have {user_booking_count} active bookings. Please cancel one to book a new session.'
+            }
+
+        # Check rate limit record for daily booking requests
         doc_ref = db.collection('email_booking_limits').document(email.replace('@', '_at_').replace('.', '_dot_'))
         doc = doc_ref.get()
 
@@ -1439,22 +1443,32 @@ def check_email_booking_rate_limit(email: str) -> dict:
             return {'allowed': True, 'wait_hours': 0, 'has_active_booking': False}
 
         rate_limit = doc.to_dict()
-        last_booking_str = rate_limit.get('last_booking', '')
 
-        if not last_booking_str:
-            return {'allowed': True, 'wait_hours': 0, 'has_active_booking': False}
+        # Check daily booking count
+        bookings_today = rate_limit.get('bookings_today', 0)
+        last_reset_str = rate_limit.get('last_reset', '')
 
-        last_booking_dt = datetime.fromisoformat(last_booking_str)
-        hours_since_last = (now - last_booking_dt).total_seconds() / 3600
+        # Reset count if it's a new day
+        if last_reset_str:
+            last_reset = datetime.fromisoformat(last_reset_str)
+            if (now - last_reset).total_seconds() > 86400:  # 24 hours
+                bookings_today = 0
 
-        if hours_since_last < 24:
-            # Rate limit - can only book once per 24 hours
-            wait_hours = max(1, int(24 - hours_since_last))
+        if bookings_today >= MAX_BOOKINGS_PER_DAY:
+            # Check when they can book again
+            last_booking_str = rate_limit.get('last_booking', '')
+            if last_booking_str:
+                last_booking_dt = datetime.fromisoformat(last_booking_str)
+                hours_since_last = (now - last_booking_dt).total_seconds() / 3600
+                wait_hours = max(1, int(24 - hours_since_last))
+            else:
+                wait_hours = 24
+
             return {
                 'allowed': False,
                 'wait_hours': wait_hours,
                 'has_active_booking': False,
-                'message': f'You can only book one session per day. Please try again in {wait_hours} hour{"s" if wait_hours != 1 else ""}.'
+                'message': f'You have reached the limit of {MAX_BOOKINGS_PER_DAY} bookings per day. Please try again tomorrow.'
             }
 
         return {'allowed': True, 'wait_hours': 0, 'has_active_booking': False}
@@ -1468,6 +1482,7 @@ def check_email_booking_rate_limit(email: str) -> dict:
 def record_email_booking_request(email: str) -> bool:
     """
     Record an email booking request for rate limiting tracking.
+    Tracks daily booking count with automatic reset after 24 hours.
 
     Args:
         email: User's email address
@@ -1482,9 +1497,35 @@ def record_email_booking_request(email: str) -> bool:
         doc_id = email.replace('@', '_at_').replace('.', '_dot_')
         doc_ref = db.collection('email_booking_limits').document(doc_id)
 
+        now = datetime.now()
+        doc = doc_ref.get()
+
+        if doc.exists:
+            data = doc.to_dict()
+            last_reset_str = data.get('last_reset', '')
+
+            # Check if we need to reset the daily count
+            if last_reset_str:
+                last_reset = datetime.fromisoformat(last_reset_str)
+                if (now - last_reset).total_seconds() > 86400:  # 24 hours
+                    # Reset count for new day
+                    bookings_today = 1
+                    last_reset = now
+                else:
+                    bookings_today = data.get('bookings_today', 0) + 1
+                    last_reset = datetime.fromisoformat(last_reset_str)
+            else:
+                bookings_today = 1
+                last_reset = now
+        else:
+            bookings_today = 1
+            last_reset = now
+
         doc_ref.set({
             'email': email,
-            'last_booking': datetime.now().isoformat()
+            'last_booking': now.isoformat(),
+            'bookings_today': bookings_today,
+            'last_reset': last_reset.isoformat()
         })
 
         return True
@@ -1511,14 +1552,20 @@ def store_confirmed_booking(email: str, booking_data: dict, slot_data: dict) -> 
 
         # Add the booking
         result = add_booking(booking_data)
-        
+
         if result:
             # Mark the slot as booked
             slot_id = slot_data.get('id') or slot_data.get('doc_id')
             if slot_id:
                 book_slot(slot_id, email, booking_data.get('selected_room'))
+
+            # Update booking statistics
+            tutor_id = booking_data.get('tutor_id', 'christopher')
+            tutor_name = booking_data.get('tutor_name', 'Christopher Buzaid')
+            add_completed_booking(tutor_id, tutor_name, email)
+
             return True
-        
+
         return False
 
     except Exception as e:
@@ -1810,118 +1857,234 @@ def verify_admin_oauth(email: str) -> bool:
 
 def get_booking_statistics() -> dict:
     """
-    Get booking statistics including historical data.
-    Returns stats per tutor and master totals.
+    Get booking statistics using a verified baseline + new bookings from Firestore.
+
+    Approach:
+    - STATS_BASELINE contains verified correct totals as of a specific date
+    - Any bookings in Firestore created AFTER the baseline date are counted on top
+    - This ensures accurate historical numbers while auto-updating for new sessions
+    - Baseline always returns even if Firestore counting fails
+
+    Returns:
+        dict with 'tutors' containing per-tutor stats and totals
+    """
+    # Verified stats baseline - these are the confirmed correct numbers
+    # Updated: 2026-02-06 by Christopher
+    STATS_BASELINE = {
+        'as_of': '2026-02-06',
+        'christopher': {
+            'total_bookings': 36,
+            'unique_clients': 22,
+        },
+        'kiumbura': {
+            'total_bookings': 6,
+            'unique_clients': 4,
+        },
+        'danny': {
+            'total_bookings': 2,
+            'unique_clients': 2,
+        }
+    }
+    # Use naive datetime to avoid timezone comparison errors
+    baseline_cutoff = datetime(2026, 2, 6)
+
+    # Always initialize tutor stats from baseline (outside Firestore try/except)
+    tutor_stats = {}
+    for tutor_id in ['christopher', 'kiumbura', 'danny']:
+        baseline = STATS_BASELINE.get(tutor_id, {})
+        tutor_stats[tutor_id] = {
+            'tutor_name': get_tutor_display_name(tutor_id),
+            'total_bookings': baseline.get('total_bookings', 0),
+            'unique_clients': [],
+            'baseline_bookings': baseline.get('total_bookings', 0),
+            'baseline_clients': baseline.get('unique_clients', 0),
+            'new_bookings': 0,
+            'new_client_emails': []
+        }
+        # Fill placeholder unique clients for baseline count
+        for i in range(baseline.get('unique_clients', 0)):
+            tutor_stats[tutor_id]['unique_clients'].append(f"baseline_{tutor_id}_{i+1}@baseline.local")
+
+    active_count = 0
+    archived_count = 0
+
+    # Count new bookings from Firestore (after baseline date)
+    try:
+        client = get_firestore_client()
+        if not client:
+            print("[STATS] WARNING: Firestore not initialized, returning baseline only")
+            return {
+                'tutors': tutor_stats,
+                'active_count': 0,
+                'archived_count': 0,
+                'calculated_at': datetime.now(timezone.utc).isoformat()
+            }
+
+        active_bookings = get_all_bookings()
+        archived_bookings = get_archived_bookings(limit=10000)
+        active_count = len(active_bookings)
+        archived_count = len(archived_bookings)
+
+        all_bookings = active_bookings + archived_bookings
+
+        for booking in all_bookings:
+            tutor_id = normalize_tutor_id(booking.get('tutor_id', 'christopher'))
+            email = (booking.get('email', '') or '').lower().strip()
+
+            # Parse booking creation date
+            created_at = booking.get('submission_date') or booking.get('timestamp') or booking.get('created_at', '')
+            booking_date = None
+            try:
+                if isinstance(created_at, str) and created_at:
+                    parsed = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    # Strip timezone to make naive for safe comparison
+                    booking_date = parsed.replace(tzinfo=None)
+                elif hasattr(created_at, 'replace'):
+                    # Firestore DatetimeWithNanoseconds or similar
+                    booking_date = created_at.replace(tzinfo=None) if hasattr(created_at, 'tzinfo') else None
+            except (ValueError, TypeError, AttributeError):
+                booking_date = None
+
+            # Only count bookings created AFTER the baseline
+            if booking_date and booking_date > baseline_cutoff:
+                if tutor_id not in tutor_stats:
+                    tutor_stats[tutor_id] = {
+                        'tutor_name': booking.get('tutor_name', get_tutor_display_name(tutor_id)),
+                        'total_bookings': 0,
+                        'unique_clients': [],
+                        'baseline_bookings': 0,
+                        'baseline_clients': 0,
+                        'new_bookings': 0,
+                        'new_client_emails': []
+                    }
+
+                tutor_stats[tutor_id]['total_bookings'] += 1
+                tutor_stats[tutor_id]['new_bookings'] += 1
+
+                if email and email not in tutor_stats[tutor_id]['new_client_emails']:
+                    tutor_stats[tutor_id]['new_client_emails'].append(email)
+                    tutor_stats[tutor_id]['unique_clients'].append(email)
+
+    except Exception as e:
+        print(f"[STATS] WARNING: Error counting new bookings, returning baseline: {e}")
+        import traceback
+        traceback.print_exc()
+
+    # Log stats (always runs, even if Firestore counting failed)
+    for tid, tdata in tutor_stats.items():
+        print(f"[STATS] {tid}: baseline={tdata.get('baseline_bookings', 0)} + new={tdata.get('new_bookings', 0)} = {tdata['total_bookings']} sessions, {len(tdata['unique_clients'])} unique clients")
+
+    return {
+        'tutors': tutor_stats,
+        'active_count': active_count,
+        'archived_count': archived_count,
+        'calculated_at': datetime.now(timezone.utc).isoformat()
+    }
+
+
+def normalize_tutor_id(tutor_id: str) -> str:
+    """
+    Normalize tutor ID to consistent format.
+    Handles legacy formats like 'christopher_buzaid' -> 'christopher'
+    """
+    if not tutor_id:
+        return 'christopher'
+
+    tutor_id = tutor_id.lower().strip()
+
+    # Map legacy IDs to current format
+    id_mapping = {
+        'christopher_buzaid': 'christopher',
+        'chris': 'christopher',
+        'christopher buzaid': 'christopher',
+    }
+
+    return id_mapping.get(tutor_id, tutor_id)
+
+
+def get_tutor_display_name(tutor_id: str) -> str:
+    """Get display name for tutor ID."""
+    names = {
+        'christopher': 'Christopher Buzaid',
+        'danny': 'Danny',
+        'kiumbura': 'Kiumbura',
+    }
+    return names.get(tutor_id, tutor_id.title())
+
+
+def recalculate_booking_statistics() -> dict:
+    """
+    Recalculate and return booking statistics.
+    Now just wraps get_booking_statistics() since that calculates from real data.
+
+    Returns:
+        dict with success status and calculated totals
     """
     try:
-        initialize_firestore()
-        doc = db.collection('app_statistics').document('booking_stats').get()
+        stats = get_booking_statistics()
 
-        if doc.exists:
-            return doc.to_dict()
-        else:
-            # Initialize with historical data if not exists
-            return initialize_booking_statistics()
-    except Exception as e:
-        print(f"ERROR getting booking statistics: {e}")
+        if 'error' in stats:
+            return {'success': False, 'error': stats['error']}
+
+        # Calculate totals
+        total_bookings = 0
+        all_emails = set()
+
+        for tutor_id, tutor_data in stats.get('tutors', {}).items():
+            total_bookings += tutor_data.get('total_bookings', 0)
+            all_emails.update(tutor_data.get('unique_clients', []))
+
+        print(f"[OK] Stats calculated: {total_bookings} total, {len(all_emails)} unique clients")
+
         return {
-            'tutors': {
-                'christopher_buzaid': {'total_bookings': 0, 'unique_clients': []}
-            },
-            'initialized': False
-        }
-
-
-def initialize_booking_statistics() -> dict:
-    """
-    Initialize booking statistics with historical data.
-    Christopher: 31 total bookings, 21 unique clients
-    """
-    try:
-        initialize_firestore()
-
-        # Historical data - 21 unique client emails for Christopher
-        # These are placeholder emails representing the 21 unique clients
-        historical_clients = [
-            f"historical_client_{i}@monmouth.edu" for i in range(1, 22)
-        ]
-
-        stats = {
-            'tutors': {
-                'christopher_buzaid': {
-                    'tutor_name': 'Christopher Buzaid',
-                    'total_bookings': 31,
-                    'unique_clients': historical_clients
-                },
-                'danny': {
-                    'tutor_name': 'Danny',
-                    'total_bookings': 0,
-                    'unique_clients': []
-                },
-                'kiumbura': {
-                    'tutor_name': 'Kiumbura',
-                    'total_bookings': 0,
-                    'unique_clients': []
+            'success': True,
+            'total_bookings': total_bookings,
+            'unique_clients': len(all_emails),
+            'active_bookings': stats.get('active_count', 0),
+            'archived_bookings': stats.get('archived_count', 0),
+            'per_tutor': {
+                tid: {
+                    'name': tdata.get('tutor_name'),
+                    'bookings': tdata.get('total_bookings', 0),
+                    'clients': len(tdata.get('unique_clients', []))
                 }
-            },
-            'initialized': True,
-            'initialized_at': datetime.now(timezone.utc).isoformat()
+                for tid, tdata in stats.get('tutors', {}).items()
+            }
         }
 
-        db.collection('app_statistics').document('booking_stats').set(stats)
-        print("[OK] Booking statistics initialized with historical data")
-        return stats
     except Exception as e:
-        print(f"ERROR initializing booking statistics: {e}")
-        return {'tutors': {}, 'initialized': False}
+        print(f"ERROR recalculating stats: {e}")
+        return {'success': False, 'error': str(e)}
 
 
 def add_completed_booking(tutor_id: str, tutor_name: str, client_email: str) -> bool:
     """
-    Add a completed booking to statistics.
-    Called when a booking is marked as completed.
+    Log a new booking creation. Stats are calculated dynamically from
+    actual booking data, so this just logs for debugging purposes.
+
+    Note: Stats are calculated in real-time from bookings + archived_bookings
+    collections, so no separate stats document needs to be maintained.
+
+    Args:
+        tutor_id: Tutor identifier
+        tutor_name: Tutor display name
+        client_email: Client's email address
+
+    Returns:
+        bool: Always True (for backwards compatibility)
     """
-    try:
-        initialize_firestore()
-        doc_ref = db.collection('app_statistics').document('booking_stats')
-        doc = doc_ref.get()
-
-        if not doc.exists:
-            stats = initialize_booking_statistics()
-        else:
-            stats = doc.to_dict()
-
-        # Initialize tutor if not exists
-        if tutor_id not in stats.get('tutors', {}):
-            stats['tutors'][tutor_id] = {
-                'tutor_name': tutor_name,
-                'total_bookings': 0,
-                'unique_clients': []
-            }
-
-        # Increment booking count
-        stats['tutors'][tutor_id]['total_bookings'] += 1
-
-        # Add unique client if not already exists
-        client_email = client_email.lower().strip()
-        if client_email and client_email not in stats['tutors'][tutor_id]['unique_clients']:
-            stats['tutors'][tutor_id]['unique_clients'].append(client_email)
-
-        # Update last modified
-        stats['last_updated'] = datetime.now(timezone.utc).isoformat()
-
-        doc_ref.set(stats)
-        print(f"[OK] Booking stats updated for {tutor_name}: {stats['tutors'][tutor_id]['total_bookings']} total")
-        return True
-    except Exception as e:
-        print(f"ERROR adding completed booking to stats: {e}")
-        return False
+    normalized_id = normalize_tutor_id(tutor_id)
+    print(f"[BOOKING] New booking: tutor={normalized_id}, client={client_email}")
+    return True
 
 
 def get_statistics_summary() -> dict:
     """
     Get a summary of all booking statistics for the admin dashboard.
-    Returns total bookings and unique clients per tutor + master total.
+    Calculates in real-time from actual booking data.
+
+    Returns:
+        dict with 'tutors' (per-tutor breakdown) and 'master_total' (combined)
     """
     try:
         stats = get_booking_statistics()
@@ -1931,7 +2094,9 @@ def get_statistics_summary() -> dict:
             'master_total': {
                 'total_bookings': 0,
                 'unique_clients': 0
-            }
+            },
+            'active_count': stats.get('active_count', 0),
+            'archived_count': stats.get('archived_count', 0)
         }
 
         all_unique_emails = set()
@@ -1952,12 +2117,165 @@ def get_statistics_summary() -> dict:
         result['master_total']['unique_clients'] = len(all_unique_emails)
 
         return result
+
     except Exception as e:
         print(f"ERROR getting statistics summary: {e}")
         return {
             'tutors': {},
-            'master_total': {'total_bookings': 0, 'unique_clients': 0}
+            'master_total': {'total_bookings': 0, 'unique_clients': 0},
+            'error': str(e)
         }
+
+
+# ============================================================================
+# ARCHIVED BOOKINGS - Store completed sessions permanently
+# ============================================================================
+
+def archive_completed_booking(booking_data: dict, session_notes: str = '',
+                              enhanced_notes: str = '', completed_by: str = 'admin') -> bool:
+    """
+    Archive a completed booking to preserve all user data permanently.
+    Called before deleting a booking when marked complete.
+
+    Args:
+        booking_data: The full booking data to archive
+        session_notes: Raw session notes from tutor
+        enhanced_notes: AI-enhanced notes sent to user
+        completed_by: Admin who completed the session
+
+    Returns:
+        bool: True if archived successfully
+    """
+    try:
+        client = get_firestore_client()
+        if not client:
+            print("ERROR: Firestore not initialized for archiving")
+            return False
+
+        # Create archive record with all booking data plus completion info
+        archive_record = {
+            **booking_data,
+            'archived_at': datetime.now(timezone.utc).isoformat(),
+            'session_notes': session_notes,
+            'enhanced_notes': enhanced_notes,
+            'completed_by': completed_by,
+            'status': 'completed'
+        }
+
+        # Use booking ID as document ID for easy lookup
+        booking_id = booking_data.get('id') or booking_data.get('doc_id')
+        if booking_id:
+            client.collection('archived_bookings').document(booking_id).set(archive_record)
+        else:
+            client.collection('archived_bookings').add(archive_record)
+
+        print(f"[OK] Archived booking for {booking_data.get('full_name', 'Unknown')}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR archiving booking: {e}")
+        return False
+
+
+def archive_cancelled_booking(booking_data: dict, cancelled_by: str = 'admin') -> bool:
+    """
+    Archive a cancelled/deleted booking to preserve user intake data.
+    Called before deleting a booking so user answers are never lost.
+
+    Args:
+        booking_data: The full booking data to archive
+        cancelled_by: Admin who cancelled the session
+
+    Returns:
+        bool: True if archived successfully
+    """
+    try:
+        client = get_firestore_client()
+        if not client:
+            print("ERROR: Firestore not initialized for cancel-archiving")
+            return False
+
+        archive_record = {
+            **booking_data,
+            'archived_at': datetime.now(timezone.utc).isoformat(),
+            'cancelled_by': cancelled_by,
+            'status': 'cancelled',
+            'session_notes': '',
+            'enhanced_notes': ''
+        }
+
+        booking_id = booking_data.get('id') or booking_data.get('doc_id')
+        if booking_id:
+            client.collection('archived_bookings').document(booking_id).set(archive_record)
+        else:
+            client.collection('archived_bookings').add(archive_record)
+
+        print(f"[OK] Archived cancelled booking for {booking_data.get('full_name', 'Unknown')}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR archiving cancelled booking: {e}")
+        return False
+
+
+def get_archived_bookings(limit: int = 100) -> List[Dict]:
+    """
+    Get all archived (completed) bookings for admin view.
+
+    Args:
+        limit: Maximum number of records to return
+
+    Returns:
+        List of archived booking records, sorted by archived_at descending
+    """
+    try:
+        client = get_firestore_client()
+        if not client:
+            return []
+
+        docs = (client.collection('archived_bookings')
+                .order_by('archived_at', direction=firestore.Query.DESCENDING)
+                .limit(limit)
+                .get())
+
+        archived = []
+        for doc in docs:
+            data = doc.to_dict()
+            data['id'] = doc.id
+            archived.append(data)
+
+        return archived
+
+    except Exception as e:
+        print(f"ERROR getting archived bookings: {e}")
+        return []
+
+
+def get_archived_booking(booking_id: str) -> Optional[Dict]:
+    """
+    Get a single archived booking by ID.
+
+    Args:
+        booking_id: The booking ID to lookup
+
+    Returns:
+        The archived booking data or None if not found
+    """
+    try:
+        client = get_firestore_client()
+        if not client:
+            return None
+
+        doc = client.collection('archived_bookings').document(booking_id).get()
+        if doc.exists:
+            data = doc.to_dict()
+            data['id'] = doc.id
+            return data
+        return None
+
+    except Exception as e:
+        print(f"ERROR getting archived booking {booking_id}: {e}")
+        return None
 
 
 # ============================================================================
@@ -2936,7 +3254,10 @@ def reset_user_misses(email: str) -> bool:
 
 def get_rate_limit_count(rate_key: str, window_seconds: int) -> int:
     """
-    Get current request count for a rate limit key within the time window
+    Get current request count for a rate limit key within the time window.
+
+    DEPRECATED: Use check_and_increment_rate_limit() for atomic check+increment.
+    Kept for backward compatibility (e.g., reading count without incrementing).
 
     Args:
         rate_key: Unique key for rate limiting (e.g., "rate_limit:global:192.168.1.1")
@@ -2981,7 +3302,10 @@ def get_rate_limit_count(rate_key: str, window_seconds: int) -> int:
 
 def increment_rate_limit(rate_key: str, window_seconds: int) -> bool:
     """
-    Increment the request counter for a rate limit key
+    Increment the request counter for a rate limit key.
+
+    DEPRECATED: Use check_and_increment_rate_limit() for atomic check+increment.
+    Kept for backward compatibility.
 
     Args:
         rate_key: Unique key for rate limiting
@@ -3042,6 +3366,176 @@ def increment_rate_limit(rate_key: str, window_seconds: int) -> bool:
     except Exception as e:
         print(f"ERROR incrementing rate limit: {e}")
         return False
+
+
+# ============================================================================
+# ATOMIC RATE LIMITING (Transaction-safe check + increment)
+# ============================================================================
+
+
+@firestore.transactional
+def _rate_limit_transaction(transaction, doc_ref, window_seconds):
+    """Atomically check and increment rate limit counter."""
+    snapshot = doc_ref.get(transaction=transaction)
+
+    now = datetime.now(timezone.utc)
+
+    if snapshot.exists:
+        data = snapshot.to_dict()
+        window_start = data.get('last_reset')
+
+        # Check if window has expired
+        if window_start:
+            try:
+                if isinstance(window_start, str):
+                    window_start_dt = datetime.fromisoformat(window_start.replace('Z', '+00:00'))
+                else:
+                    window_start_dt = window_start
+
+                if window_start_dt.tzinfo is None:
+                    window_start_dt = window_start_dt.replace(tzinfo=timezone.utc)
+
+                elapsed = (now - window_start_dt).total_seconds()
+                if elapsed >= window_seconds:
+                    # Window expired, reset counter
+                    transaction.set(doc_ref, {
+                        'count': 1,
+                        'last_reset': now.isoformat(),
+                        'window_seconds': window_seconds,
+                        'updated_at': now.isoformat()
+                    })
+                    return 0  # Was 0 before this increment
+                else:
+                    # Within window, increment
+                    current_count = data.get('count', 0)
+                    transaction.update(doc_ref, {
+                        'count': current_count + 1,
+                        'updated_at': now.isoformat()
+                    })
+                    return current_count  # Return count BEFORE increment
+            except Exception:
+                pass
+
+        # Fallback: increment existing doc with unknown window state
+        current_count = data.get('count', 0)
+        transaction.update(doc_ref, {
+            'count': current_count + 1,
+            'updated_at': now.isoformat()
+        })
+        return current_count
+    else:
+        # New document -- first request in window
+        transaction.set(doc_ref, {
+            'count': 1,
+            'last_reset': now.isoformat(),
+            'window_seconds': window_seconds,
+            'updated_at': now.isoformat()
+        })
+        return 0
+
+
+def check_and_increment_rate_limit(rate_key, window_seconds):
+    """
+    Atomically check current count and increment.
+
+    Returns the count BEFORE the increment, so callers can compare
+    against the limit threshold.  Uses a Firestore transaction to
+    prevent race conditions between concurrent requests.
+
+    Args:
+        rate_key: Unique key for rate limiting
+        window_seconds: Time window in seconds
+
+    Returns:
+        int: Request count BEFORE this increment (0 on first request or error)
+    """
+    try:
+        client = get_firestore_client()
+        if not client:
+            return 0  # Fail open if DB unavailable
+
+        doc_ref = client.collection('rate_limits').document(rate_key)
+        transaction = client.transaction()
+        return _rate_limit_transaction(transaction, doc_ref, window_seconds)
+    except Exception as e:
+        print(f"[RATE LIMIT] Transaction error: {e}")
+        return 0  # Fail open
+
+
+# ============================================================================
+# SSO NONCE TRACKING (Replay Prevention)
+# ============================================================================
+
+def claim_sso_nonce(nonce: str, expires_timestamp: int) -> bool:
+    """Atomically check and claim an SSO nonce (one-time use).
+
+    Uses Firestore transactions to prevent race conditions where two
+    requests with the same token could both succeed.
+
+    Returns True if the nonce was successfully claimed (first use).
+    Returns False if already used, expired cleanup failed, or DB error (fail-closed).
+    """
+    client = get_firestore_client()
+    if client is None:
+        print("[WARNING] Firestore unavailable, rejecting SSO nonce")
+        return False
+
+    try:
+        doc_ref = client.collection('sso_nonces').document(nonce)
+        transaction = client.transaction()
+
+        @firestore.transactional
+        def _claim(txn):
+            doc = doc_ref.get(transaction=txn)
+
+            if doc.exists:
+                # Nonce already used (whether expired or not) — reject
+                # Cleanup of expired nonces is handled separately by cleanup_expired_sso_nonces()
+                return False
+
+            # First use — claim it
+            txn.set(doc_ref, {
+                'used_at': datetime.now(timezone.utc).isoformat(),
+                'expires_at': expires_timestamp,
+            })
+            return True
+
+        return _claim(transaction)
+
+    except Exception as e:
+        print(f"[ERROR] SSO nonce claim failed: {e}")
+        return False  # Fail closed
+
+
+def cleanup_expired_sso_nonces() -> int:
+    """Delete expired SSO nonces. Called during periodic maintenance.
+
+    Uses a 5-minute grace period to avoid deleting nonces that might
+    still be mid-validation in a concurrent request.
+    """
+    client = get_firestore_client()
+    if client is None:
+        return 0
+
+    try:
+        # 5-minute grace period: only delete nonces expired > 5 min ago
+        cutoff_ts = int(datetime.now(timezone.utc).timestamp()) - 300
+        expired = client.collection('sso_nonces') \
+            .where('expires_at', '<', cutoff_ts) \
+            .stream()
+
+        count = 0
+        for doc in expired:
+            doc.reference.delete()
+            count += 1
+
+        if count > 0:
+            print(f"[OK] Cleaned up {count} expired SSO nonces")
+        return count
+
+    except Exception as e:
+        print(f"[ERROR] SSO nonce cleanup failed: {e}")
+        return 0
 
 
 if __name__ == "__main__":
